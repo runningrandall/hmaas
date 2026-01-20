@@ -1,29 +1,11 @@
 import { NextResponse } from 'next/server';
-
-const words = [
-    'apple',
-    'banana',
-    'cherry',
-    'date',
-    'elderberry',
-    'fig',
-    'grape',
-    'honeydew',
-    'kiwi',
-    'lemon',
-    'mango',
-    'nectarine',
-    'orange',
-    'papaya',
-    'quince',
-    'raspberry',
-    'strawberry',
-    'tangerine',
-    'ugli',
-    'watermelon'
-];
+import { db } from '@/db';
+import { words } from '@/db/schema';
+import { sql } from 'drizzle-orm';
 
 export async function POST() {
-    const randomWord = words[Math.floor(Math.random() * words.length)];
+    const result = await db.select().from(words).orderBy(sql`RANDOM()`).limit(1);
+    const randomWord = result[0]?.text || "default";
+
     return NextResponse.json({ randomWord });
 }

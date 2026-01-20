@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
+import Link from 'next/link';
 
 export default function Home() {
   const [randomWord, setRandomWord] = useState<string | null>(null);
@@ -61,6 +63,34 @@ export default function Home() {
         </div>
 
         <div className="z-10 flex flex-col items-center gap-4">
+          <SignedOut>
+            <div className="p-4 bg-white/10 rounded-lg backdrop-blur-sm">
+              <p className="mb-2 text-sm text-center">Sign in to access more features</p>
+              <SignInButton mode="modal">
+                <button className="rounded-full bg-white text-black px-6 py-2 font-semibold hover:bg-gray-200 transition">
+                  Sign In
+                </button>
+              </SignInButton>
+            </div>
+          </SignedOut>
+
+          <SignedIn>
+            <div className="flex flex-col items-center gap-4 p-4 bg-white/10 rounded-lg backdrop-blur-sm">
+              <div className="flex items-center gap-4">
+                <UserButton />
+                <span className="text-sm">Welcome back!</span>
+              </div>
+              <Link
+                href="/protected"
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                Go to Protected Page
+              </Link>
+            </div>
+          </SignedIn>
+
+          <div className="w-full h-px bg-gray-700/50 my-4" />
+
           <button
             onClick={fetchRandomWord}
             disabled={loading}
