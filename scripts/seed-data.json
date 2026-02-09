@@ -1,0 +1,58 @@
+{
+    "serverless-template-table": [
+        {
+            "PutRequest": {
+                "Item": {
+                    "pk": {
+                        "S": "item_1"
+                    },
+                    "sk": {
+                        "S": "item_1"
+                    },
+                    "itemId": {
+                        "S": "item_1"
+                    },
+                    "name": {
+                        "S": "Seeded Item 1"
+                    },
+                    "description": {
+                        "S": "This is a seeded item."
+                    },
+                    "createdAt": {
+                        "N": "1700000000000"
+                    },
+                    "updatedAt": {
+                        "N": "1700000000000"
+                    }
+                }
+            }
+        },
+        {
+            "PutRequest": {
+                "Item": {
+                    "pk": {
+                        "S": "item_2"
+                    },
+                    "sk": {
+                        "S": "item_2"
+                    },
+                    "itemId": {
+                        "S": "item_2"
+                    },
+                    "name": {
+                        "S": "Seeded Item 2"
+                    },
+                    "description": {
+                        "S": "Another seeded item."
+                    },
+                    "createdAt": {
+                        "N": "1700000000000"
+                    },
+                    "updatedAt": {
+                        "N": "1700000000000"
+                    }
+                }
+            }
+        }
+    ]
+}

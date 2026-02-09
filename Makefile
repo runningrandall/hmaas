@@ -20,3 +20,6 @@ init-db:
 
 local-api:
 	./scripts/start-local-api.sh
+
+seed-db:
+	./scripts/seed-local-db.sh

@@ -64,7 +64,11 @@ To run the backend and database locally:
     ```bash
     make init-db
     ```
-4.  **Start Local API**:
+4.  **Seed Local DB** (Optional):
+    ```bash
+    make seed-db
+    ```
+5.  **Start Local API**:
     ```bash
     make local-api
     ```

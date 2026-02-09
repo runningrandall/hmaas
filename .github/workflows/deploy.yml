@@ -36,6 +36,12 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
+      - name: Run Unit Tests
+        run: pnpm test
+
+      - name: Run Linting
+        run: pnpm --filter frontend lint
+
       - name: Deploy Infrastructure (Main Only)
         if: github.ref == 'refs/heads/main'
         run: pnpm --filter infra run deploy --require-approval never
