@@ -1,37 +1,59 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+import { fetchAuthSession } from 'aws-amplify/auth';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export interface Item {
+    pk: string;
+    sk: string;
     itemId: string;
     name: string;
-    description?: string;
-    createdAt: number;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
-export const api = {
-    listItems: async (): Promise<Item[]> => {
-        const res = await fetch(`${API_URL}/items`);
-        if (!res.ok) throw new Error('Failed to fetch items');
-        return res.json();
-    },
+async function getHeaders() {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
 
-    createItem: async (name: string, description?: string): Promise<Item> => {
-        const res = await fetch(`${API_URL}/items`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                itemId: crypto.randomUUID(), // Client-side ID generation for simplicity, or server can do it
-                name,
-                description,
-            }),
-        });
-        if (!res.ok) throw new Error('Failed to create item');
-        return res.json();
-    },
+    try {
+        const session = await fetchAuthSession();
+        const token = session.tokens?.accessToken?.toString();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+    } catch (e) {
+        console.debug('No auth session found', e);
+    }
 
-    deleteItem: async (itemId: string): Promise<void> => {
-        const res = await fetch(`${API_URL}/items/${itemId}`, {
-            method: 'DELETE',
-        });
-        if (!res.ok) throw new Error('Failed to delete item');
-    },
-};
+    return headers;
+}
+
+export async function listItems() {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_URL}items`, { headers, cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to fetch items');
+    return res.json();
+}
+
+export async function createItem(name: string, description: string) {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_URL}items`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ name, description }),
+    });
+    if (!res.ok) throw new Error('Failed to create item');
+    return res.json();
+}
+
+export async function deleteItem(itemId: string) {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_URL}items/${itemId}`, {
+        method: 'DELETE',
+        headers,
+    });
+    if (!res.ok) throw new Error('Failed to delete item');
+    return res.json();
+}

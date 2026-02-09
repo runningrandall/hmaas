@@ -1,4 +1,4 @@
-.PHONY: deploy destroy synth dev
+.PHONY: deploy destroy synth dev local-db init-db local-api
 
 deploy:
 	pnpm --filter infra run deploy
@@ -11,3 +11,12 @@ synth:
 
 dev:
 	pnpm --filter frontend run dev
+
+local-db:
+	./scripts/start-local-db.sh
+
+init-db:
+	./scripts/init-local-db.sh
+
+local-api:
+	./scripts/start-local-api.sh

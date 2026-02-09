@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, Item } from '../lib/api';
+import { listItems, createItem, deleteItem, Item } from '../lib/api';
 
 export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
@@ -12,7 +12,7 @@ export default function Home() {
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const data = await api.listItems();
+      const data = await listItems();
       setItems(data);
     } catch (err: any) {
       setError(err.message);
@@ -34,21 +34,9 @@ export default function Home() {
 
     try {
       setLoading(true);
-      const created = await api.createItem(newItemName);
+      const created = await createItem(newItemName, 'Created via Web UI');
       setItems([...items, created]);
       setNewItemName('');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (itemId: string) => {
-    try {
-      setLoading(true);
-      await api.deleteItem(itemId);
-      setItems(items.filter((item) => item.itemId !== itemId));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -81,6 +69,12 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-2xl">
         <h1 className="mb-8 text-3xl font-bold text-center text-gray-800">Serverless Template App</h1>
+
+        <div className="flex justify-end gap-4 mb-8">
+          <a href="/login" className="text-blue-600 hover:underline">Login / Sign Up</a>
+          <a href="/profile" className="text-blue-600 hover:underline">Profile</a>
+          <a href="/admin" className="text-blue-600 hover:underline">Admin Dashboard</a>
+        </div>
 
         {error && (
           <div className="mb-6 rounded-md bg-red-50 p-4 text-red-700 border border-red-200">

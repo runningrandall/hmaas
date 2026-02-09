@@ -9,8 +9,15 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 
+import * as iam from 'aws-cdk-lib/aws-iam';
+import { AuthStack } from './auth-stack';
+
+interface InfraStackProps extends cdk.StackProps {
+  auth: AuthStack;
+}
+
 export class InfraStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: InfraStackProps) {
     super(scope, id, props);
 
     // 1. DynamoDB Table
@@ -76,14 +83,45 @@ export class InfraStack extends cdk.Stack {
     table.grantReadData(listItemsLambda);
     table.grantWriteData(deleteItemLambda);
 
+    // 7. Authorizer
+    const authLambda = new nodejs.NodejsFunction(this, 'authorizerLambda', {
+      entry: path.join(__dirname, '../../backend/src/auth/authorizer.ts'),
+      runtime: lambda.Runtime.NODEJS_22_X,
+      architecture: lambda.Architecture.ARM_64,
+      environment: {
+        USER_POOL_ID: props.auth.userPool.userPoolId,
+        USER_POOL_CLIENT_ID: props.auth.userPoolClient.userPoolClientId,
+        POLICY_STORE_ID: props.auth.policyStoreId,
+      },
+      bundling: {
+        minify: true,
+        sourceMap: true,
+        // aws-jwt-verify is a dependency, verifiedpermissions client is too.
+        // NodejsFunction bundles dependencies in package.json by default if not in externalModules.
+        // We should ensure they are bundled or layer is used. 
+        // Default bundling is usually fine for these.
+      },
+    });
+
+    // Grant Authorizer permission to call IsAuthorized
+    authLambda.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['verifiedpermissions:IsAuthorized'],
+      resources: [`arn:aws:verifiedpermissions:${this.region}:${this.account}:policy-store/${props.auth.policyStoreId}`],
+    }));
+
+    const authorizer = new apigateway.TokenAuthorizer(this, 'APIGatewayAuthorizer', {
+      handler: authLambda,
+      resultsCacheTtl: cdk.Duration.seconds(0), // Disable cache for testing
+    });
+
     // 5. API Gateway Integrations
     const items = api.root.addResource('items');
-    items.addMethod('GET', new apigateway.LambdaIntegration(listItemsLambda));
-    items.addMethod('POST', new apigateway.LambdaIntegration(createItemLambda));
+    items.addMethod('GET', new apigateway.LambdaIntegration(listItemsLambda), { authorizer });
+    items.addMethod('POST', new apigateway.LambdaIntegration(createItemLambda), { authorizer });
 
     const item = items.addResource('{itemId}');
-    item.addMethod('GET', new apigateway.LambdaIntegration(getItemLambda));
-    item.addMethod('DELETE', new apigateway.LambdaIntegration(deleteItemLambda));
+    item.addMethod('GET', new apigateway.LambdaIntegration(getItemLambda), { authorizer });
+    item.addMethod('DELETE', new apigateway.LambdaIntegration(deleteItemLambda), { authorizer });
 
     // Output API URL
     new cdk.CfnOutput(this, 'ApiUrl', {

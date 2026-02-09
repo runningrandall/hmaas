@@ -49,6 +49,34 @@ This project demonstrates a full-stack serverless architecture using:
    ```
    Open [http://localhost:3000](http://localhost:3000).
 
+   open [http://localhost:3000](http://localhost:3000).
+
+## Local Development (Offline)
+
+To run the backend and database locally:
+
+1.  **Prerequisites**: Docker & AWS SAM CLI (`brew install aws-sam-cli`).
+2.  **Start Local DB**:
+    ```bash
+    make local-db
+    ```
+3.  **Initialize DB Table**:
+    ```bash
+    make init-db
+    ```
+4.  **Start Local API**:
+    ```bash
+    make local-api
+    ```
+    This runs the API at `http://127.0.0.1:3000`.
+
+5.  **Run Frontend against Local API**:
+    Update `frontend/.env.local`:
+    ```bash
+    NEXT_PUBLIC_API_URL=http://127.0.0.1:3000/
+    ```
+     Then run `make dev`.
+
 ## Architecture Details
 
 - **Single Table Design**: The `backend/src/entities/item.ts` defines the schema using ElectroDB.
