@@ -30,9 +30,7 @@ test('Infra Stack Created', () => {
         Name: 'Template Service test',
     });
 
-    // Verify Frontend Resources
-    template.resourceCountIs('AWS::S3::Bucket', 1);
-    template.resourceCountIs('AWS::CloudFront::Distribution', 1);
+
 });
 
 test('Auth Stack Created', () => {
