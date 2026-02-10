@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@aws-sdk/client-dynamodb':
+        specifier: ^3.985.0
+        version: 3.985.0
       concurrently:
         specifier: ^9.2.1
         version: 9.2.1
