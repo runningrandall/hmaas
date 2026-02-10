@@ -1,13 +1,14 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { handler } from '../../src/handlers/listItems';
-import { ItemEntity } from '../../src/entities/item';
+import { ItemService } from '../../src/application/item-service';
 
-vi.mock('../../src/entities/item', () => ({
-    ItemEntity: {
-        scan: {
-            go: vi.fn(),
-        },
-    },
+// Mock dependencies
+vi.mock('../../src/adapters/dynamo-item-repository');
+vi.mock('../../src/adapters/event-bridge-publisher');
+vi.mock('../../src/application/item-service', () => ({
+    ItemService: vi.fn().mockReturnValue({
+        listItems: vi.fn(),
+    }),
 }));
 
 const makeEvent = (overrides: Record<string, any> = {}) => ({
@@ -27,16 +28,21 @@ const makeEvent = (overrides: Record<string, any> = {}) => ({
 });
 
 describe('listItems handler', () => {
+    let mockListItems: any;
+
     beforeEach(() => {
         vi.clearAllMocks();
+        // Get the mock instance
+        const mockServiceInstance = new ItemService({} as any, {} as any);
+        mockListItems = mockServiceInstance.listItems;
     });
 
     it('should list items successfully', async () => {
         const mockItems = [
-            { itemId: '1', name: 'Item 1' },
-            { itemId: '2', name: 'Item 2' },
+            { itemId: '1', name: 'Item 1', createdAt: '2023-01-01' },
+            { itemId: '2', name: 'Item 2', createdAt: '2023-01-02' },
         ];
-        (ItemEntity.scan.go as any).mockResolvedValue({ data: mockItems });
+        mockListItems.mockResolvedValue(mockItems);
 
         const event = makeEvent();
         const result = await handler(event, {} as any, {} as any);
@@ -48,7 +54,7 @@ describe('listItems handler', () => {
     });
 
     it('should return empty array when no items exist', async () => {
-        (ItemEntity.scan.go as any).mockResolvedValue({ data: [] });
+        mockListItems.mockResolvedValue([]);
 
         const event = makeEvent();
         const result = await handler(event, {} as any, {} as any);
@@ -60,7 +66,7 @@ describe('listItems handler', () => {
     });
 
     it('should return 500 on error', async () => {
-        (ItemEntity.scan.go as any).mockRejectedValue(new Error('DB Error'));
+        mockListItems.mockRejectedValue(new Error('Service Failed'));
 
         const event = makeEvent();
         const result = await handler(event, {} as any, {} as any);
@@ -68,3 +74,4 @@ describe('listItems handler', () => {
         expect(result.statusCode).toBe(500);
     });
 });
+

@@ -1,11 +1,14 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { handler } from '../../src/handlers/deleteItem';
-import { ItemEntity } from '../../src/entities/item';
+import { ItemService } from '../../src/application/item-service';
 
-vi.mock('../../src/entities/item', () => ({
-    ItemEntity: {
-        delete: vi.fn(),
-    },
+// Mock dependencies
+vi.mock('../../src/adapters/dynamo-item-repository');
+vi.mock('../../src/adapters/event-bridge-publisher');
+vi.mock('../../src/application/item-service', () => ({
+    ItemService: vi.fn().mockReturnValue({
+        deleteItem: vi.fn(),
+    }),
 }));
 
 const makeEvent = (overrides: Record<string, any> = {}) => ({
@@ -25,13 +28,17 @@ const makeEvent = (overrides: Record<string, any> = {}) => ({
 });
 
 describe('deleteItem handler', () => {
+    let mockDeleteItem: any;
+
     beforeEach(() => {
         vi.clearAllMocks();
+        // Get the mock instance
+        const mockServiceInstance = new ItemService({} as any, {} as any);
+        mockDeleteItem = mockServiceInstance.deleteItem;
     });
 
     it('should delete an item successfully', async () => {
-        const mockGo = vi.fn().mockResolvedValue({});
-        (ItemEntity.delete as any).mockReturnValue({ go: mockGo });
+        mockDeleteItem.mockResolvedValue();
 
         const event = makeEvent({
             pathParameters: { itemId: '123' },
@@ -43,7 +50,7 @@ describe('deleteItem handler', () => {
             statusCode: 200,
             body: JSON.stringify({ message: 'Item deleted' }),
         });
-        expect(ItemEntity.delete).toHaveBeenCalledWith({ itemId: '123' });
+        expect(mockDeleteItem).toHaveBeenCalledWith('123');
     });
 
     it('should return 400 if itemId is missing', async () => {
@@ -54,6 +61,7 @@ describe('deleteItem handler', () => {
         const result = await handler(event, {} as any, {} as any);
 
         expect(result.statusCode).toBe(400);
+        expect(mockDeleteItem).not.toHaveBeenCalled();
     });
 
     it('should return 400 if pathParameters is null', async () => {
@@ -64,11 +72,11 @@ describe('deleteItem handler', () => {
         const result = await handler(event, {} as any, {} as any);
 
         expect(result.statusCode).toBe(400);
+        expect(mockDeleteItem).not.toHaveBeenCalled();
     });
 
     it('should return 500 on error', async () => {
-        const mockGo = vi.fn().mockRejectedValue(new Error('DB Error'));
-        (ItemEntity.delete as any).mockReturnValue({ go: mockGo });
+        mockDeleteItem.mockRejectedValue(new Error('Service Failed'));
 
         const event = makeEvent({
             pathParameters: { itemId: '123' },
@@ -79,3 +87,4 @@ describe('deleteItem handler', () => {
         expect(result.statusCode).toBe(500);
     });
 });
+

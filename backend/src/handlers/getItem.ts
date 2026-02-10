@@ -1,8 +1,14 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { ItemEntity } from "../entities/item";
 import { logger } from "../lib/observability";
 import { commonMiddleware } from "../lib/middleware";
 import { AppError } from "../lib/error";
+import { DynamoItemRepository } from "../adapters/dynamo-item-repository";
+import { EventBridgePublisher } from "../adapters/event-bridge-publisher";
+import { ItemService } from "../application/item-service";
+
+const repository = new DynamoItemRepository();
+const publisher = new EventBridgePublisher(process.env.EVENT_BUS_NAME || "");
+const service = new ItemService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
@@ -12,15 +18,11 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         throw new AppError("Missing itemId", 400);
     }
 
-    const result = await ItemEntity.get({ itemId }).go();
-
-    if (!result.data) {
-        throw new AppError("Item not found", 404);
-    }
+    const result = await service.getItem(itemId);
 
     return {
         statusCode: 200,
-        body: JSON.stringify(result.data),
+        body: JSON.stringify(result),
     };
 };
 

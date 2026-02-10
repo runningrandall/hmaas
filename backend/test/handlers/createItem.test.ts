@@ -1,24 +1,14 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { handler } from '../../src/handlers/createItem';
-import { ItemEntity } from '../../src/entities/item';
+import { ItemService } from '../../src/application/item-service';
 
-// Mock electrodb Entity
-vi.mock('../../src/entities/item', () => ({
-    ItemEntity: {
-        create: vi.fn(),
-    },
-}));
-
-// Mock EventBridge Client using vi.hoisted to avoid ReferenceError
-const { mockSend } = vi.hoisted(() => {
-    return { mockSend: vi.fn() };
-});
-
-vi.mock('@aws-sdk/client-eventbridge', () => ({
-    EventBridgeClient: vi.fn(() => ({
-        send: mockSend,
-    })),
-    PutEventsCommand: vi.fn(),
+// Mock dependencies
+vi.mock('../../src/adapters/dynamo-item-repository');
+vi.mock('../../src/adapters/event-bridge-publisher');
+vi.mock('../../src/application/item-service', () => ({
+    ItemService: vi.fn().mockReturnValue({
+        createItem: vi.fn(),
+    }),
 }));
 
 const makeEvent = (overrides: Record<string, any> = {}) => ({
@@ -38,22 +28,18 @@ const makeEvent = (overrides: Record<string, any> = {}) => ({
 });
 
 describe('createItem handler', () => {
+    let mockCreateItem: any;
+
     beforeEach(() => {
         vi.clearAllMocks();
-        // Default: env var not set
-        delete process.env.EVENT_BUS_NAME;
+        // Get the mock instance
+        const mockServiceInstance = new ItemService({} as any, {} as any);
+        mockCreateItem = mockServiceInstance.createItem;
     });
 
-    afterEach(() => {
-        delete process.env.EVENT_BUS_NAME;
-    });
-
-    it('should create an item successfully (no event published if env not set)', async () => {
+    it('should create an item successfully', async () => {
         const mockItem = { itemId: '123', name: 'Test Item', description: 'desc' };
-
-        // Mock chainable .go() method
-        const mockGo = vi.fn().mockResolvedValue({ data: mockItem });
-        (ItemEntity.create as any).mockReturnValue({ go: mockGo });
+        mockCreateItem.mockResolvedValue(mockItem);
 
         const event = makeEvent({
             body: JSON.stringify({ name: 'Test Item', description: 'desc' }),
@@ -65,35 +51,10 @@ describe('createItem handler', () => {
             statusCode: 201,
             body: JSON.stringify(mockItem),
         });
-        expect(ItemEntity.create).toHaveBeenCalledWith(expect.objectContaining({
+        expect(mockCreateItem).toHaveBeenCalledWith(expect.objectContaining({
             name: 'Test Item',
             description: 'desc',
-            itemId: expect.any(String)
         }));
-        expect(mockSend).not.toHaveBeenCalled();
-    });
-
-    it('should create an item and publish event when env var is set', async () => {
-        process.env.EVENT_BUS_NAME = 'test-bus';
-        const mockItem = { itemId: '123', name: 'Test Item', description: 'desc' };
-
-        const mockGo = vi.fn().mockResolvedValue({ data: mockItem });
-        (ItemEntity.create as any).mockReturnValue({ go: mockGo });
-
-        const event = makeEvent({
-            body: JSON.stringify({ name: 'Test Item', description: 'desc' }),
-        });
-
-        await handler(event, {} as any, {} as any);
-
-        expect(ItemEntity.create).toHaveBeenCalledWith(expect.objectContaining({
-            name: 'Test Item',
-            description: 'desc',
-            itemId: expect.any(String)
-        }));
-
-        expect(mockSend).toHaveBeenCalledTimes(1);
-        expect(mockSend).toHaveBeenCalledWith(expect.any(Object));
     });
 
     it('should return 400 if body is missing', async () => {
@@ -101,6 +62,7 @@ describe('createItem handler', () => {
         const result = await handler(event, {} as any, {} as any);
 
         expect(result.statusCode).toBe(400);
+        expect(mockCreateItem).not.toHaveBeenCalled();
     });
 
     it('should return 400 if validation fails', async () => {
@@ -112,13 +74,11 @@ describe('createItem handler', () => {
         expect(result.statusCode).toBe(400);
         const body = JSON.parse(result.body as string);
         expect(body.error).toBe('Validation failed');
-        expect(body.details).toBeDefined();
+        expect(mockCreateItem).not.toHaveBeenCalled();
     });
 
     it('should return 500 on error', async () => {
-        const errorMsg = 'DB Error';
-        const mockGo = vi.fn().mockRejectedValue(new Error(errorMsg));
-        (ItemEntity.create as any).mockReturnValue({ go: mockGo });
+        mockCreateItem.mockRejectedValue(new Error('Service Failed'));
 
         const event = makeEvent({
             body: JSON.stringify({ name: 'Fail' }),
@@ -129,3 +89,4 @@ describe('createItem handler', () => {
         expect(result.statusCode).toBe(500);
     });
 });
+

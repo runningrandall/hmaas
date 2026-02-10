@@ -1,12 +1,15 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { handler } from '../../src/handlers/getItem';
-import { ItemEntity } from '../../src/entities/item';
+import { ItemService } from '../../src/application/item-service';
+import { AppError } from '../../src/lib/error';
 
-// Mock electrodb Entity
-vi.mock('../../src/entities/item', () => ({
-    ItemEntity: {
-        get: vi.fn(),
-    },
+// Mock dependencies
+vi.mock('../../src/adapters/dynamo-item-repository');
+vi.mock('../../src/adapters/event-bridge-publisher');
+vi.mock('../../src/application/item-service', () => ({
+    ItemService: vi.fn().mockReturnValue({
+        getItem: vi.fn(),
+    }),
 }));
 
 const makeEvent = (overrides: Record<string, any> = {}) => ({
@@ -26,15 +29,18 @@ const makeEvent = (overrides: Record<string, any> = {}) => ({
 });
 
 describe('getItem handler', () => {
+    let mockGetItem: any;
+
     beforeEach(() => {
         vi.clearAllMocks();
+        // Get the mock instance
+        const mockServiceInstance = new ItemService({} as any, {} as any);
+        mockGetItem = mockServiceInstance.getItem;
     });
 
     it('should get an item successfully', async () => {
-        const mockItem = { itemId: '123', name: 'Test Item', description: 'desc' };
-
-        const mockGo = vi.fn().mockResolvedValue({ data: mockItem });
-        (ItemEntity.get as any).mockReturnValue({ go: mockGo });
+        const mockItem = { itemId: '123', name: 'Test Item', description: 'desc', createdAt: '2023-01-01' };
+        mockGetItem.mockResolvedValue(mockItem);
 
         const event = makeEvent({
             pathParameters: { itemId: '123' },
@@ -46,7 +52,7 @@ describe('getItem handler', () => {
             statusCode: 200,
             body: JSON.stringify(mockItem),
         });
-        expect(ItemEntity.get).toHaveBeenCalledWith({ itemId: '123' });
+        expect(mockGetItem).toHaveBeenCalledWith('123');
     });
 
     it('should return 400 if itemId is missing', async () => {
@@ -57,11 +63,11 @@ describe('getItem handler', () => {
         const result = await handler(event, {} as any, {} as any);
 
         expect(result.statusCode).toBe(400);
+        expect(mockGetItem).not.toHaveBeenCalled();
     });
 
     it('should return 404 if item not found', async () => {
-        const mockGo = vi.fn().mockResolvedValue({ data: null });
-        (ItemEntity.get as any).mockReturnValue({ go: mockGo });
+        mockGetItem.mockRejectedValue(new AppError('Item not found', 404));
 
         const event = makeEvent({
             pathParameters: { itemId: '404' },
@@ -73,9 +79,7 @@ describe('getItem handler', () => {
     });
 
     it('should return 500 on error', async () => {
-        const errorMsg = 'DB Error';
-        const mockGo = vi.fn().mockRejectedValue(new Error(errorMsg));
-        (ItemEntity.get as any).mockReturnValue({ go: mockGo });
+        mockGetItem.mockRejectedValue(new Error('Service Failed'));
 
         const event = makeEvent({
             pathParameters: { itemId: '123' },
@@ -86,3 +90,4 @@ describe('getItem handler', () => {
         expect(result.statusCode).toBe(500);
     });
 });
+
