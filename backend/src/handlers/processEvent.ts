@@ -1,12 +1,12 @@
 import { EventBridgeEvent } from "aws-lambda";
+import { logger } from "../lib/observability";
 
 export const handler = async (event: EventBridgeEvent<string, any>) => {
-    console.log("Received EventBridge Event:");
-    console.log(JSON.stringify(event, null, 2));
+    logger.info("Received EventBridge Event", { event });
 
     // Logic to process event
     if (event["detail-type"] === "ItemCreated") {
-        console.log(`Processing ItemCreated event for item: ${event.detail.itemId}`);
+        logger.info("Processing ItemCreated event", { itemId: event.detail.itemId });
     }
 
     return;

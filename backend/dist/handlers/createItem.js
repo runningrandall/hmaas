@@ -2,13 +2,40 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
 const item_1 = require("../entities/item");
-const handler = async (event) => {
+const client_eventbridge_1 = require("@aws-sdk/client-eventbridge");
+const observability_1 = require("../lib/observability");
+const eventBridge = observability_1.tracer.captureAWSv3Client(new client_eventbridge_1.EventBridgeClient({}));
+const handler = async (event, context) => {
+    const EVENT_BUS_NAME = process.env.EVENT_BUS_NAME;
+    // Add context to logger
+    observability_1.logger.addContext(context);
     try {
         if (!event.body) {
+            observability_1.logger.warn("Missing body in request");
             return { statusCode: 400, body: JSON.stringify({ error: "Missing body" }) };
         }
         const body = JSON.parse(event.body);
+        observability_1.logger.info("Creating item", { itemName: body.name });
         const result = await item_1.ItemEntity.create(body).go();
+        observability_1.logger.info("Item created successfully", { itemId: result.data.itemId });
+        // Publish Event
+        if (EVENT_BUS_NAME) {
+            try {
+                await eventBridge.send(new client_eventbridge_1.PutEventsCommand({
+                    Entries: [{
+                            Source: "hmaas.api",
+                            DetailType: "ItemCreated",
+                            Detail: JSON.stringify(result.data),
+                            EventBusName: EVENT_BUS_NAME,
+                        }]
+                }));
+                observability_1.logger.info("Published ItemCreated event");
+            }
+            catch (err) {
+                observability_1.logger.error("Failed to publish event", { error: err });
+                // Don't fail the request if event publishing fails, but log it
+            }
+        }
         return {
             statusCode: 201,
             headers: { "Access-Control-Allow-Origin": "*" },
@@ -16,7 +43,7 @@ const handler = async (event) => {
         };
     }
     catch (error) {
-        console.error(error);
+        observability_1.logger.error("Error creating item", { error });
         return {
             statusCode: 500,
             headers: { "Access-Control-Allow-Origin": "*" },

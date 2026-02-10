@@ -1,18 +1,27 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { ItemEntity } from "../entities/item";
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
+import { logger, tracer } from "../lib/observability";
 
-const eventBridge = new EventBridgeClient({});
+const eventBridge = tracer.captureAWSv3Client(new EventBridgeClient({}));
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async (event, context) => {
     const EVENT_BUS_NAME = process.env.EVENT_BUS_NAME;
+
+    // Add context to logger
+    logger.addContext(context);
+
     try {
         if (!event.body) {
+            logger.warn("Missing body in request");
             return { statusCode: 400, body: JSON.stringify({ error: "Missing body" }) };
         }
 
         const body = JSON.parse(event.body);
+        logger.info("Creating item", { itemName: body.name });
+
         const result = await ItemEntity.create(body).go();
+        logger.info("Item created successfully", { itemId: result.data.itemId });
 
         // Publish Event
         if (EVENT_BUS_NAME) {
@@ -25,9 +34,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                         EventBusName: EVENT_BUS_NAME,
                     }]
                 }));
-                console.log("Published ItemCreated event");
+                logger.info("Published ItemCreated event");
             } catch (err) {
-                console.error("Failed to publish event:", err);
+                logger.error("Failed to publish event", { error: err });
                 // Don't fail the request if event publishing fails, but log it
             }
         }
@@ -38,7 +47,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             body: JSON.stringify(result.data),
         };
     } catch (error: any) {
-        console.error(error);
+        logger.error("Error creating item", { error });
         return {
             statusCode: 500,
             headers: { "Access-Control-Allow-Origin": "*" },

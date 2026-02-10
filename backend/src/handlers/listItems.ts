@@ -1,7 +1,9 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { ItemEntity } from "../entities/item";
+import { logger } from "../lib/observability";
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async (event, context) => {
+    logger.addContext(context);
     try {
         const result = await ItemEntity.scan.go();
 
@@ -11,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             body: JSON.stringify(result.data),
         };
     } catch (error: any) {
-        console.error(error);
+        logger.error("Error listing items", { error });
         return {
             statusCode: 500,
             headers: { "Access-Control-Allow-Origin": "*" },

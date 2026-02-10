@@ -55,6 +55,7 @@ export class InfraStack extends cdk.Stack {
         sourceMap: true,
         externalModules: ['aws-sdk'], // aws-sdk v3 is included in runtime but good to be explicit for others
       },
+      tracing: lambda.Tracing.ACTIVE,
     };
 
     const createItemLambda = new nodejs.NodejsFunction(this, 'createItemLambda', {
