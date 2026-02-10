@@ -3,9 +3,9 @@ import { ItemEntity } from "../entities/item";
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 
 const eventBridge = new EventBridgeClient({});
-const EVENT_BUS_NAME = process.env.EVENT_BUS_NAME;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
+    const EVENT_BUS_NAME = process.env.EVENT_BUS_NAME;
     try {
         if (!event.body) {
             return { statusCode: 400, body: JSON.stringify({ error: "Missing body" }) };

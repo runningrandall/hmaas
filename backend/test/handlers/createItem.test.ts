@@ -9,8 +9,11 @@ vi.mock('../../src/entities/item', () => ({
     },
 }));
 
-// Mock EventBridge Client
-const mockSend = vi.fn();
+// Mock EventBridge Client using vi.hoisted to avoid ReferenceError
+const { mockSend } = vi.hoisted(() => {
+    return { mockSend: vi.fn() };
+});
+
 vi.mock('@aws-sdk/client-eventbridge', () => ({
     EventBridgeClient: vi.fn(() => ({
         send: mockSend,
