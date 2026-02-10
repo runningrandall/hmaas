@@ -1,20 +1,47 @@
 import { {{pascalCase name}}Repository, {{pascalCase name}} } from "../domain/{{camelCase name}}";
 import { DBService } from "../entities/service";
+import { z } from "zod";
+import { logger } from "../lib/observability";
+
+/**
+* Zod schema for validating data coming OUT of DynamoDB.
+* Catches data corruption or schema drift at the adapter boundary.
+*/
+const Dynamo{{pascalCase name}}Schema = z.object({
+{{camelCase name}}Id: z.string(),
+name: z.string(),
+description: z.string().optional().nullable(),
+createdAt: z.union([z.string(), z.number()]).transform(v => String(v)),
+updatedAt: z.union([z.string(), z.number()]).optional().transform(v => v != null ? String(v) : undefined),
+}).passthrough();
+
+function parse{{pascalCase name}}(data: unknown): {{pascalCase name}} {
+const result = Dynamo{{pascalCase name}}Schema.safeParse(data);
+if (!result.success) {
+logger.error("Data validation failed reading from DynamoDB", {
+errors: result.error.issues,
+data,
+});
+throw new Error(`Data integrity error: ${result.error.message}`);
+}
+return result.data as {{pascalCase name}};
+}
 
 export class Dynamo{{pascalCase name}}Repository implements {{pascalCase name}}Repository {
 async create(item: {{pascalCase name}}): Promise<{{pascalCase name}}> {
     const result = await DBService.entities.{{camelCase name}}.create(item).go();
-    return result.data as {{pascalCase name}};
+    return parse{{pascalCase name}}(result.data);
     }
 
     async get({{camelCase name}}Id: string): Promise<{{pascalCase name}} | null> {
         const result = await DBService.entities.{{camelCase name}}.get({ {{camelCase name}}Id }).go();
-        return result.data as {{pascalCase name}} | null;
+        if (!result.data) return null;
+        return parse{{pascalCase name}}(result.data);
         }
 
         async list(): Promise<{{pascalCase name}}[]> {
             const result = await DBService.entities.{{camelCase name}}.scan.go();
-            return result.data as {{pascalCase name}}[];
+            return result.data.map(parse{{pascalCase name}});
             }
 
             async delete({{camelCase name}}Id: string): Promise<void> {

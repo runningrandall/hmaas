@@ -1,20 +1,48 @@
 import { ItemRepository, Item } from "../domain/item";
 import { DBService } from "../entities/service";
+import { z } from "zod";
+import { logger } from "../lib/observability";
+
+/**
+ * Zod schema for validating data coming OUT of DynamoDB.
+ * This catches data corruption or schema drift at the adapter boundary.
+ * Note: ElectroDB stores createdAt/updatedAt as numbers, so we coerce to string.
+ */
+const DynamoItemSchema = z.object({
+    itemId: z.string(),
+    name: z.string(),
+    description: z.string().optional().nullable(),
+    createdAt: z.union([z.string(), z.number()]).transform(v => String(v)),
+    updatedAt: z.union([z.string(), z.number()]).optional().transform(v => v != null ? String(v) : undefined),
+}).passthrough();
+
+function parseItem(data: unknown): Item {
+    const result = DynamoItemSchema.safeParse(data);
+    if (!result.success) {
+        logger.error("Data validation failed reading from DynamoDB", {
+            errors: result.error.issues,
+            data,
+        });
+        throw new Error(`Data integrity error: ${result.error.message}`);
+    }
+    return result.data as Item;
+}
 
 export class DynamoItemRepository implements ItemRepository {
     async create(item: Item): Promise<Item> {
         const result = await DBService.entities.item.create(item).go();
-        return result.data as Item;
+        return parseItem(result.data);
     }
 
     async get(itemId: string): Promise<Item | null> {
         const result = await DBService.entities.item.get({ itemId }).go();
-        return result.data as Item | null;
+        if (!result.data) return null;
+        return parseItem(result.data);
     }
 
     async list(): Promise<Item[]> {
         const result = await DBService.entities.item.scan.go();
-        return result.data as Item[];
+        return result.data.map(parseItem);
     }
 
     async delete(itemId: string): Promise<void> {
