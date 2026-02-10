@@ -20,7 +20,7 @@ export class EventBridgePublisher implements EventPublisher {
         try {
             await this.client.send(new PutEventsCommand({
                 Entries: [{
-                    Source: "hmaas.api",
+                    Source: 'test.api',
                     DetailType: eventName,
                     Detail: JSON.stringify(payload),
                     EventBusName: this.busName,

@@ -310,9 +310,9 @@ export function generateOpenApiSpec() {
     return generator.generateDocument({
         openapi: '3.0.0',
         info: {
+            title: 'Test Service API',
             version: '1.0.0',
-            title: 'HMaaS API',
-            description: 'Home Maintenance as a Service — RESTful API for managing items. All endpoints require a valid Cognito JWT bearer token.',
+            description: 'API for Test Service',
         },
         servers: [
             {

@@ -1,4 +1,4 @@
-# Observability
+# Test Service Observability
 
 We use **AWS Lambda Powertools for TypeScript** and **Amazon CloudWatch** for full-stack observability.
 

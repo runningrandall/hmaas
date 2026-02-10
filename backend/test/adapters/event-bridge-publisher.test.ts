@@ -34,7 +34,7 @@ describe('EventBridgePublisher', () => {
         expect(mockSend).toHaveBeenCalledTimes(1);
         expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
             Entries: [{
-                Source: 'hmaas.api',
+                Source: 'test.api',
                 DetailType: 'ItemCreated',
                 Detail: JSON.stringify({ itemId: '123', name: 'Test' }),
                 EventBusName: 'test-bus',

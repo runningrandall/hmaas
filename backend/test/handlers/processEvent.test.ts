@@ -10,7 +10,7 @@ describe('processEvent handler', () => {
         const event = {
             version: '0',
             id: 'test-id',
-            source: 'hmaas.api',
+            source: 'test.api',
             account: '123456789',
             time: '2024-01-01T00:00:00Z',
             region: 'us-east-1',
@@ -30,7 +30,7 @@ describe('processEvent handler', () => {
         const event = {
             version: '0',
             id: 'test-id',
-            source: 'hmaas.api',
+            source: 'test.api',
             account: '123456789',
             time: '2024-01-01T00:00:00Z',
             region: 'us-east-1',

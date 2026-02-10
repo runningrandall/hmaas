@@ -54,15 +54,15 @@ export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<Au
         const command = new IsAuthorizedCommand({
             policyStoreId,
             principal: {
-                entityType: "Hmaas::User",
+                entityType: "Test::User",
                 entityId: userId,
             },
             action: {
-                actionType: "Hmaas::Action",
+                actionType: "Test::Action",
                 actionId: action,
             },
             resource: {
-                entityType: "Hmaas::Resource",
+                entityType: "Test::Resource",
                 entityId: "default",
             },
             // Pass groups as context or attributes?
@@ -76,7 +76,7 @@ export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<Au
             entities: {
                 entityList: [
                     {
-                        identifier: { entityType: "Hmaas::User", entityId: userId },
+                        identifier: { entityType: "Test::User", entityId: userId },
                         attributes: {
                             groups: {
                                 set: groups.map(g => ({ string: g }))

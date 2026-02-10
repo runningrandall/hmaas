@@ -1,5 +1,5 @@
 {
-    "name": "hmaas-2-monorepo",
+    "name": "serverless-template-monorepo",
     "version": "0.0.0",
     "private": true,
     "lint-staged": {

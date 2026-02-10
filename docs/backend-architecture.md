@@ -1,4 +1,4 @@
-# Backend Architecture
+# Test Service Backend Architecture
 
 This project implements a **Serverless Event-Driven Architecture** using AWS Lambda, DynamoDB, and EventBridge.
 
@@ -42,7 +42,7 @@ Entities are defined in `backend/src/entities/item.ts`.
 
 ```typescript
 const ItemEntity = new Entity({
-  model: { entity: "item", service: "hmaas", version: "1" },
+  model: { entity: "item", service: "template-service", version: "1" },
   attributes: {
     itemId: { type: "string", required: true },
     name: { type: "string", required: true },
@@ -65,7 +65,7 @@ We use a **CloudFormation Custom Resource** (`backend/src/handlers/seedData.ts`)
 Decouples services using an Event Bus.
 
 ### Architecture
-1.  **Producer**: `createItem` Lambda publishes an `ItemCreated` event to the `HmaasEventBus`.
+1.  **Producer**: `createItem` Lambda publishes an `ItemCreated` event to the `TestEventBus`.
 2.  **Bus**: Routes events based on rules.
 3.  **Consumer**: `processEvent` Lambda is triggered by the rule.
 
@@ -75,7 +75,7 @@ import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge
 
 await ebClient.send(new PutEventsCommand({
   Entries: [{
-    Source: "hmaas.api",
+    Source: "test.api",
     DetailType: "ItemCreated",
     Detail: JSON.stringify({ itemId: "123" }),
     EventBusName: process.env.EVENT_BUS_NAME,

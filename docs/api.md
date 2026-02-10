@@ -1,6 +1,6 @@
-# HMaaS API
+# Test Service API
 
-> Home Maintenance as a Service — RESTful API for managing items. All endpoints require a valid Cognito JWT bearer token.
+> API for Test Service
 
 **Version:** 1.0.0 | **OpenAPI Spec:** [swagger.json](swagger.json)
 
@@ -961,4 +961,4 @@ Deletes an item by its unique identifier.
 
 ---
 
-*Generated at 2026-02-10T21:06:41.438Z from OpenAPI spec.*
+*Generated at 2026-02-10T23:10:46.528Z from OpenAPI spec.*

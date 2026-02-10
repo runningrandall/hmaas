@@ -2,7 +2,7 @@ import { Logger } from '@aws-lambda-powertools/logger';
 import { Tracer } from '@aws-lambda-powertools/tracer';
 import { Metrics } from '@aws-lambda-powertools/metrics';
 
-const SERVICE_NAME = 'hmaas-backend';
+const SERVICE_NAME = 'test-backend';
 
 export const logger = new Logger({
     serviceName: SERVICE_NAME,
