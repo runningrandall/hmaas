@@ -2,6 +2,8 @@ import { APIGatewayProxyHandler } from "aws-lambda";
 import { ItemEntity } from "../entities/item";
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { logger, tracer } from "../lib/observability";
+import { CreateItemSchema } from "../lib/schemas";
+import { randomUUID } from "crypto";
 
 const eventBridge = tracer.captureAWSv3Client(new EventBridgeClient({}));
 
@@ -17,10 +19,30 @@ export const handler: APIGatewayProxyHandler = async (event, context) => {
             return { statusCode: 400, body: JSON.stringify({ error: "Missing body" }) };
         }
 
-        const body = JSON.parse(event.body);
-        logger.info("Creating item", { itemName: body.name });
+        const parseResult = CreateItemSchema.safeParse(JSON.parse(event.body));
 
-        const result = await ItemEntity.create(body).go();
+        if (!parseResult.success) {
+            const issues = parseResult.error.issues;
+            logger.warn("Validation failed", { issues });
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    error: "Validation failed",
+                    details: issues
+                })
+            };
+        }
+
+        const body = parseResult.data;
+        const itemId = randomUUID();
+        logger.info("Creating item", { itemName: body.name, itemId });
+
+        const itemToCreate = {
+            ...body,
+            itemId,
+        };
+
+        const result = await ItemEntity.create(itemToCreate).go();
         logger.info("Item created successfully", { itemId: result.data.itemId });
 
         // Publish Event

@@ -56,6 +56,9 @@ importers:
       electrodb:
         specifier: ^2.14.0
         version: 2.15.1(@aws-sdk/client-dynamodb@3.985.0)
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@types/aws-lambda':
         specifier: ^8.10.130

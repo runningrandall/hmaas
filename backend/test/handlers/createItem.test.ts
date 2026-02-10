@@ -49,7 +49,11 @@ describe('createItem handler', () => {
             statusCode: 201,
             body: JSON.stringify(mockItem),
         });
-        expect(ItemEntity.create).toHaveBeenCalledWith({ name: 'Test Item', description: 'desc' });
+        expect(ItemEntity.create).toHaveBeenCalledWith(expect.objectContaining({
+            name: 'Test Item',
+            description: 'desc',
+            itemId: expect.any(String)
+        }));
         expect(mockSend).not.toHaveBeenCalled();
     });
 
@@ -66,6 +70,12 @@ describe('createItem handler', () => {
 
         await handler(event, {} as any, {} as any);
 
+        expect(ItemEntity.create).toHaveBeenCalledWith(expect.objectContaining({
+            name: 'Test Item',
+            description: 'desc',
+            itemId: expect.any(String)
+        }));
+
         expect(mockSend).toHaveBeenCalledTimes(1);
         expect(mockSend).toHaveBeenCalledWith(expect.any(Object));
     });
@@ -78,6 +88,18 @@ describe('createItem handler', () => {
             statusCode: 400,
             body: JSON.stringify({ error: 'Missing body' }),
         });
+    });
+
+    it('should return 400 if validation fails', async () => {
+        const event = {
+            body: JSON.stringify({ description: 'Missing name' }),
+        } as any;
+        const result = await handler(event, {} as any, {} as any);
+
+        expect(result.statusCode).toBe(400);
+        const body = JSON.parse(result.body as string);
+        expect(body.error).toBe('Validation failed');
+        expect(body.details).toBeDefined();
     });
 
     it('should return 500 on error', async () => {
