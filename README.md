@@ -106,7 +106,7 @@ The documentation has been split into detailed guides:
 - **[Observability](docs/observability.md)** — Metrics, Logging, Tracing, and Dashboards.
 - **[Secrets Management](docs/secrets-management.md)** — Handling credentials secure.
 - **[Cost Estimation](docs/cost-estimation.md)** — Infracost integration.
-- **[API Documentation](docs/api.md)** — OpenAPI specs.
+- **[Code Generation](docs/code-generation.md)** — Plop generators for entities, endpoints, and components.
 
 ## Features
 

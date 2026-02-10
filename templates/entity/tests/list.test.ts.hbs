@@ -1,0 +1,64 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { handler } from '../../src/handlers/list{{pascalCase name}}s';
+import { {{pascalCase name}}Service } from '../../src/application/{{dashCase name}}-service';
+
+vi.mock('../../src/adapters/dynamo-{{dashCase name}}-repository');
+vi.mock('../../src/adapters/event-bridge-publisher');
+vi.mock('../../src/application/{{dashCase name}}-service', () => ({
+{{pascalCase name}}Service: vi.fn().mockReturnValue({
+list{{pascalCase name}}s: vi.fn(),
+}),
+}));
+
+const makeEvent = (overrides: Record<string, any> = {}) => ({
+    headers: { 'Content-Type': 'application/json' },
+    body: null,
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueHeaders: {},
+    multiValueQueryStringParameters: null,
+    httpMethod: 'GET',
+    isBase64Encoded: false,
+    path: '/{{dashCase name}}s',
+    stageVariables: null,
+    requestContext: {} as any,
+    resource: '',
+    ...overrides,
+    });
+
+    describe('list{{pascalCase name}}s handler', () => {
+    let mockList: any;
+
+    beforeEach(() => {
+    vi.clearAllMocks();
+    const mockServiceInstance = new {{pascalCase name}}Service({} as any, {} as any);
+    mockList = mockServiceInstance.list{{pascalCase name}}s;
+    });
+
+    it('should list {{camelCase name}}s successfully', async () => {
+    const mockItems = [{ {{camelCase name}}Id: '1', name: 'A' }, { {{camelCase name}}Id: '2', name: 'B' }];
+    mockList.mockResolvedValue(mockItems);
+
+    const event = makeEvent();
+    const result = await handler(event, {} as any, {} as any);
+
+    expect(result).toMatchObject({
+    statusCode: 200,
+    body: JSON.stringify(mockItems),
+    });
+    });
+
+    it('should return empty array when none exist', async () => {
+    mockList.mockResolvedValue([]);
+    const event = makeEvent();
+    const result = await handler(event, {} as any, {} as any);
+    expect(result).toMatchObject({ statusCode: 200, body: JSON.stringify([]) });
+    });
+
+    it('should return 500 on error', async () => {
+    mockList.mockRejectedValue(new Error('Service Failed'));
+    const event = makeEvent();
+    const result = await handler(event, {} as any, {} as any);
+    expect(result.statusCode).toBe(500);
+    });
+    });

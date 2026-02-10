@@ -1,0 +1,49 @@
+import { {{pascalCase name}}, Create{{pascalCase name}}Request, {{pascalCase name}}Repository } from
+"../domain/{{camelCase name}}";
+import { EventPublisher } from "../domain/item";
+import { randomUUID } from "crypto";
+import { logger, metrics } from "../lib/observability";
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
+import { AppError } from "../lib/error";
+
+export class {{pascalCase name}}Service {
+constructor(
+private repository: {{pascalCase name}}Repository,
+private eventPublisher: EventPublisher
+) {}
+
+async create{{pascalCase name}}(request: Create{{pascalCase name}}Request): Promise<{{pascalCase name}}> {
+    logger.info("Creating {{camelCase name}}", { name: request.name });
+
+    const item: {{pascalCase name}} = {
+    {{camelCase name}}Id: randomUUID(),
+    name: request.name,
+    description: request.description,
+    createdAt: new Date().toISOString(),
+    };
+
+    const created = await this.repository.create(item);
+    metrics.addMetric('{{pascalCase name}}sCreated', MetricUnit.Count, 1);
+
+    await this.eventPublisher.publish("{{pascalCase name}}Created", created);
+
+    return created;
+    }
+
+    async get{{pascalCase name}}({{camelCase name}}Id: string): Promise<{{pascalCase name}}> {
+        const item = await this.repository.get({{camelCase name}}Id);
+        if (!item) {
+        throw new AppError("{{pascalCase name}} not found", 404);
+        }
+        return item;
+        }
+
+        async list{{pascalCase name}}s(): Promise<{{pascalCase name}}[]> {
+            return this.repository.list();
+            }
+
+            async delete{{pascalCase name}}({{camelCase name}}Id: string): Promise<void> {
+                await this.repository.delete({{camelCase name}}Id);
+                logger.info("{{pascalCase name}} deleted", { {{camelCase name}}Id });
+                }
+                }

@@ -1,0 +1,71 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { handler } from '../../src/handlers/get{{pascalCase name}}';
+import { {{pascalCase name}}Service } from '../../src/application/{{dashCase name}}-service';
+import { AppError } from '../../src/lib/error';
+
+vi.mock('../../src/adapters/dynamo-{{dashCase name}}-repository');
+vi.mock('../../src/adapters/event-bridge-publisher');
+vi.mock('../../src/application/{{dashCase name}}-service', () => ({
+{{pascalCase name}}Service: vi.fn().mockReturnValue({
+get{{pascalCase name}}: vi.fn(),
+}),
+}));
+
+const makeEvent = (overrides: Record<string, any> = {}) => ({
+    headers: { 'Content-Type': 'application/json' },
+    body: null,
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueHeaders: {},
+    multiValueQueryStringParameters: null,
+    httpMethod: 'GET',
+    isBase64Encoded: false,
+    path: '/{{dashCase name}}s',
+    stageVariables: null,
+    requestContext: {} as any,
+    resource: '',
+    ...overrides,
+    });
+
+    describe('get{{pascalCase name}} handler', () => {
+    let mockGet: any;
+
+    beforeEach(() => {
+    vi.clearAllMocks();
+    const mockServiceInstance = new {{pascalCase name}}Service({} as any, {} as any);
+    mockGet = mockServiceInstance.get{{pascalCase name}};
+    });
+
+    it('should get a {{camelCase name}} successfully', async () => {
+    const mock{{pascalCase name}} = { {{camelCase name}}Id: '123', name: 'Test' };
+    mockGet.mockResolvedValue(mock{{pascalCase name}});
+
+    const event = makeEvent({ pathParameters: { {{camelCase name}}Id: '123' } });
+    const result = await handler(event, {} as any, {} as any);
+
+    expect(result).toMatchObject({
+    statusCode: 200,
+    body: JSON.stringify(mock{{pascalCase name}}),
+    });
+    });
+
+    it('should return 400 if {{camelCase name}}Id is missing', async () => {
+    const event = makeEvent({ pathParameters: {} });
+    const result = await handler(event, {} as any, {} as any);
+    expect(result.statusCode).toBe(400);
+    });
+
+    it('should return 404 if not found', async () => {
+    mockGet.mockRejectedValue(new AppError('Not found', 404));
+    const event = makeEvent({ pathParameters: { {{camelCase name}}Id: '404' } });
+    const result = await handler(event, {} as any, {} as any);
+    expect(result.statusCode).toBe(404);
+    });
+
+    it('should return 500 on error', async () => {
+    mockGet.mockRejectedValue(new Error('Service Failed'));
+    const event = makeEvent({ pathParameters: { {{camelCase name}}Id: '123' } });
+    const result = await handler(event, {} as any, {} as any);
+    expect(result.statusCode).toBe(500);
+    });
+    });

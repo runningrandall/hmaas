@@ -1,0 +1,77 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { handler } from '../../src/handlers/create{{pascalCase name}}';
+import { {{pascalCase name}}Service } from '../../src/application/{{dashCase name}}-service';
+
+// Mock dependencies
+vi.mock('../../src/adapters/dynamo-{{dashCase name}}-repository');
+vi.mock('../../src/adapters/event-bridge-publisher');
+vi.mock('../../src/application/{{dashCase name}}-service', () => ({
+{{pascalCase name}}Service: vi.fn().mockReturnValue({
+create{{pascalCase name}}: vi.fn(),
+}),
+}));
+
+const makeEvent = (overrides: Record<string, any> = {}) => ({
+    headers: { 'Content-Type': 'application/json' },
+    body: null,
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueHeaders: {},
+    multiValueQueryStringParameters: null,
+    httpMethod: 'POST',
+    isBase64Encoded: false,
+    path: '/{{dashCase name}}s',
+    stageVariables: null,
+    requestContext: {} as any,
+    resource: '',
+    ...overrides,
+    });
+
+    describe('create{{pascalCase name}} handler', () => {
+    let mockCreate: any;
+
+    beforeEach(() => {
+    vi.clearAllMocks();
+    const mockServiceInstance = new {{pascalCase name}}Service({} as any, {} as any);
+    mockCreate = mockServiceInstance.create{{pascalCase name}};
+    });
+
+    it('should create a {{camelCase name}} successfully', async () => {
+    const mock{{pascalCase name}} = { {{camelCase name}}Id: '123', name: 'Test', description: 'desc' };
+    mockCreate.mockResolvedValue(mock{{pascalCase name}});
+
+    const event = makeEvent({
+    body: JSON.stringify({ name: 'Test', description: 'desc' }),
+    });
+
+    const result = await handler(event, {} as any, {} as any);
+
+    expect(result).toMatchObject({
+    statusCode: 201,
+    body: JSON.stringify(mock{{pascalCase name}}),
+    });
+    });
+
+    it('should return 400 if body is missing', async () => {
+    const event = makeEvent({ body: null });
+    const result = await handler(event, {} as any, {} as any);
+    expect(result.statusCode).toBe(400);
+    });
+
+    it('should return 400 if validation fails', async () => {
+    const event = makeEvent({
+    body: JSON.stringify({ description: 'Missing name' }),
+    });
+    const result = await handler(event, {} as any, {} as any);
+    expect(result.statusCode).toBe(400);
+    });
+
+    it('should return 500 on error', async () => {
+    mockCreate.mockRejectedValue(new Error('Service Failed'));
+    const event = makeEvent({
+    body: JSON.stringify({ name: 'Fail' }),
+    });
+    const result = await handler(event, {} as any, {} as any);
+    expect(result.statusCode).toBe(500);
+    });
+    });

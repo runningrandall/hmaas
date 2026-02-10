@@ -1,0 +1,23 @@
+import { {{pascalCase name}}Repository, {{pascalCase name}} } from "../domain/{{camelCase name}}";
+import { DBService } from "../entities/service";
+
+export class Dynamo{{pascalCase name}}Repository implements {{pascalCase name}}Repository {
+async create(item: {{pascalCase name}}): Promise<{{pascalCase name}}> {
+    const result = await DBService.entities.{{camelCase name}}.create(item).go();
+    return result.data as {{pascalCase name}};
+    }
+
+    async get({{camelCase name}}Id: string): Promise<{{pascalCase name}} | null> {
+        const result = await DBService.entities.{{camelCase name}}.get({ {{camelCase name}}Id }).go();
+        return result.data as {{pascalCase name}} | null;
+        }
+
+        async list(): Promise<{{pascalCase name}}[]> {
+            const result = await DBService.entities.{{camelCase name}}.scan.go();
+            return result.data as {{pascalCase name}}[];
+            }
+
+            async delete({{camelCase name}}Id: string): Promise<void> {
+                await DBService.entities.{{camelCase name}}.delete({ {{camelCase name}}Id }).go();
+                }
+                }

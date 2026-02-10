@@ -1,0 +1,61 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { handler } from '../../src/handlers/delete{{pascalCase name}}';
+import { {{pascalCase name}}Service } from '../../src/application/{{dashCase name}}-service';
+
+vi.mock('../../src/adapters/dynamo-{{dashCase name}}-repository');
+vi.mock('../../src/adapters/event-bridge-publisher');
+vi.mock('../../src/application/{{dashCase name}}-service', () => ({
+{{pascalCase name}}Service: vi.fn().mockReturnValue({
+delete{{pascalCase name}}: vi.fn(),
+}),
+}));
+
+const makeEvent = (overrides: Record<string, any> = {}) => ({
+    headers: { 'Content-Type': 'application/json' },
+    body: null,
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueHeaders: {},
+    multiValueQueryStringParameters: null,
+    httpMethod: 'DELETE',
+    isBase64Encoded: false,
+    path: '/{{dashCase name}}s',
+    stageVariables: null,
+    requestContext: {} as any,
+    resource: '',
+    ...overrides,
+    });
+
+    describe('delete{{pascalCase name}} handler', () => {
+    let mockDelete: any;
+
+    beforeEach(() => {
+    vi.clearAllMocks();
+    const mockServiceInstance = new {{pascalCase name}}Service({} as any, {} as any);
+    mockDelete = mockServiceInstance.delete{{pascalCase name}};
+    });
+
+    it('should delete a {{camelCase name}} successfully', async () => {
+    mockDelete.mockResolvedValue();
+    const event = makeEvent({ pathParameters: { {{camelCase name}}Id: '123' } });
+    const result = await handler(event, {} as any, {} as any);
+
+    expect(result).toMatchObject({
+    statusCode: 200,
+    body: JSON.stringify({ message: '{{pascalCase name}} deleted' }),
+    });
+    });
+
+    it('should return 400 if {{camelCase name}}Id is missing', async () => {
+    const event = makeEvent({ pathParameters: {} });
+    const result = await handler(event, {} as any, {} as any);
+    expect(result.statusCode).toBe(400);
+    });
+
+    it('should return 500 on error', async () => {
+    mockDelete.mockRejectedValue(new Error('Service Failed'));
+    const event = makeEvent({ pathParameters: { {{camelCase name}}Id: '123' } });
+    const result = await handler(event, {} as any, {} as any);
+    expect(result.statusCode).toBe(500);
+    });
+    });

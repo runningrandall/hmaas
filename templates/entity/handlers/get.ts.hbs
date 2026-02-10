@@ -1,0 +1,29 @@
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { logger } from "../lib/observability";
+import { commonMiddleware } from "../lib/middleware";
+import { AppError } from "../lib/error";
+import { Dynamo{{pascalCase name}}Repository } from "../adapters/dynamo-{{dashCase name}}-repository";
+import { EventBridgePublisher } from "../adapters/event-bridge-publisher";
+import { {{pascalCase name}}Service } from "../application/{{dashCase name}}-service";
+
+const repository = new Dynamo{{pascalCase name}}Repository();
+const publisher = new EventBridgePublisher(process.env.EVENT_BUS_NAME || "");
+const service = new {{pascalCase name}}Service(repository, publisher);
+
+const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
+    logger.addContext(context);
+
+    const {{camelCase name}}Id = event.pathParameters?.{{camelCase name}}Id;
+    if (!{{camelCase name}}Id) {
+    throw new AppError("Missing {{camelCase name}}Id", 400);
+    }
+
+    const result = await service.get{{pascalCase name}}({{camelCase name}}Id);
+
+    return {
+    statusCode: 200,
+    body: JSON.stringify(result),
+    };
+    };
+
+    export const handler = commonMiddleware(baseHandler);
