@@ -58,8 +58,8 @@ describe('seedData handler', () => {
 
         await handler(makeEvent('Create') as any, makeContext() as any);
 
-        // Should have called PutItem for each seed item (3 items)
-        expect(mockSend).toHaveBeenCalledTimes(3);
+        // Should have called PutItem for each seed item (5 items)
+        expect(mockSend).toHaveBeenCalledTimes(5);
 
         // Should have sent SUCCESS response to CloudFormation
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -74,7 +74,7 @@ describe('seedData handler', () => {
 
         await handler(makeEvent('Update') as any, makeContext() as any);
 
-        expect(mockSend).toHaveBeenCalledTimes(3);
+        expect(mockSend).toHaveBeenCalledTimes(5);
 
         const responseBody = JSON.parse(mockFetch.mock.calls[0][1].body);
         expect(responseBody.Status).toBe('SUCCESS');

@@ -36,7 +36,7 @@ const makeEvent = (overrides: Record<string, any> = {}) => ({
     });
 
     it('should delete a {{camelCase name}} successfully', async () => {
-    mockDelete.mockResolvedValue();
+    mockDelete.mockResolvedValue(undefined);
     const event = makeEvent({ pathParameters: { {{camelCase name}}Id: '123' } });
     const result = await handler(event, {} as any, {} as any);
 

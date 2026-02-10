@@ -1,4 +1,5 @@
 import { {{pascalCase name}}Repository, {{pascalCase name}} } from "../domain/{{camelCase name}}";
+import { PaginationOptions, PaginatedResult } from "../domain/item";
 import { DBService } from "../entities/service";
 import { z } from "zod";
 import { logger } from "../lib/observability";
@@ -27,9 +28,12 @@ throw new Error(`Data integrity error: ${result.error.message}`);
 return result.data as {{pascalCase name}};
 }
 
+const DEFAULT_PAGE_SIZE = 20;
+
 export class Dynamo{{pascalCase name}}Repository implements {{pascalCase name}}Repository {
 async create(item: {{pascalCase name}}): Promise<{{pascalCase name}}> {
-    const result = await DBService.entities.{{camelCase name}}.create(item).go();
+    const { createdAt, ...data } = item;
+    const result = await DBService.entities.{{camelCase name}}.create(data).go();
     return parse{{pascalCase name}}(result.data);
     }
 
@@ -39,9 +43,18 @@ async create(item: {{pascalCase name}}): Promise<{{pascalCase name}}> {
         return parse{{pascalCase name}}(result.data);
         }
 
-        async list(): Promise<{{pascalCase name}}[]> {
-            const result = await DBService.entities.{{camelCase name}}.scan.go();
-            return result.data.map(parse{{pascalCase name}});
+        async list(options?: PaginationOptions): Promise<PaginatedResult<{{pascalCase name}}>> {
+            const limit = options?.limit || DEFAULT_PAGE_SIZE;
+
+            const result = await DBService.entities.{{camelCase name}}.scan.go({
+            limit,
+            ...(options?.cursor && { cursor: options.cursor }),
+            });
+
+            return {
+            items: result.data.map(parse{{pascalCase name}}),
+            cursor: result.cursor ?? null,
+            };
             }
 
             async delete({{camelCase name}}Id: string): Promise<void> {

@@ -35,24 +35,37 @@ const makeEvent = (overrides: Record<string, any> = {}) => ({
     mockList = mockServiceInstance.list{{pascalCase name}}s;
     });
 
-    it('should list {{camelCase name}}s successfully', async () => {
-    const mockItems = [{ {{camelCase name}}Id: '1', name: 'A' }, { {{camelCase name}}Id: '2', name: 'B' }];
-    mockList.mockResolvedValue(mockItems);
+    it('should return paginated {{camelCase name}}s', async () => {
+    const mockResult = { items: [{ {{camelCase name}}Id: '1', name: 'A' }], cursor: null };
+    mockList.mockResolvedValue(mockResult);
 
     const event = makeEvent();
     const result = await handler(event, {} as any, {} as any);
 
     expect(result).toMatchObject({
     statusCode: 200,
-    body: JSON.stringify(mockItems),
+    body: JSON.stringify(mockResult),
     });
     });
 
-    it('should return empty array when none exist', async () => {
-    mockList.mockResolvedValue([]);
+    it('should pass limit and cursor query params', async () => {
+    const mockResult = { items: [], cursor: null };
+    mockList.mockResolvedValue(mockResult);
+
+    const event = makeEvent({ queryStringParameters: { limit: '5', cursor: 'abc' } });
+    await handler(event, {} as any, {} as any);
+
+    expect(mockList).toHaveBeenCalledWith({ limit: 5, cursor: 'abc' });
+    });
+
+    it('should handle default pagination', async () => {
+    const mockResult = { items: [], cursor: null };
+    mockList.mockResolvedValue(mockResult);
+
     const event = makeEvent();
-    const result = await handler(event, {} as any, {} as any);
-    expect(result).toMatchObject({ statusCode: 200, body: JSON.stringify([]) });
+    await handler(event, {} as any, {} as any);
+
+    expect(mockList).toHaveBeenCalledWith({ limit: undefined, cursor: undefined });
     });
 
     it('should return 500 on error', async () => {

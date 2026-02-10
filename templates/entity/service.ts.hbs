@@ -15,14 +15,13 @@ private eventPublisher: EventPublisher
 async create{{pascalCase name}}(request: Create{{pascalCase name}}Request): Promise<{{pascalCase name}}> {
     logger.info("Creating {{camelCase name}}", { name: request.name });
 
-    const item: {{pascalCase name}} = {
+    const item = {
     {{camelCase name}}Id: randomUUID(),
     name: request.name,
     description: request.description,
-    createdAt: new Date().toISOString(),
     };
 
-    const created = await this.repository.create(item);
+    const created = await this.repository.create(item as {{pascalCase name}});
     metrics.addMetric('{{pascalCase name}}sCreated', MetricUnit.Count, 1);
 
     await this.eventPublisher.publish("{{pascalCase name}}Created", created);

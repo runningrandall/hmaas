@@ -7,30 +7,57 @@ const TABLE_NAME = process.env.TABLE_NAME!;
 // Reference data to seed into the table on stack creation/update
 const SEED_DATA = [
     {
-        pk: { S: '$category#maintenance' },
-        sk: { S: '$category#maintenance' },
+        pk: { S: '$template-service#categoryid_maintenance' },
+        sk: { S: '$category_1' },
+        categoryId: { S: 'maintenance' },
         name: { S: 'General Maintenance' },
         description: { S: 'Regular home maintenance tasks' },
-        __edb_e__: { S: 'Category' },
+        createdAt: { N: String(Date.now()) },
+        __edb_e__: { S: 'category' },
         __edb_v__: { S: '1' },
     },
     {
-        pk: { S: '$category#plumbing' },
-        sk: { S: '$category#plumbing' },
+        pk: { S: '$template-service#categoryid_plumbing' },
+        sk: { S: '$category_1' },
+        categoryId: { S: 'plumbing' },
         name: { S: 'Plumbing' },
         description: { S: 'Plumbing repairs and installations' },
-        __edb_e__: { S: 'Category' },
+        createdAt: { N: String(Date.now()) },
+        __edb_e__: { S: 'category' },
         __edb_v__: { S: '1' },
     },
     {
-        pk: { S: '$category#electrical' },
-        sk: { S: '$category#electrical' },
+        pk: { S: '$template-service#categoryid_electrical' },
+        sk: { S: '$category_1' },
+        categoryId: { S: 'electrical' },
         name: { S: 'Electrical' },
         description: { S: 'Electrical repairs and installations' },
-        __edb_e__: { S: 'Category' },
+        createdAt: { N: String(Date.now()) },
+        __edb_e__: { S: 'category' },
+        __edb_v__: { S: '1' },
+    },
+    {
+        pk: { S: '$template-service#categoryid_hvac' },
+        sk: { S: '$category_1' },
+        categoryId: { S: 'hvac' },
+        name: { S: 'HVAC' },
+        description: { S: 'Heating, ventilation, and air conditioning' },
+        createdAt: { N: String(Date.now()) },
+        __edb_e__: { S: 'category' },
+        __edb_v__: { S: '1' },
+    },
+    {
+        pk: { S: '$template-service#categoryid_landscaping' },
+        sk: { S: '$category_1' },
+        categoryId: { S: 'landscaping' },
+        name: { S: 'Landscaping' },
+        description: { S: 'Lawn care, tree trimming, and garden maintenance' },
+        createdAt: { N: String(Date.now()) },
+        __edb_e__: { S: 'category' },
         __edb_v__: { S: '1' },
     },
 ];
+
 
 export const handler = async (event: CloudFormationCustomResourceEvent, context: Context) => {
     console.log('Seed handler invoked', JSON.stringify(event));
