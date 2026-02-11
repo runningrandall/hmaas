@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateOpenApiSpec = exports.registry = void 0;
+exports.registry = void 0;
+exports.generateOpenApiSpec = generateOpenApiSpec;
 const zod_to_openapi_1 = require("@asteasolutions/zod-to-openapi");
 const zod_to_openapi_2 = require("@asteasolutions/zod-to-openapi");
 const zod_1 = require("zod");
@@ -313,4 +314,3 @@ function generateOpenApiSpec() {
         ],
     });
 }
-exports.generateOpenApiSpec = generateOpenApiSpec;

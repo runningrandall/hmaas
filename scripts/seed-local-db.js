@@ -2,7 +2,7 @@ const { DynamoDBClient, BatchWriteItemCommand } = require("@aws-sdk/client-dynam
 const fs = require("fs");
 const path = require("path");
 
-const TABLE_NAME = "serverless-template-table";
+const TABLE_NAME = "s-and-l-utils";
 const ENDPOINT = "http://localhost:8000";
 const REGION = "us-east-1";
 const SEED_FILE = path.join(__dirname, "seed-data.json");
@@ -26,8 +26,8 @@ const seedDatabase = async () => {
         const seedData = JSON.parse(fs.readFileSync(SEED_FILE, "utf8"));
 
         // Check if the seed data structure matches what we expect (keys are table names)
-        // Adjust based on current seed-data.json structure which has "serverless-template-table" as key
-        const items = seedData[TABLE_NAME] || seedData["serverless-template-table"];
+        // Adjust based on current seed-data.json structure which has "s-and-l-utils" as key
+        const items = seedData[TABLE_NAME] || seedData["s-and-l-utils"];
 
         if (!items || !Array.isArray(items)) {
             console.log("No items found for table in seed file.");

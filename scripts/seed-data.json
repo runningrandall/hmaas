@@ -1,5 +1,5 @@
 {
-    "serverless-template-table": [
+    "s-and-l-utils": [
         {
             "PutRequest": {
                 "Item": {

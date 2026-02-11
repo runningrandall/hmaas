@@ -1,178 +1,216 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { listItems, createItem, deleteItem, Item } from '../lib/api';
+import { useState, useRef, useEffect } from "react";
+import Script from "next/script";
+import LocationPicker from "../components/LocationPicker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [newItemName, setNewItemName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [contact, setContact] = useState("");
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchItems = async () => {
-    try {
-      setLoading(true);
-      const data = await listItems();
-      setItems(data);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError((err as Error)?.message || 'An unknown error occurred');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // In a real app, this would come from process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  // For this template, we might need to ask the user or use a placeholder
+  const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
   useEffect(() => {
-    // Only fetch if API URL is set, otherwise show instruction
-    if (process.env.NEXT_PUBLIC_API_URL) {
-      fetchItems();
+    // If no API key is present in env, we might want to prompt or show error?
+    // For now we assume it's there or user will provide it.
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.warn("Google Maps API Key is missing!");
     }
-  }, []);
+  }, [GOOGLE_MAPS_API_KEY]);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
+  };
+
+  const getUploadUrl = async (contentType: string) => {
+    // Determine the base URL. If API_URL is set, use it.
+    // Otherwise, assume relative path if checking against a local proxy, 
+    // or arguably we need the absolute URL if it is on a different domain.
+    // Given usage plan, we likely need the full URL.
+
+    // For now, if API_URL is missing, we can't proceed really.
+    const baseUrl = API_URL;
+
+    const res = await fetch(`${baseUrl}/upload-url?contentType=${encodeURIComponent(contentType)}`);
+    if (!res.ok) throw new Error("Failed to get upload URL");
+    return res.json();
+  };
+
+  const uploadImage = async (url: string, file: File) => {
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type,
+      },
+      body: file,
+    });
+    if (!res.ok) throw new Error("Failed to upload image");
+  };
+
+  const createReport = async (name: string, contact: string, location: { lat: number; lng: number }, imageKey: string) => {
+    const baseUrl = API_URL;
+    const res = await fetch(`${baseUrl}/reports`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        contact,
+        location,
+        imageKey,
+      }),
+    });
+    if (!res.ok) throw new Error("Failed to create report");
+    return res.json();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItemName.trim()) return;
+    if (!name || !location || !imageFile) {
+      alert("Please fill in all required fields (Name, Location, Photo)");
+      return;
+    }
 
+    setIsSubmitting(true);
     try {
-      setLoading(true);
-      const created = await createItem(newItemName, 'Created via Web UI');
-      setItems([...items, created]);
-      setNewItemName('');
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError((err as Error)?.message || 'An unknown error occurred');
-      }
+      // 1. Get Upload URL
+      const { uploadUrl, key } = await getUploadUrl(imageFile.type);
+
+      // 2. Upload Image
+      await uploadImage(uploadUrl, imageFile);
+
+      // 3. Submit Report
+      await createReport(name, contact, location, key);
+
+      setSuccess(true);
+      setName("");
+      setContact("");
+      setLocation(null);
+      setImageFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit report. Please try again. Ensure API URL is configured.");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
-
-    try {
-      setLoading(true);
-      await deleteItem(itemId);
-      setItems(items.filter((item) => item.itemId !== itemId));
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError((err as Error)?.message || 'An unknown error occurred');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!process.env.NEXT_PUBLIC_API_URL) {
+  if (success) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-100">
-        <div className="rounded-lg bg-white p-8 shadow-md">
-          <h1 className="mb-4 text-2xl font-bold text-red-600">Configuration Required</h1>
-          <p className="mb-4 text-gray-700">
-            Please configure the <code className="bg-gray-200 px-1 py-0.5 rounded">NEXT_PUBLIC_API_URL</code> environment variable.
-          </p>
-          <ol className="list-decimal list-inside space-y-2 text-gray-600">
-            <li>Deploy the backend using <code className="bg-gray-200 px-1 py-0.5 rounded">make deploy</code> (or <code className="bg-gray-200 px-1 py-0.5 rounded">cd infra && npx cdk deploy</code>)</li>
-            <li>Copy the <strong>ApiUrl</strong> from the output.</li>
-            <li>Create <code className="bg-gray-200 px-1 py-0.5 rounded">frontend/.env.local</code> and add:</li>
-          </ol>
-          <pre className="mt-4 bg-gray-800 p-4 rounded text-white overflow-x-auto">
-            NEXT_PUBLIC_API_URL=https://your-api-url...
-          </pre>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-green-600">Report Submitted!</CardTitle>
+            <CardDescription>Thank you for reporting the concern.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => setSuccess(false)}>
+              Submit Another Report
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
-      <div className="mx-auto max-w-2xl">
-        <h1 className="mb-8 text-3xl font-bold text-center text-gray-800">Serverless Template App</h1>
+    <div className="min-h-screen p-4 bg-gray-50 flex flex-col items-center">
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`}
+        strategy="afterInteractive"
+      />
 
-        <div className="flex justify-end gap-4 mb-8">
-          <a href="/login" className="text-blue-600 hover:underline">Login / Sign Up</a>
-          <a href="/profile" className="text-blue-600 hover:underline">Profile</a>
-          <a href="/admin" className="text-blue-600 hover:underline">Admin Dashboard</a>
-        </div>
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>S&L Storm Water Reporting</CardTitle>
+          <CardDescription>Report a concern by filling out the form below.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your Name"
+                required
+              />
+            </div>
 
-        {error && (
-          <div className="mb-6 rounded-md bg-red-50 p-4 text-red-700 border border-red-200">
-            {error}
-          </div>
-        )}
+            <div className="space-y-2">
+              <Label htmlFor="contact">Contact Info (Optional)</Label>
+              <Input
+                id="contact"
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
+                placeholder="Phone or Email"
+              />
+            </div>
 
-        <div className="mb-8 rounded-lg bg-white p-6 shadow-sm border border-gray-100">
-          <h2 className="mb-4 text-xl font-semibold text-gray-800">Add New Item</h2>
-          <form onSubmit={handleCreate} className="flex gap-4">
-            <input
-              type="text"
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              placeholder="Item name..."
-              aria-label="New item name"
-              className="flex-1 rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading || !newItemName.trim()}
-              className="rounded-md bg-blue-600 px-6 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Add
-            </button>
+            <div className="space-y-2">
+              <Label>Photo *</Label>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageChange}
+                required
+              />
+              {imageFile && <p className="text-sm text-gray-500">Selected: {imageFile.name}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Location *</Label>
+              {GOOGLE_MAPS_API_KEY ? (
+                <LocationPicker onLocationSelect={setLocation} initialLocation={location || undefined} />
+              ) : (
+                <div className="p-4 bg-yellow-100 text-yellow-800 rounded text-sm">
+                  Google Maps API Key missing. Please configure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.
+                </div>
+              )}
+              {location && (
+                <p className="text-xs text-gray-500">
+                  Lat: {location.lat.toFixed(6)}, Lng: {location.lng.toFixed(6)}
+                </p>
+              )}
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Report"
+              )}
+            </Button>
           </form>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Items List</h2>
-            <button
-              onClick={fetchItems}
-              disabled={loading}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              Refresh
-            </button>
-          </div>
-
-          {loading && items.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Loading...</div>
-          ) : items.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No items found. Create one above!</div>
-          ) : (
-            <ul className="space-y-3">
-              {items.map((item) => (
-                <li
-                  key={item.itemId}
-                  className="flex items-center justify-between rounded-md bg-gray-50 p-4 hover:bg-gray-100 transition-colors"
-                >
-                  <div>
-                    <span className="font-medium text-gray-900">{item.name}</span>
-                    <span className="ml-2 text-xs text-gray-500">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(item.itemId)}
-                    disabled={loading}
-                    aria-label={`Delete ${item.name}`}
-                    className="text-red-600 hover:text-red-800 font-medium text-sm px-3 py-1 rounded hover:bg-red-50 transition-colors"
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      <div className="mt-8 text-center text-sm text-gray-400">
+        &copy; {new Date().getFullYear()} S&L Construction
       </div>
-    </main>
+    </div>
   );
 }

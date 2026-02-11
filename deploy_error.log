@@ -1,0 +1,101 @@
+Bundling asset TestInfraStack-randalladams/seedDataLambda/Code/Stage...
+
+  ...6ab60c7a595bb901bdc6974e36ffe5ee150d80015b8fc365-building/index.js  2.9kb
+  ...0c7a595bb901bdc6974e36ffe5ee150d80015b8fc365-building/index.js.map  6.8kb
+
+⚡ Done in 20ms
+Bundling asset TestInfraStack-randalladams/createItemLambda/Code/Stage...
+
+  ...e5eed503ead2ae6ac9c931833c30781e8af1a6d174ae65-building/index.js  1.3mb ⚠️
+  ...d503ead2ae6ac9c931833c30781e8af1a6d174ae65-building/index.js.map  4.4mb
+
+⚡ Done in 484ms
+Bundling asset TestInfraStack-randalladams/getItemLambda/Code/Stage...
+
+  ...50776178ea0cf680e76d32e6cfeda7c90962c46956c88b-building/index.js  1.2mb ⚠️
+  ...6178ea0cf680e76d32e6cfeda7c90962c46956c88b-building/index.js.map  4.3mb
+
+⚡ Done in 261ms
+Bundling asset TestInfraStack-randalladams/listItemsLambda/Code/Stage...
+
+  ...55a9ab052066164f2dbf5b41d3b51088cc5aa6a0284695-building/index.js  1.2mb ⚠️
+  ...ab052066164f2dbf5b41d3b51088cc5aa6a0284695-building/index.js.map  4.3mb
+
+⚡ Done in 151ms
+Bundling asset TestInfraStack-randalladams/deleteItemLambda/Code/Stage...
+
+  ...7674aed8fb16a9d7c4a43a81af56657841c76b937046db-building/index.js  1.2mb ⚠️
+  ...aed8fb16a9d7c4a43a81af56657841c76b937046db-building/index.js.map  4.3mb
+
+⚡ Done in 255ms
+Bundling asset TestInfraStack-randalladams/createCategoryLambda/Code/Stage...
+
+  ...617e5c04621ccf0285ca8e1aac0a05bb74ec958031d903-building/index.js  1.2mb ⚠️
+  ...5c04621ccf0285ca8e1aac0a05bb74ec958031d903-building/index.js.map  4.4mb
+
+⚡ Done in 193ms
+Bundling asset TestInfraStack-randalladams/getCategoryLambda/Code/Stage...
+
+  ...5034bdf19368cf80df835e8944b90f8e8a6d41f518d91a-building/index.js  1.2mb ⚠️
+  ...bdf19368cf80df835e8944b90f8e8a6d41f518d91a-building/index.js.map  4.3mb
+
+⚡ Done in 314ms
+Bundling asset TestInfraStack-randalladams/listCategorysLambda/Code/Stage...
+
+  ...d06d9e9365277d8389b9e572df3aeaafc30871551798d5-building/index.js  1.2mb ⚠️
+  ...9e9365277d8389b9e572df3aeaafc30871551798d5-building/index.js.map  4.3mb
+
+⚡ Done in 777ms
+Bundling asset TestInfraStack-randalladams/deleteCategoryLambda/Code/Stage...
+
+  ...2e45dfc7a50a1cd30d03b436a4e476072d5caa2317863b-building/index.js  1.2mb ⚠️
+  ...dfc7a50a1cd30d03b436a4e476072d5caa2317863b-building/index.js.map  4.3mb
+
+⚡ Done in 155ms
+Bundling asset TestInfraStack-randalladams/createReportLambda/Code/Stage...
+
+  ...c5f34895b55b10cc45fdb48e1841f7fd82a2f24e3be410-building/index.js  503.8kb
+  ...4895b55b10cc45fdb48e1841f7fd82a2f24e3be410-building/index.js.map    1.8mb
+
+⚡ Done in 93ms
+Bundling asset TestInfraStack-randalladams/generateUploadUrlLambda/Code/Stage...
+
+  ...ab1827f1392e019029d054bd0eb2dbb7648acb63f43245-building/index.js  615.4kb
+  ...27f1392e019029d054bd0eb2dbb7648acb63f43245-building/index.js.map    2.1mb
+
+⚡ Done in 162ms
+Bundling asset TestInfraStack-randalladams/authorizerLambda/Code/Stage...
+
+  ...f1d3780e281d2511445dc58c0d6e4d7d4c2bd794b501219-building/index.js  17.1kb
+  ...780e281d2511445dc58c0d6e4d7d4c2bd794b501219-building/index.js.map  87.5kb
+
+⚡ Done in 8ms
+Bundling asset TestInfraStack-randalladams/processEventLambda/Code/Stage...
+
+  ...987737f12ccd0bfb368e2691bf1e3c76b2efcc73df4548-building/index.js  150.1kb
+  ...37f12ccd0bfb368e2691bf1e3c76b2efcc73df4548-building/index.js.map  693.2kb
+
+⚡ Done in 20ms
+[31m[Error at /TestFrontendStack/NonProdWebsiteBucket/Resource] AwsSolutions-S2: The S3 Bucket does not have public access restricted and blocked. The bucket should have public access restricted and blocked to prevent unauthorized access.[39m
+[31m[39m
+[0m[0m
+[0mNOTICES         (What's this? https://github.com/aws/aws-cdk/wiki/CLI-Notices)[0m
+[0m[0m
+[0m34892	CDK CLI collects telemetry data on command usage starting at version 2.1100.0 (unless opted out)[0m
+[0m[0m
+[0m	Overview: We do not collect customer content and we anonymize the[0m
+[0m	          telemetry we do collect. See the attached issue for more[0m
+[0m	          information on what data is collected, why, and how to[0m
+[0m	          opt-out. Telemetry will NOT be collected for any CDK CLI[0m
+[0m	          version prior to version 2.1100.0 - regardless of[0m
+[0m	          opt-in/out. You can also view the telemetry we collect by[0m
+[0m	          logging it to a local file, by adding[0m
+[0m	          `--telemetry-file=my/local/file` to any `cdk` command.[0m
+[0m[0m
+[0m	Affected versions: cli: ^2.1100.0[0m
+[0m[0m
+[0m	More information at: https://github.com/aws/aws-cdk/issues/34892[0m
+[0m[0m
+[0m[0m
+[0mIf you don’t want to see a notice anymore, use "cdk acknowledge <id>". For example, "cdk acknowledge 34892".[0m
+[31mFound errors[39m

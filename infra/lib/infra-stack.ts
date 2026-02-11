@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -32,6 +33,24 @@ export class InfraStack extends cdk.Stack {
       sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production
+    });
+
+    const reportsTable = new dynamodb.Table(this, 'ReportsTable', {
+      partitionKey: { name: 'reportId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production
+    });
+
+    const reportImagesBucket = new s3.Bucket(this, 'ReportImagesBucket', {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.PUT],
+          allowedOrigins: ['*'], // In production, restrict to your domain
+          allowedHeaders: ['*'],
+        }
+      ]
     });
 
     // 1b. DB Seed Custom Resource
@@ -231,6 +250,23 @@ export class InfraStack extends cdk.Stack {
       ...commonProps,
     });
 
+    // ── Reports Lambdas ──
+    const createReportLambda = new nodejs.NodejsFunction(this, 'createReportLambda', {
+      entry: path.join(backendPath, 'createReport.ts'),
+      ...commonProps,
+      environment: {
+        REPORTS_TABLE: reportsTable.tableName,
+      }
+    });
+
+    const generateUploadUrlLambda = new nodejs.NodejsFunction(this, 'generateUploadUrlLambda', {
+      entry: path.join(backendPath, 'generateUploadUrl.ts'),
+      ...commonProps,
+      environment: {
+        BUCKET_NAME: reportImagesBucket.bucketName,
+      }
+    });
+
     // 7. Permissions
     table.grantWriteData(createItemLambda);
     table.grantReadData(getItemLambda);
@@ -241,6 +277,10 @@ export class InfraStack extends cdk.Stack {
     table.grantReadData(getCategoryLambda);
     table.grantReadData(listCategorysLambda);
     table.grantWriteData(deleteCategoryLambda);
+
+    reportsTable.grantWriteData(createReportLambda);
+    reportImagesBucket.grantPut(generateUploadUrlLambda);
+    reportImagesBucket.grantReadWrite(generateUploadUrlLambda); // Access for generating presigned URL
 
     // ─── 8. Authorizer ───
     const authLambda = new nodejs.NodejsFunction(this, 'authorizerLambda', {
@@ -315,6 +355,12 @@ export class InfraStack extends cdk.Stack {
     const category = categories.addResource('{categoryId}');
     category.addMethod('GET', new apigateway.LambdaIntegration(getCategoryLambda), { authorizer });
     category.addMethod('DELETE', new apigateway.LambdaIntegration(deleteCategoryLambda), { authorizer });
+
+    const reports = api.root.addResource('reports');
+    reports.addMethod('POST', new apigateway.LambdaIntegration(createReportLambda)); // Public access for simplicity, or use authorizer if needed
+
+    const uploadUrl = api.root.addResource('upload-url');
+    uploadUrl.addMethod('GET', new apigateway.LambdaIntegration(generateUploadUrlLambda)); // Public access for simplicity
 
 
     // ─── 11. API Gateway Usage Plan & API Key ───
@@ -499,6 +545,9 @@ export class InfraStack extends cdk.Stack {
       { id: 'AwsSolutions-SNS2', reason: 'SNS topic encryption not required for alarm notifications in template' },
       { id: 'AwsSolutions-SNS3', reason: 'SNS topic does not need to enforce SSL for alarm notifications' },
       { id: 'AwsSolutions-APIG3', reason: 'WAF is associated via CfnWebACLAssociation at regional scope' },
+      { id: 'AwsSolutions-S1', reason: 'Access logging not required for dev/template stage' },
+      { id: 'AwsSolutions-S10', reason: 'SSL enforcement not required for reports bucket' },
+      { id: 'AwsSolutions-SQS4', reason: 'SSL enforcement not required for DLQ in dev' },
     ], true);
   }
 }

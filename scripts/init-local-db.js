@@ -1,6 +1,6 @@
 const { DynamoDBClient, CreateTableCommand, DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
 
-const TABLE_NAME = "serverless-template-table";
+const TABLE_NAME = "s-and-l-utils";
 const ENDPOINT = "http://localhost:8000";
 const REGION = "us-east-1";
 

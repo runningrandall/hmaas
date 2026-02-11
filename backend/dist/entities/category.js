@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoryEntity = void 0;
 const electrodb_1 = require("electrodb");
 const dynamodb_1 = require("../clients/dynamodb");
-const table = process.env.TABLE_NAME || "serverless-template-table";
+const table = process.env.TABLE_NAME || "s-and-l-utils";
 exports.CategoryEntity = new electrodb_1.Entity({
     model: {
         entity: "category",

@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateOrThrow = exports.mapErrorToResponse = exports.AppError = void 0;
+exports.AppError = void 0;
+exports.mapErrorToResponse = mapErrorToResponse;
+exports.validateOrThrow = validateOrThrow;
 const zod_1 = require("zod");
 const observability_1 = require("./observability");
 /**
@@ -86,7 +88,6 @@ function mapErrorToResponse(error, requestId) {
         body: JSON.stringify(buildErrorResponse('INTERNAL_SERVER_ERROR', message, undefined, requestId)),
     };
 }
-exports.mapErrorToResponse = mapErrorToResponse;
 /**
  * Convenience helper: validates Zod parse result and throws AppError on failure.
  */
@@ -101,4 +102,3 @@ function validateOrThrow(parseResult) {
     }
     return parseResult.data;
 }
-exports.validateOrThrow = validateOrThrow;

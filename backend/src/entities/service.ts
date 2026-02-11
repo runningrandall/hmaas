@@ -8,5 +8,5 @@ export const DBService = new Service(
         item: ItemEntity,
         category: CategoryEntity,
     },
-    { client, table: process.env.TABLE_NAME || "serverless-template-table" }
+    { client, table: process.env.TABLE_NAME || "s-and-l-utils" }
 );

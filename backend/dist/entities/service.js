@@ -8,4 +8,4 @@ const dynamodb_1 = require("../clients/dynamodb");
 exports.DBService = new electrodb_1.Service({
     item: item_1.ItemEntity,
     category: category_1.CategoryEntity,
-}, { client: dynamodb_1.client, table: process.env.TABLE_NAME || "serverless-template-table" });
+}, { client: dynamodb_1.client, table: process.env.TABLE_NAME || "s-and-l-utils" });

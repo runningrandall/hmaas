@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as verifiedpermissions from 'aws-cdk-lib/aws-verifiedpermissions';
+import { NagSuppressions } from 'cdk-nag';
 
 interface AuthStackProps extends cdk.StackProps {
     stageName: string;
@@ -68,7 +69,6 @@ export class AuthStack extends cdk.Stack {
                                     }
                                 }
                             },
-                            "Action": {},
                             "Resource": {}
                         },
                         "actions": {
@@ -116,7 +116,7 @@ export class AuthStack extends cdk.Stack {
             definition: {
                 static: {
                     description: "Manager can read dashboard and manage users",
-                    statement: `permit(principal, action, resource) when { principal.groups.contains("Manager") && [Action::"ReadDashboard", Action::"ManageUsers"].contains(action) };`
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("Manager") && [Test::Action::"ReadDashboard", Test::Action::"ManageUsers"].contains(action) };`
                 }
             }
         });
@@ -127,7 +127,7 @@ export class AuthStack extends cdk.Stack {
             definition: {
                 static: {
                     description: "User can read profile",
-                    statement: `permit(principal, action, resource) when { principal.groups.contains("User") && action == Action::"ReadProfile" };`
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("User") && action == Test::Action::"ReadProfile" };`
                 }
             }
         });
@@ -136,5 +136,11 @@ export class AuthStack extends cdk.Stack {
         new cdk.CfnOutput(this, 'UserPoolId', { value: this.userPool.userPoolId });
         new cdk.CfnOutput(this, 'UserPoolClientId', { value: this.userPoolClient.userPoolClientId });
         new cdk.CfnOutput(this, 'PolicyStoreId', { value: this.policyStoreId });
+
+        NagSuppressions.addResourceSuppressions(this.userPool, [
+            { id: 'AwsSolutions-COG1', reason: 'Custom password policy used for dev' },
+            { id: 'AwsSolutions-COG2', reason: 'MFA not required for dev' },
+            { id: 'AwsSolutions-COG3', reason: 'Advanced security mode not enforced for dev' },
+        ]);
     }
 }
