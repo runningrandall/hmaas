@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Script from "next/script";
 import {
   GoogleReCaptchaProvider,
@@ -21,11 +21,11 @@ import {
 import { Loader2, CheckCircle2 } from "lucide-react";
 
 const CONCERN_TYPES = [
-  "Visible sediment / turbidity",
-  "Erosion / exposed soil",
-  "Illicit discharge / pollution",
-  "Runoff from construction area",
-  "Stormwater controls failing",
+  "Visible Sediment / Dirty Water",
+  "Illicit Discharge / Pollution",
+  "Runoff Flowing Unchecked by Control Devices",
+  "Damaged or Failing Control Devices",
+  "Erosion / Fresh Dirt Slide",
   "Other",
 ] as const;
 
@@ -34,9 +34,11 @@ const RECAPTCHA_SITE_KEY =
 
 function ReportForm() {
   const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [concernType, setConcernType] = useState("");
   const [description, setDescription] = useState("");
+  const [locationDescription, setLocationDescription] = useState("");
   const [dateObserved, setDateObserved] = useState("");
   const [timeObserved, setTimeObserved] = useState("");
   const [location, setLocation] = useState<{
@@ -79,9 +81,11 @@ function ReportForm() {
   const createReport = async (
     reportData: {
       name: string;
-      contact: string;
+      email: string;
+      phone: string;
       concernType: string;
       description: string;
+      locationDescription: string;
       dateObserved: string;
       timeObserved: string;
       location: { lat: number; lng: number };
@@ -101,9 +105,9 @@ function ReportForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || !concernType || !location || imageFiles.length === 0) {
+    if (!concernType || !location || imageFiles.length === 0) {
       alert(
-        "Please fill in all required fields (Name, Type of Concern, at least one Photo, Location)"
+        "Please fill in all required fields (Type of Concern, at least one Photo, Location)"
       );
       return;
     }
@@ -131,10 +135,12 @@ function ReportForm() {
 
       // Submit report
       await createReport({
-        name,
-        contact,
+        name: name || "Anonymous",
+        email,
+        phone,
         concernType,
         description,
+        locationDescription,
         dateObserved,
         timeObserved,
         location,
@@ -145,9 +151,11 @@ function ReportForm() {
       setSuccess(true);
       // Reset
       setName("");
-      setContact("");
+      setEmail("");
+      setPhone("");
       setConcernType("");
       setDescription("");
+      setLocationDescription("");
       setDateObserved("");
       setTimeObserved("");
       setLocation(null);
@@ -224,25 +232,38 @@ function ReportForm() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">Name (Optional)</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your Name"
-                required
+                placeholder="Leave Blank if you wish to remain anonymous"
               />
             </div>
 
             {/* Contact */}
-            <div className="space-y-2">
-              <Label htmlFor="contact">Contact Info (Optional)</Label>
-              <Input
-                id="contact"
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                placeholder="Phone or Email"
-              />
+            {/* Contact Info Split */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email (Optional)</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone (Optional)</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(555) 555-5555"
+                />
+              </div>
             </div>
 
             {/* Type of Concern */}
@@ -271,14 +292,14 @@ function ReportForm() {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the concern in detail..."
+                placeholder="Describe what you observed. All details are helpful"
                 rows={3}
                 className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
               />
             </div>
 
             {/* Date & Time */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="dateObserved">Date Observed</Label>
                 <Input
@@ -297,6 +318,17 @@ function ReportForm() {
                   onChange={(e) => setTimeObserved(e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* Location Description */}
+            <div className="space-y-2">
+              <Label htmlFor="locationDescription">Location Description</Label>
+              <Input
+                id="locationDescription"
+                value={locationDescription}
+                onChange={(e) => setLocationDescription(e.target.value)}
+                placeholder="trail crossing, picnic area"
+              />
             </div>
 
             {/* Photos */}

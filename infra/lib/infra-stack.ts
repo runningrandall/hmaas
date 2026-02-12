@@ -256,6 +256,7 @@ export class InfraStack extends cdk.Stack {
       ...commonProps,
       environment: {
         REPORTS_TABLE: reportsTable.tableName,
+        RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY || '',
       }
     });
 

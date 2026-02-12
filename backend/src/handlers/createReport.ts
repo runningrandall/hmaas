@@ -13,19 +13,73 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     try {
         const body = JSON.parse(event.body || '{}');
-        const { name, contact, concernType, description, dateObserved, timeObserved, location, imageKeys, captchaToken } = body;
+        const {
+            name,
+            email,
+            phone,
+            concernType,
+            description,
+            locationDescription,
+            dateObserved,
+            timeObserved,
+            location,
+            imageKeys,
+            captchaToken
+        } = body;
 
-        if (!name || !concernType || !location || !imageKeys || imageKeys.length === 0) {
+        // Validation (Name is optional now)
+        if (!concernType || !location || !imageKeys || imageKeys.length === 0) {
             return {
                 statusCode: 400,
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-                body: JSON.stringify({ message: 'Missing required fields: name, concernType, location, imageKeys' }),
+                body: JSON.stringify({ message: 'Missing required fields: concernType, location, imageKeys' }),
             };
         }
 
-        // TODO: Verify captchaToken server-side via Google reCAPTCHA API
-        if (captchaToken) {
-            console.log('CAPTCHA token received, server-side verification pending');
+        // Verify captchaToken server-side via Google reCAPTCHA API
+        const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY;
+        if (recaptchaSecret) {
+            if (!captchaToken) {
+                return {
+                    statusCode: 400,
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                    body: JSON.stringify({ message: 'Missing CAPTCHA token' }),
+                };
+            }
+
+            try {
+                const verifyUrl = 'https://www.google.com/recaptcha/api/siteverify';
+                const params = new URLSearchParams();
+                params.append('secret', recaptchaSecret);
+                params.append('response', captchaToken);
+
+                const response = await fetch(verifyUrl, {
+                    method: 'POST',
+                    body: params,
+                });
+
+                const data: any = await response.json();
+                console.log('reCAPTCHA verification result:', data);
+
+                if (!data.success || (data.score !== undefined && data.score < 0.5)) {
+                    console.warn(`reCAPTCHA failed. Success: ${data.success}, Score: ${data.score}`);
+                    return {
+                        statusCode: 400,
+                        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                        body: JSON.stringify({ message: 'CAPTCHA verification failed', details: data['error-codes'] }),
+                    };
+                }
+            } catch (err) {
+                console.error('Error verifying reCAPTCHA:', err);
+                // Fail open or closed? Failing closed for security.
+                return {
+                    statusCode: 500,
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                    body: JSON.stringify({ message: 'Failed to verify CAPTCHA' }),
+                };
+            }
+        } else {
+            console.warn('RECAPTCHA_SECRET_KEY not set. Skipping server-side verification.');
         }
 
         const reportId = randomUUID();
@@ -34,10 +88,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const item = {
             reportId,
             createdAt,
-            name,
-            contact,
+            name: name || 'Anonymous',
+            email: email || '',
+            phone: phone || '',
             concernType,
             description: description || '',
+            locationDescription: locationDescription || '',
             dateObserved: dateObserved || '',
             timeObserved: timeObserved || '',
             location, // { lat: number, lng: number }
