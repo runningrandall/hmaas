@@ -8,6 +8,7 @@ import {
 } from "react-google-recaptcha-v3";
 import LocationPicker from "../components/LocationPicker";
 import PhotoUploader from "../components/PhotoUploader";
+import { TimePicker12Hour } from "../components/TimePicker12Hour";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -100,6 +101,25 @@ function ReportForm() {
     });
     if (!res.ok) throw new Error("Failed to create report");
     return res.json();
+  };
+
+  const formatPhoneNumber = (value: string) => {
+    if (!value) return value;
+    const phoneNumber = value.replace(/[^\d]/g, "");
+    const phoneNumberLength = phoneNumber.length;
+    if (phoneNumberLength < 4) return phoneNumber;
+    if (phoneNumberLength < 7) {
+      return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+    }
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(
+      3,
+      6
+    )}-${phoneNumber.slice(6, 10)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedPhoneNumber = formatPhoneNumber(e.target.value);
+    setPhone(formattedPhoneNumber);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -260,8 +280,9 @@ function ReportForm() {
                   id="phone"
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={handlePhoneChange}
                   placeholder="(555) 555-5555"
+                  maxLength={14}
                 />
               </div>
             </div>
@@ -302,20 +323,22 @@ function ReportForm() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="dateObserved">Date Observed</Label>
-                <Input
-                  id="dateObserved"
-                  type="date"
-                  value={dateObserved}
-                  onChange={(e) => setDateObserved(e.target.value)}
-                />
+                <div className="relative">
+                  <Input
+                    id="dateObserved"
+                    type="date"
+                    value={dateObserved}
+                    onChange={(e) => setDateObserved(e.target.value)}
+                    className="block w-full [color-scheme:dark] text-foreground bg-transparent border-input placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{ colorScheme: 'dark' }} />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="timeObserved">Time Observed</Label>
-                <Input
+                <TimePicker12Hour
                   id="timeObserved"
-                  type="time"
                   value={timeObserved}
-                  onChange={(e) => setTimeObserved(e.target.value)}
+                  onChange={setTimeObserved}
                 />
               </div>
             </div>

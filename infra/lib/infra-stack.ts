@@ -256,9 +256,25 @@ export class InfraStack extends cdk.Stack {
       ...commonProps,
       environment: {
         REPORTS_TABLE: reportsTable.tableName,
+        BUCKET_NAME: reportImagesBucket.bucketName,
+        SENDER_EMAIL: process.env.SENDER_EMAIL || 'rjadams96@gmail.com',
         RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY || '',
       }
     });
+
+    const getReportLambda = new nodejs.NodejsFunction(this, 'getReportLambda', {
+      entry: path.join(backendPath, 'getReport.ts'),
+      ...commonProps,
+      environment: {
+        REPORTS_TABLE: reportsTable.tableName,
+        BUCKET_NAME: reportImagesBucket.bucketName,
+      }
+    });
+
+    // Grant SES permissions - Removed as createReportLambda no longer sends emails
+    // createReportLambda.addToRolePolicy(new iam.PolicyStatement({}));
+
+    reportImagesBucket.grantRead(createReportLambda);
 
     const generateUploadUrlLambda = new nodejs.NodejsFunction(this, 'generateUploadUrlLambda', {
       entry: path.join(backendPath, 'generateUploadUrl.ts'),
@@ -267,6 +283,22 @@ export class InfraStack extends cdk.Stack {
         BUCKET_NAME: reportImagesBucket.bucketName,
       }
     });
+
+    const sendReportNotificationLambda = new nodejs.NodejsFunction(this, 'sendReportNotificationLambda', {
+      entry: path.join(backendPath, 'sendReportNotification.ts'),
+      ...commonProps,
+      environment: {
+        SENDER_EMAIL: process.env.SENDER_EMAIL || 'rjadams96@gmail.com',
+        RECIPIENT_EMAIL: process.env.RECIPIENT_EMAIL || 'rjadams96@gmail.com', // Default to sender for now
+        FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+      }
+    });
+
+    // Grant SES permissions to notification lambda
+    sendReportNotificationLambda.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+      resources: ['*'], // In production, restrict to specific identities
+    }));
 
     // 7. Permissions
     table.grantWriteData(createItemLambda);
@@ -280,7 +312,9 @@ export class InfraStack extends cdk.Stack {
     table.grantWriteData(deleteCategoryLambda);
 
     reportsTable.grantWriteData(createReportLambda);
+    reportsTable.grantReadData(getReportLambda);
     reportImagesBucket.grantPut(generateUploadUrlLambda);
+    reportImagesBucket.grantRead(getReportLambda); // For checking existence if needed, or signing
     reportImagesBucket.grantReadWrite(generateUploadUrlLambda); // Access for generating presigned URL
 
     // ─── 8. Authorizer ───
@@ -330,6 +364,18 @@ export class InfraStack extends cdk.Stack {
       })],
     });
 
+    new events.Rule(this, 'ReportCreatedRule', {
+      eventBus: eventBus,
+      eventPattern: {
+        source: ['reports.api'],
+        detailType: ['ReportCreated'],
+      },
+      targets: [new targets.LambdaFunction(sendReportNotificationLambda, {
+        deadLetterQueue: lambdaDLQ,
+        retryAttempts: 2,
+      })],
+    });
+
     eventBus.grantPutEventsTo(createItemLambda);
     eventBus.grantPutEventsTo(deleteItemLambda);
     createItemLambda.addEnvironment('EVENT_BUS_NAME', eventBus.eventBusName);
@@ -339,6 +385,9 @@ export class InfraStack extends cdk.Stack {
     eventBus.grantPutEventsTo(deleteCategoryLambda);
     createCategoryLambda.addEnvironment('EVENT_BUS_NAME', eventBus.eventBusName);
     deleteCategoryLambda.addEnvironment('EVENT_BUS_NAME', eventBus.eventBusName);
+
+    eventBus.grantPutEventsTo(createReportLambda);
+    createReportLambda.addEnvironment('EVENT_BUS_NAME', eventBus.eventBusName);
 
     // ─── 10. API Gateway Routes ───
     const items = api.root.addResource('items');
@@ -359,6 +408,9 @@ export class InfraStack extends cdk.Stack {
 
     const reports = api.root.addResource('reports');
     reports.addMethod('POST', new apigateway.LambdaIntegration(createReportLambda)); // Public access for simplicity, or use authorizer if needed
+
+    const report = reports.addResource('{reportId}');
+    report.addMethod('GET', new apigateway.LambdaIntegration(getReportLambda)); // Public for now, or use authorizer
 
     const uploadUrl = api.root.addResource('upload-url');
     uploadUrl.addMethod('GET', new apigateway.LambdaIntegration(generateUploadUrlLambda)); // Public access for simplicity

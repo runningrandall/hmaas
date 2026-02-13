@@ -1,5 +1,5 @@
 {
-    "name": "serverless-template-monorepo",
+    "name": "s_l_utilities",
     "version": "1.0.0",
     "private": true,
     "lint-staged": {
@@ -12,6 +12,7 @@
         "test": "pnpm -r run test",
         "lint": "pnpm -r run lint",
         "deploy": "pnpm --filter infra run deploy",
+        "deploy:dev": "pnpm run build && pnpm --filter infra run deploy --all",
         "dev": "pnpm --filter frontend run dev",
         "prepare": "husky",
         "db:start": "./scripts/start-local-db.sh",

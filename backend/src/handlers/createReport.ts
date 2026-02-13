@@ -1,12 +1,15 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { randomUUID } from 'crypto';
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
+const eventBridgeClient = new EventBridgeClient({});
 
 const TABLE_NAME = process.env.REPORTS_TABLE || '';
+const EVENT_BUS_NAME = process.env.EVENT_BUS_NAME || 'default';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
     console.log('Received event:', JSON.stringify(event, null, 2));
@@ -28,11 +31,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         } = body;
 
         // Validation (Name is optional now)
-        if (!concernType || !location || !imageKeys || imageKeys.length === 0) {
+        if (!concernType || !location) {
             return {
                 statusCode: 400,
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-                body: JSON.stringify({ message: 'Missing required fields: concernType, location, imageKeys' }),
+                body: JSON.stringify({ message: 'Missing required fields: concernType, location' }),
             };
         }
 
@@ -71,7 +74,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                 }
             } catch (err) {
                 console.error('Error verifying reCAPTCHA:', err);
-                // Fail open or closed? Failing closed for security.
                 return {
                     statusCode: 500,
                     headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -97,14 +99,47 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             dateObserved: dateObserved || '',
             timeObserved: timeObserved || '',
             location, // { lat: number, lng: number }
-            imageKeys, // string[]
+            imageKeys: imageKeys || [], // string[]
             status: 'NEW',
         };
 
+        // 1. Save to DynamoDB
         await docClient.send(new PutCommand({
             TableName: TABLE_NAME,
             Item: item,
         }));
+
+        // 2. Publish Event to EventBridge
+        try {
+            const eventDetail = {
+                reportId,
+                name: item.name,
+                email: item.email,
+                phone: item.phone,
+                concernType,
+                description,
+                locationDescription,
+                dateObserved,
+                timeObserved,
+                location, // { lat, lng }
+                imageKeys: item.imageKeys,
+            };
+
+            await eventBridgeClient.send(new PutEventsCommand({
+                Entries: [
+                    {
+                        Source: 'reports.api',
+                        DetailType: 'ReportCreated',
+                        Detail: JSON.stringify(eventDetail),
+                        EventBusName: EVENT_BUS_NAME,
+                    }
+                ]
+            }));
+            console.log(`Event ReportCreated published for reportId: ${reportId}`);
+        } catch (eventError) {
+            console.error('Failed to publish event:', eventError);
+            // Non-blocking, but logged.
+        }
 
         return {
             statusCode: 201,

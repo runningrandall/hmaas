@@ -19,16 +19,7 @@ declare global {
   }
 }
 
-const MARKERS = [
-  { lat: 40.6967857, lng: -111.7209817, title: "Winter Gate" },
-  { lat: 40.7019681, lng: -111.7025645, title: "Elbow Fork" }, // Combined duplicate
-  { lat: 40.6846298, lng: -111.6491335, title: "Big Water Parking Lot" },
-  {
-    lat: 40.6852596,
-    lng: -111.650626,
-    title: "End Project Station 258 + 45.95 Mill Creek Canyon Road",
-  },
-];
+
 
 export default function LocationPicker({
   onLocationSelect,
@@ -145,20 +136,6 @@ export default function LocationPicker({
 
       setMap(newMap);
 
-      // Add static markers
-      MARKERS.forEach((m) => {
-        new window.google.maps.Marker({
-          position: { lat: m.lat, lng: m.lng },
-          map: newMap,
-          title: m.title,
-          label: {
-            text: "📍", // Simple indicator, key info in Hover Title
-            color: "white",
-            fontSize: "14px",
-          },
-        });
-      });
-
       if (initialLocation) {
         const newMarker = new window.google.maps.Marker({
           position: initialLocation,
@@ -241,6 +218,7 @@ export default function LocationPicker({
       setMarker(newMarker);
       map.setCenter(initialLocation);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialLocation, map]);
 
   if (error) {
