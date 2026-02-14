@@ -28,9 +28,8 @@ const getStageName = (): string => {
     // Sanitize: allow only alphanumeric
     return branchName.replace(/[^a-zA-Z0-9]/g, '');
   }
-  // 2. Local: USERNAME or os.userInfo().username
-  const username = process.env.USERNAME || os.userInfo().username;
-  return username.replace(/[^a-zA-Z0-9]/g, '');
+  // 2. Local: Hardcode to 'dev'
+  return 'dev';
 };
 
 const stageName = getStageName();

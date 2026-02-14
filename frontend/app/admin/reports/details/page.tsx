@@ -8,25 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft, MapPin, Calendar, Clock, User, Mail, Phone, AlertTriangle } from "lucide-react";
 
-interface Report {
-    reportId: string;
-    createdAt: string;
-    name: string;
-    email: string;
-    phone: string;
-    concernType: string;
-    description: string;
-    locationDescription: string;
-    dateObserved: string;
-    timeObserved: string;
-    location: {
-        lat: number;
-        lng: number;
-    };
-    imageKeys: string[];
-    imageUrls?: string[]; // Presigned URLs
-    status: string;
-}
+import { getReport, Report } from "@/lib/api";
+
+// ... existing imports ...
 
 function ReportDetailsContent() {
     const searchParams = useSearchParams();
@@ -39,17 +23,11 @@ function ReportDetailsContent() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
     const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
     const fetchReport = useCallback(async (reportId: string) => {
         try {
-            const res = await fetch(`${API_URL}/reports/${reportId}`);
-            if (!res.ok) {
-                if (res.status === 404) throw new Error('Report not found');
-                throw new Error('Failed to fetch report');
-            }
-            const data = await res.json();
+            const data = await getReport(reportId);
             setReport(data);
         } catch (err: unknown) {
             console.error(err);
@@ -61,7 +39,7 @@ function ReportDetailsContent() {
         } finally {
             setLoading(false);
         }
-    }, [API_URL]);
+    }, []);
 
     useEffect(() => {
         if (!id) return;

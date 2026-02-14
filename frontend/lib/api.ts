@@ -15,6 +15,13 @@ export interface Report {
     imageKeys: string[];
     emailLocation?: string;
     imageUrls?: string[]; // Presigned URLs
+    status: string;
+    dateObserved?: string;
+    timeObserved?: string;
+    locationDescription?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
 }
 
 export interface Item {
@@ -81,7 +88,18 @@ export async function listReports(limit: number = 20, nextToken?: string | null,
     if (nextToken) params.append('nextToken', nextToken);
     if (search) params.append('search', search);
 
-    const res = await fetch(`${API_URL}reports?${params.toString()}`, { headers, cache: 'no-store' });
+    const res = await fetch(`${API_URL}/reports?${params.toString()}`, { headers, cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch reports');
+    return res.json();
+}
+
+export async function getReport(reportId: string): Promise<Report> {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_URL}reports/${reportId}`, { headers, cache: 'no-store' });
+    if (!res.ok) {
+        if (res.status === 404) throw new Error('Report not found');
+        if (res.status === 403) throw new Error('Access denied');
+        throw new Error('Failed to fetch report');
+    }
     return res.json();
 }

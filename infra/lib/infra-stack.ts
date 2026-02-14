@@ -428,7 +428,24 @@ export class InfraStack extends cdk.Stack {
     reports.addMethod('POST', new apigateway.LambdaIntegration(createReportLambda)); // Public access for simplicity, or use authorizer if needed
 
     const report = reports.addResource('{reportId}');
-    report.addMethod('GET', new apigateway.LambdaIntegration(getReportLambda)); // Public for now, or use authorizer
+    report.addMethod('GET', new apigateway.LambdaIntegration(getReportLambda), { authorizer });
+
+    // Add Gateway Responses for CORS on 4xx/5xx errors
+    api.addGatewayResponse('GatewayResponseDefault4XX', {
+      type: apigateway.ResponseType.DEFAULT_4XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'*'",
+      },
+    });
+
+    api.addGatewayResponse('GatewayResponseDefault5XX', {
+      type: apigateway.ResponseType.DEFAULT_5XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'*'",
+      },
+    });
 
     const uploadUrl = api.root.addResource('upload-url');
     uploadUrl.addMethod('GET', new apigateway.LambdaIntegration(generateUploadUrlLambda)); // Public access for simplicity
