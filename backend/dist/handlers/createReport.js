@@ -81,6 +81,7 @@ const handler = async (event) => {
             location, // { lat: number, lng: number }
             imageKeys: imageKeys || [], // string[]
             status: 'NEW',
+            type: 'REPORT', // For GSI
         };
         // 1. Save to DynamoDB
         await docClient.send(new lib_dynamodb_1.PutCommand({
