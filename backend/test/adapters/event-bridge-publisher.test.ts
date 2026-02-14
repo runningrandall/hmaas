@@ -1,14 +1,9 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { mockClient } from 'aws-sdk-client-mock';
+import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { EventBridgePublisher } from '../../src/adapters/event-bridge-publisher';
 
-// Mock EventBridge client
-const mockSend = vi.fn();
-vi.mock('@aws-sdk/client-eventbridge', () => ({
-    EventBridgeClient: vi.fn().mockImplementation(() => ({
-        send: mockSend,
-    })),
-    PutEventsCommand: vi.fn().mockImplementation((input: any) => input),
-}));
+const ebMock = mockClient(EventBridgeClient);
 
 // Mock tracer to pass through the client
 vi.mock('../../src/lib/observability', () => ({
@@ -22,17 +17,19 @@ vi.mock('../../src/lib/observability', () => ({
 
 describe('EventBridgePublisher', () => {
     beforeEach(() => {
+        ebMock.reset();
         vi.clearAllMocks();
     });
 
     it('should publish an event to EventBridge', async () => {
-        mockSend.mockResolvedValue({});
+        ebMock.on(PutEventsCommand).resolves({});
         const publisher = new EventBridgePublisher('test-bus');
 
         await publisher.publish('ItemCreated', { itemId: '123', name: 'Test' });
 
-        expect(mockSend).toHaveBeenCalledTimes(1);
-        expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
+        expect(ebMock.calls()).toHaveLength(1);
+        const callArgs = ebMock.call(0).args[0].input;
+        expect(callArgs).toEqual(expect.objectContaining({
             Entries: [{
                 Source: 'test.api',
                 DetailType: 'ItemCreated',
@@ -47,11 +44,11 @@ describe('EventBridgePublisher', () => {
 
         await publisher.publish('ItemCreated', { itemId: '123' });
 
-        expect(mockSend).not.toHaveBeenCalled();
+        expect(ebMock.calls()).toHaveLength(0);
     });
 
     it('should not throw when EventBridge send fails', async () => {
-        mockSend.mockRejectedValue(new Error('EventBridge error'));
+        ebMock.on(PutEventsCommand).rejects(new Error('EventBridge error'));
         const publisher = new EventBridgePublisher('test-bus');
 
         // Should not throw — error is logged but swallowed

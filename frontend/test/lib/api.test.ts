@@ -21,6 +21,7 @@ describe('API client', () => {
         vi.clearAllMocks();
         // Default: no auth session
         mockFetchAuthSession.mockRejectedValue(new Error('No session'));
+        vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3001/');
     });
 
     describe('listItems', () => {
@@ -77,25 +78,38 @@ describe('API client', () => {
 
     describe('createItem', () => {
         it('should create an item successfully', async () => {
-            const newItem = { itemId: '2', name: 'New', description: 'Desc' };
-            mockFetch.mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve(newItem),
+            mockFetchAuthSession.mockResolvedValue({
+                tokens: {
+                    accessToken: {
+                        toString: () => 'mock-token'
+                    }
+                }
             });
 
-            const result = await createItem('New', 'Desc');
+            const mockItem = { itemId: '1', name: 'Test Item', description: 'desc', pk: 'pk', sk: 'sk', createdAt: '2024-01-01', updatedAt: '2024-01-01' };
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: async () => mockItem,
+            } as Response);
 
-            expect(result).toEqual(newItem);
+            const result = await createItem('Test Item', 'desc');
+
             expect(mockFetch).toHaveBeenCalledWith(
-                expect.stringContaining('items'),
+                'http://localhost:3000/items',
                 expect.objectContaining({
                     method: 'POST',
-                    body: JSON.stringify({ name: 'New', description: 'Desc' }),
-                }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer mock-token'
+                    },
+                    body: JSON.stringify({ name: 'Test Item', description: 'desc' }),
+                })
             );
+            expect(result).toEqual(mockItem);
         });
 
         it('should throw on non-ok response', async () => {
+            mockFetchAuthSession.mockResolvedValue({ tokens: {} });
             mockFetch.mockResolvedValue({ ok: false, status: 400 });
 
             await expect(createItem('Bad', 'Desc')).rejects.toThrow('Failed to create item');
@@ -104,6 +118,13 @@ describe('API client', () => {
 
     describe('deleteItem', () => {
         it('should delete an item successfully', async () => {
+            mockFetchAuthSession.mockResolvedValue({
+                tokens: {
+                    accessToken: {
+                        toString: () => 'mock-token'
+                    }
+                }
+            });
             mockFetch.mockResolvedValue({
                 ok: true,
                 json: () => Promise.resolve({ message: 'deleted' }),
@@ -116,11 +137,15 @@ describe('API client', () => {
                 expect.stringContaining('items/item-123'),
                 expect.objectContaining({
                     method: 'DELETE',
+                    headers: expect.objectContaining({
+                        'Authorization': 'Bearer mock-token'
+                    })
                 }),
             );
         });
 
         it('should throw on non-ok response', async () => {
+            mockFetchAuthSession.mockResolvedValue({ tokens: {} });
             mockFetch.mockResolvedValue({ ok: false, status: 404 });
 
             await expect(deleteItem('bad-id')).rejects.toThrow('Failed to delete item');

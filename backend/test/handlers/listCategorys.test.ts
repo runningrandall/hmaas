@@ -4,11 +4,18 @@ import { CategoryService } from '../../src/application/category-service';
 
 vi.mock('../../src/adapters/dynamo-category-repository');
 vi.mock('../../src/adapters/event-bridge-publisher');
-vi.mock('../../src/application/category-service', () => ({
-    CategoryService: vi.fn().mockReturnValue({
+vi.mock('../../src/application/category-service', () => {
+    const mockService = {
         listCategories: vi.fn(),
-    }),
-}));
+    };
+    return {
+        CategoryService: class {
+            constructor() {
+                return mockService;
+            }
+        },
+    };
+});
 
 const makeEvent = (overrides: Record<string, any> = {}) => ({
     headers: { 'Content-Type': 'application/json' },

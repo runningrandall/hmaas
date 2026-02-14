@@ -1,9 +1,13 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { mockClient } from 'aws-sdk-client-mock';
+import { VerifiedPermissionsClient, IsAuthorizedCommand, IsAuthorizedCommandInput } from '@aws-sdk/client-verifiedpermissions';
+import { handler } from '../../src/auth/authorizer';
+
+const avpMock = mockClient(VerifiedPermissionsClient);
 
 // Use vi.hoisted so mocks are available before vi.mock hoisting
-const { mockVerify, mockAVPSend } = vi.hoisted(() => ({
+const { mockVerify } = vi.hoisted(() => ({
     mockVerify: vi.fn(),
-    mockAVPSend: vi.fn(),
 }));
 
 vi.mock('aws-jwt-verify', () => ({
@@ -14,13 +18,6 @@ vi.mock('aws-jwt-verify', () => ({
     },
 }));
 
-vi.mock('@aws-sdk/client-verifiedpermissions', () => ({
-    VerifiedPermissionsClient: vi.fn(() => ({ send: mockAVPSend })),
-    IsAuthorizedCommand: vi.fn((params: any) => params),
-}));
-
-import { handler } from '../../src/auth/authorizer';
-
 const makeEvent = (overrides: Record<string, any> = {}) => ({
     type: 'TOKEN',
     authorizationToken: 'Bearer test-jwt-token',
@@ -30,6 +27,7 @@ const makeEvent = (overrides: Record<string, any> = {}) => ({
 
 describe('authorizer handler', () => {
     beforeEach(() => {
+        avpMock.reset();
         vi.clearAllMocks();
     });
 
@@ -38,7 +36,7 @@ describe('authorizer handler', () => {
             sub: 'user-123',
             'cognito:groups': ['admin'],
         });
-        mockAVPSend.mockResolvedValue({ decision: 'ALLOW' });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
 
         const event = makeEvent();
         const result = await handler(event as any);
@@ -52,7 +50,7 @@ describe('authorizer handler', () => {
             sub: 'user-456',
             'cognito:groups': ['user'],
         });
-        mockAVPSend.mockResolvedValue({ decision: 'DENY' });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'DENY' });
 
         const event = makeEvent();
         const result = await handler(event as any);
@@ -66,7 +64,7 @@ describe('authorizer handler', () => {
             sub: 'user-789',
             'cognito:groups': ['admin'],
         });
-        mockAVPSend.mockResolvedValue({ decision: 'ALLOW' });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
 
         const event = makeEvent({
             methodArn: 'arn:aws:execute-api:us-east-1:123456789:apiid/stage/POST/items',
@@ -76,8 +74,9 @@ describe('authorizer handler', () => {
         expect(result.principalId).toBe('user-789');
 
         // Verify the AVP command was called with ManageUsers action
-        const avpCall = mockAVPSend.mock.calls[0][0];
-        expect(avpCall.action.actionId).toBe('ManageUsers');
+        expect(avpMock.calls()).toHaveLength(1);
+        const callArgs = avpMock.call(0).args[0].input as IsAuthorizedCommandInput;
+        expect(callArgs.action?.actionId).toBe('ManageUsers');
     });
 
     it('should map GET to ReadDashboard action', async () => {
@@ -85,7 +84,7 @@ describe('authorizer handler', () => {
             sub: 'user-123',
             'cognito:groups': [],
         });
-        mockAVPSend.mockResolvedValue({ decision: 'ALLOW' });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
 
         const event = makeEvent({
             methodArn: 'arn:aws:execute-api:us-east-1:123456789:apiid/stage/GET/items/123',
@@ -93,8 +92,8 @@ describe('authorizer handler', () => {
 
         await handler(event as any);
 
-        const avpCall = mockAVPSend.mock.calls[0][0];
-        expect(avpCall.action.actionId).toBe('ReadDashboard');
+        const callArgs = avpMock.call(0).args[0].input as IsAuthorizedCommandInput;
+        expect(callArgs.action?.actionId).toBe('ReadDashboard');
     });
 
     it('should handle users with no groups', async () => {
@@ -102,7 +101,7 @@ describe('authorizer handler', () => {
             sub: 'user-no-groups',
             // No cognito:groups in payload
         });
-        mockAVPSend.mockResolvedValue({ decision: 'ALLOW' });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
 
         const event = makeEvent();
         const result = await handler(event as any);
@@ -111,8 +110,8 @@ describe('authorizer handler', () => {
         expect(result.policyDocument.Statement[0].Effect).toBe('Allow');
 
         // Should pass empty groups array
-        const avpCall = mockAVPSend.mock.calls[0][0];
-        expect(avpCall.entities.entityList[0].attributes.groups.set).toEqual([]);
+        const callArgs = avpMock.call(0).args[0].input as IsAuthorizedCommandInput;
+        expect(callArgs.entities?.entityList?.[0]?.attributes?.groups?.set).toEqual([]);
     });
 
     it('should throw Unauthorized on invalid token', async () => {
@@ -128,7 +127,7 @@ describe('authorizer handler', () => {
             sub: 'user-123',
             'cognito:groups': ['admin'],
         });
-        mockAVPSend.mockRejectedValue(new Error('AVP service error'));
+        avpMock.on(IsAuthorizedCommand).rejects(new Error('AVP service error'));
 
         const event = makeEvent();
 

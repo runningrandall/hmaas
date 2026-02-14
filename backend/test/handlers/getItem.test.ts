@@ -6,11 +6,18 @@ import { AppError } from '../../src/lib/error';
 // Mock dependencies
 vi.mock('../../src/adapters/dynamo-item-repository');
 vi.mock('../../src/adapters/event-bridge-publisher');
-vi.mock('../../src/application/item-service', () => ({
-    ItemService: vi.fn().mockReturnValue({
+vi.mock('../../src/application/item-service', () => {
+    const mockService = {
         getItem: vi.fn(),
-    }),
-}));
+    };
+    return {
+        ItemService: class {
+            constructor() {
+                return mockService;
+            }
+        },
+    };
+});
 
 const makeEvent = (overrides: Record<string, any> = {}) => ({
     headers: { 'Content-Type': 'application/json' },

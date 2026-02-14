@@ -1,203 +1,154 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Home from '../../app/page';
 
-// Mock the API module
-vi.mock('../../lib/api', () => ({
-    listItems: vi.fn(),
-    createItem: vi.fn(),
-    deleteItem: vi.fn(),
+// Mock child components to simplify testing
+vi.mock('../../components/LocationPicker', () => ({
+    default: ({ onLocationSelect }: { onLocationSelect: (loc: { lat: number; lng: number }) => void }) => (
+        <div data-testid="location-picker">
+            <button
+                type="button"
+                onClick={() => onLocationSelect({ lat: 40.7, lng: -111.9 })}
+            >
+                Select Location
+            </button>
+        </div>
+    ),
 }));
 
-import { listItems, createItem, deleteItem } from '../../lib/api';
+vi.mock('../../components/PhotoUploader', () => ({
+    default: ({ onFilesChange }: { onFilesChange: (files: File[]) => void }) => (
+        <div data-testid="photo-uploader">
+            <button
+                type="button"
+                onClick={() => onFilesChange([new File(['content'], 'test.jpg', { type: 'image/jpeg' })])}
+            >
+                Add Photo
+            </button>
+        </div>
+    ),
+}));
 
-describe('Home page', () => {
+vi.mock('../../components/TimePicker12Hour', () => ({
+    TimePicker12Hour: ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
+        <input
+            data-testid="time-picker"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+        />
+    ),
+}));
+
+// Mock react-google-recaptcha-v3
+vi.mock('react-google-recaptcha-v3', () => ({
+    GoogleReCaptchaProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    useGoogleReCaptcha: () => ({
+        executeRecaptcha: vi.fn().mockResolvedValue('mock-captcha-token'),
+    }),
+}));
+
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
+
+describe('ReportForm', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        // Default: no items
-        (listItems as ReturnType<typeof vi.fn>).mockResolvedValue([]);
-        // Set API URL env var so the page renders
-        vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3001/');
+        vi.stubEnv('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', 'mock-key');
+        vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3000');
+        vi.stubEnv('NEXT_PUBLIC_RECAPTCHA_SITE_KEY', 'mock-site-key');
     });
 
-    it('should render the page title', async () => {
+    it('should render the form title', () => {
         render(<Home />);
-
-        expect(screen.getByText('Serverless Template App')).toBeInTheDocument();
+        expect(screen.getByText('S&L Construction')).toBeInTheDocument();
+        expect(screen.getByText('Report a Concern')).toBeInTheDocument();
     });
 
-    it('should show loading state then items', async () => {
-        const mockItems = [
-            { itemId: '1', name: 'Alpha', description: 'desc', pk: 'pk', sk: 'sk', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
-            { itemId: '2', name: 'Beta', description: 'desc', pk: 'pk', sk: 'sk', createdAt: '2024-01-02', updatedAt: '2024-01-02' },
-        ];
-        (listItems as ReturnType<typeof vi.fn>).mockResolvedValue(mockItems);
+    it('should allow filling out the form and submitting', async () => {
+        // Mock getUploadUrl
+        mockFetch.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ uploadUrl: 'http://upload-url', key: 'image-key' }),
+        });
+        // Mock uploadImage (PUT)
+        mockFetch.mockResolvedValueOnce({
+            ok: true,
+        });
+        // Mock createReport (POST)
+        mockFetch.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ reportId: '123' }),
+        });
 
         render(<Home />);
+
+        // Fill inputs
+        fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: 'John Doe' } });
+        fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: 'john@example.com' } });
+
+        // Select concern type
+        fireEvent.change(screen.getByLabelText(/Type of Concern/i), { target: { value: 'Visibile Sediment / Dirty Water' } }); // Note: typo in source? "Visible"
+
+        const concernSelect = screen.getByLabelText(/Type of Concern/i);
+        fireEvent.change(concernSelect, { target: { value: 'Visible Sediment / Dirty Water' } });
+
+        // Select location
+        fireEvent.click(screen.getByText('Select Location'));
+
+        // Add photo
+        fireEvent.click(screen.getByText('Add Photo'));
+
+        // Submit
+        const submitBtn = screen.getByText('Submit Report');
+        expect(submitBtn).toBeEnabled();
+        fireEvent.click(submitBtn);
 
         await waitFor(() => {
-            expect(screen.getByText('Alpha')).toBeInTheDocument();
-            expect(screen.getByText('Beta')).toBeInTheDocument();
+            expect(mockFetch).toHaveBeenCalledTimes(3); // getUploadUrl, upload, createReport
+        });
+
+        // Verify createReport call payload
+        const createReportCall = mockFetch.mock.calls[2];
+        expect(createReportCall[0]).toContain('/reports');
+        expect(JSON.parse(createReportCall[1].body)).toEqual(expect.objectContaining({
+            name: 'John Doe',
+            email: 'john@example.com',
+            concernType: 'Visible Sediment / Dirty Water',
+            imageKeys: ['image-key'],
+            location: { lat: 40.7, lng: -111.9 },
+        }));
+
+        // Expect success message
+        await waitFor(() => {
+            expect(screen.getByText('Report Submitted!')).toBeInTheDocument();
         });
     });
 
-    it('should show empty state when no items', async () => {
-        (listItems as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+    it('should show error if submission fails', async () => {
+        // Mock getUploadUrl
+        mockFetch.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ uploadUrl: 'http://upload-url', key: 'image-key' }),
+        });
+        // Mock uploadImage
+        mockFetch.mockResolvedValueOnce({ ok: true });
+        // Mock createReport failure
+        mockFetch.mockResolvedValueOnce({ ok: false });
 
         render(<Home />);
+
+        // Fill minimal required
+        fireEvent.change(screen.getByLabelText(/Type of Concern/i), { target: { value: 'Other' } });
+        fireEvent.click(screen.getByText('Select Location'));
+        fireEvent.click(screen.getByText('Add Photo'));
+
+        // Spy on window.alert
+        const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { });
+
+        fireEvent.click(screen.getByText('Submit Report'));
 
         await waitFor(() => {
-            expect(screen.getByText('No items found. Create one above!')).toBeInTheDocument();
+            expect(alertSpy).toHaveBeenCalledWith('Failed to submit report. Please try again.');
         });
-    });
-
-    it('should create a new item', async () => {
-        const newItem = { itemId: '3', name: 'New Item', description: 'Created via Web UI', pk: 'pk', sk: 'sk', createdAt: '2024-01-03', updatedAt: '2024-01-03' };
-        (createItem as ReturnType<typeof vi.fn>).mockResolvedValue(newItem);
-
-        render(<Home />);
-
-        const input = screen.getByPlaceholderText('Item name...');
-        fireEvent.change(input, { target: { value: 'New Item' } });
-
-        const addButton = screen.getByText('Add');
-        await waitFor(() => expect(addButton).not.toBeDisabled());
-        fireEvent.click(addButton);
-
-        await waitFor(() => {
-            expect(createItem).toHaveBeenCalledWith('New Item', 'Created via Web UI');
-            expect(screen.getByText('New Item')).toBeInTheDocument();
-        });
-    });
-
-    it('should not submit empty item name', async () => {
-        render(<Home />);
-
-        const addButton = screen.getByText('Add');
-        expect(addButton).toBeDisabled();
-    });
-
-    it('should show error on listItems failure', async () => {
-        const error = new Error('Network error');
-        (listItems as ReturnType<typeof vi.fn>).mockRejectedValue(error);
-
-        render(<Home />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Network error')).toBeInTheDocument();
-        });
-    });
-
-    it('should show error on createItem failure', async () => {
-        (createItem as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Create failed'));
-
-        render(<Home />);
-
-        const input = screen.getByPlaceholderText('Item name...');
-        fireEvent.change(input, { target: { value: 'Fail Item' } });
-
-        const addButton = screen.getByText('Add');
-        await waitFor(() => expect(addButton).not.toBeDisabled());
-        fireEvent.click(addButton);
-
-        await waitFor(() => {
-            expect(screen.getByText('Create failed')).toBeInTheDocument();
-        });
-    });
-
-    it('should show configuration required when API URL is not set', () => {
-        vi.stubEnv('NEXT_PUBLIC_API_URL', '');
-
-        render(<Home />);
-
-        expect(screen.getByText('Configuration Required')).toBeInTheDocument();
-    });
-
-    it('should render navigation links', async () => {
-        render(<Home />);
-
-        expect(screen.getByText('Login / Sign Up')).toBeInTheDocument();
-        expect(screen.getByText('Profile')).toBeInTheDocument();
-        expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
-    });
-
-    it('should have a refresh button', async () => {
-        render(<Home />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Refresh')).toBeInTheDocument();
-        });
-    });
-
-    it('should delete an item', async () => {
-        const mockItems = [{ itemId: '1', name: 'Delete Me', description: 'desc', pk: 'pk', sk: 'sk', createdAt: '2024-01-01', updatedAt: '2024-01-01' }];
-        (listItems as ReturnType<typeof vi.fn>).mockResolvedValue(mockItems);
-        (deleteItem as ReturnType<typeof vi.fn>).mockResolvedValue({ message: 'deleted' });
-
-        // Mock window.confirm
-        const confirmSpy = vi.spyOn(window, 'confirm');
-        confirmSpy.mockImplementation(() => true);
-
-        render(<Home />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Delete Me')).toBeInTheDocument();
-        });
-
-        const deleteButtons = screen.getAllByText('Delete');
-        fireEvent.click(deleteButtons[0]);
-
-        await waitFor(() => {
-            expect(deleteItem).toHaveBeenCalledWith('1');
-            expect(screen.queryByText('Delete Me')).not.toBeInTheDocument();
-        });
-
-        confirmSpy.mockRestore();
-    });
-
-    it('should not delete if confirm cancelled', async () => {
-        const mockItems = [{ itemId: '1', name: 'Keep Me', description: 'desc', pk: 'pk', sk: 'sk', createdAt: '2024-01-01', updatedAt: '2024-01-01' }];
-        (listItems as ReturnType<typeof vi.fn>).mockResolvedValue(mockItems);
-
-        const confirmSpy = vi.spyOn(window, 'confirm');
-        confirmSpy.mockImplementation(() => false);
-
-        render(<Home />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Keep Me')).toBeInTheDocument();
-        });
-
-        const deleteButtons = screen.getAllByText('Delete');
-        fireEvent.click(deleteButtons[0]);
-
-        expect(deleteItem).not.toHaveBeenCalled();
-        expect(screen.getByText('Keep Me')).toBeInTheDocument();
-
-        confirmSpy.mockRestore();
-    });
-
-    it('should show error on delete failure', async () => {
-        const mockItems = [{ itemId: '1', name: 'Error Item', description: 'desc', pk: 'pk', sk: 'sk', createdAt: '2024-01-01', updatedAt: '2024-01-01' }];
-        (listItems as ReturnType<typeof vi.fn>).mockResolvedValue(mockItems);
-        (deleteItem as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Delete failed'));
-
-        const confirmSpy = vi.spyOn(window, 'confirm');
-        confirmSpy.mockImplementation(() => true);
-
-        render(<Home />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Error Item')).toBeInTheDocument();
-        });
-
-        const deleteButtons = screen.getAllByText('Delete');
-        fireEvent.click(deleteButtons[0]);
-
-        await waitFor(() => {
-            expect(screen.getByText('Delete failed')).toBeInTheDocument();
-        });
-
-        confirmSpy.mockRestore();
     });
 });

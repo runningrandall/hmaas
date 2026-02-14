@@ -1,22 +1,13 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { mockClient } from 'aws-sdk-client-mock';
+import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { handler } from '../../src/handlers/seedData';
 
-// Mock DynamoDB client
-vi.mock('@aws-sdk/client-dynamodb', () => {
-    const mockSend = vi.fn();
-    return {
-        DynamoDBClient: vi.fn(() => ({ send: mockSend })),
-        PutItemCommand: vi.fn((params: any) => ({ input: params })),
-        ScanCommand: vi.fn(),
-        __mockSend: mockSend, // export for test access
-    };
-});
+const ddbMock = mockClient(DynamoDBClient);
 
 // Mock fetch for CloudFormation response
 const mockFetch = vi.fn().mockResolvedValue({ status: 200 });
 vi.stubGlobal('fetch', mockFetch);
-
-const { __mockSend: mockSend } = await import('@aws-sdk/client-dynamodb') as any;
 
 const makeEvent = (requestType: string) => ({
     RequestType: requestType,
@@ -49,17 +40,18 @@ const makeContext = () => ({
 
 describe('seedData handler', () => {
     beforeEach(() => {
+        ddbMock.reset();
         vi.clearAllMocks();
         mockFetch.mockResolvedValue({ status: 200 });
     });
 
     it('should seed data on Create event', async () => {
-        mockSend.mockResolvedValue({});
+        ddbMock.on(PutItemCommand).resolves({});
 
         await handler(makeEvent('Create') as any, makeContext() as any);
 
         // Should have called PutItem for each seed item (5 items)
-        expect(mockSend).toHaveBeenCalledTimes(5);
+        expect(ddbMock.calls()).toHaveLength(5);
 
         // Should have sent SUCCESS response to CloudFormation
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -70,11 +62,11 @@ describe('seedData handler', () => {
     });
 
     it('should seed data on Update event', async () => {
-        mockSend.mockResolvedValue({});
+        ddbMock.on(PutItemCommand).resolves({});
 
         await handler(makeEvent('Update') as any, makeContext() as any);
 
-        expect(mockSend).toHaveBeenCalledTimes(5);
+        expect(ddbMock.calls()).toHaveLength(5);
 
         const responseBody = JSON.parse(mockFetch.mock.calls[0][1].body);
         expect(responseBody.Status).toBe('SUCCESS');
@@ -83,7 +75,7 @@ describe('seedData handler', () => {
     it('should skip existing items without failing', async () => {
         const conditionalError = new Error('Condition not met');
         (conditionalError as any).name = 'ConditionalCheckFailedException';
-        mockSend.mockRejectedValue(conditionalError);
+        ddbMock.on(PutItemCommand).rejects(conditionalError);
 
         await handler(makeEvent('Create') as any, makeContext() as any);
 
@@ -96,7 +88,7 @@ describe('seedData handler', () => {
         await handler(makeEvent('Delete') as any, makeContext() as any);
 
         // Should not call DynamoDB at all
-        expect(mockSend).not.toHaveBeenCalled();
+        expect(ddbMock.calls()).toHaveLength(0);
 
         // Should still respond SUCCESS to CloudFormation
         const responseBody = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -104,7 +96,7 @@ describe('seedData handler', () => {
     });
 
     it('should report FAILED status on unexpected error', async () => {
-        mockSend.mockRejectedValue(new Error('Access Denied'));
+        ddbMock.on(PutItemCommand).rejects(new Error('Access Denied'));
 
         await handler(makeEvent('Create') as any, makeContext() as any);
 
