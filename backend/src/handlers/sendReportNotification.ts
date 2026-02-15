@@ -17,6 +17,7 @@ export const handler = async (event: EventBridgeEvent<'ReportCreated', ReportCre
     logger.info('Received ReportCreated event', { event });
 
     const { reportId, description, locationDescription, location } = event.detail as any;
+    // Link format: /admin/reports/details?id={reportId}
     const adminUrl = `${process.env.FRONTEND_URL}/admin/reports/details?id=${reportId}`;
     const senderEmail = process.env.SENDER_EMAIL; // The email address to send FROM (must be verified in SES)
     const recipientEmail = process.env.RECIPIENT_EMAIL; // The admin email to send TO

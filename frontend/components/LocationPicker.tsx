@@ -34,7 +34,7 @@ export default function LocationPicker({
 
   const initMap = () => {
     if (mapRef.current && !map) {
-      const defaultLocation = { lat: 40.69, lng: -111.68 }; // Centered on markers
+      const defaultLocation = { lat: 40.6998, lng: -111.7454 }; // Centered on Millcreek Canyon
       const startLocation = initialLocation || defaultLocation;
 
       const newMap = new window.google.maps.Map(mapRef.current, {
@@ -162,7 +162,8 @@ export default function LocationPicker({
         onLocationSelect(selectedLocation);
       });
 
-      // Try to get current location
+      // Try to get current location - DISABLED per requirement to center on Millcreek
+      /*
       if (navigator.geolocation && !initialLocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -178,6 +179,7 @@ export default function LocationPicker({
           }
         );
       }
+      */
     }
   };
 

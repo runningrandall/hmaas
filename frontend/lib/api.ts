@@ -54,14 +54,14 @@ async function getHeaders() {
 
 export async function listItems() {
     const headers = await getHeaders();
-    const res = await fetch(`${API_URL}items`, { headers, cache: 'no-store' });
+    const res = await fetch(`${API_URL}/items`, { headers, cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch items');
     return res.json();
 }
 
 export async function createItem(name: string, description: string) {
     const headers = await getHeaders();
-    const res = await fetch(`${API_URL}items`, {
+    const res = await fetch(`${API_URL}/items`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ name, description }),
@@ -72,7 +72,7 @@ export async function createItem(name: string, description: string) {
 
 export async function deleteItem(itemId: string) {
     const headers = await getHeaders();
-    const res = await fetch(`${API_URL}items/${itemId}`, {
+    const res = await fetch(`${API_URL}/items/${itemId}`, {
         method: 'DELETE',
         headers,
     });
@@ -95,7 +95,7 @@ export async function listReports(limit: number = 20, nextToken?: string | null,
 
 export async function getReport(reportId: string): Promise<Report> {
     const headers = await getHeaders();
-    const res = await fetch(`${API_URL}reports/${reportId}`, { headers, cache: 'no-store' });
+    const res = await fetch(`${API_URL}/reports/${reportId}`, { headers, cache: 'no-store' });
     if (!res.ok) {
         if (res.status === 404) throw new Error('Report not found');
         if (res.status === 403) throw new Error('Access denied');

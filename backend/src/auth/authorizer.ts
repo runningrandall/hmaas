@@ -12,7 +12,7 @@ const verifier = CognitoJwtVerifier.create({
     clientId: clientId,
 });
 
-const avp = new VerifiedPermissionsClient({});
+const avp = new VerifiedPermissionsClient({ region: process.env.REGION || process.env.AWS_REGION });
 
 export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<AuthResponse> => {
     console.log("Authorizer Event:", JSON.stringify(event));

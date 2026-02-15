@@ -343,6 +343,7 @@ export class InfraStack extends cdk.Stack {
         USER_POOL_ID: props.auth.userPool.userPoolId,
         USER_POOL_CLIENT_ID: props.auth.userPoolClient.userPoolClientId,
         POLICY_STORE_ID: props.auth.policyStoreId,
+        REGION: this.region,
       },
       bundling: {
         minify: true,
@@ -352,7 +353,7 @@ export class InfraStack extends cdk.Stack {
 
     authLambda.addToRolePolicy(new iam.PolicyStatement({
       actions: ['verifiedpermissions:IsAuthorized'],
-      resources: [`arn:aws:verifiedpermissions:${this.region}:${this.account}:policy-store/${props.auth.policyStoreId}`],
+      resources: [`arn:aws:verifiedpermissions:*:${this.account}:policy-store/${props.auth.policyStoreId}`],
     }));
 
     const authorizer = new apigateway.TokenAuthorizer(this, 'APIGatewayAuthorizer', {

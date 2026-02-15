@@ -11,7 +11,7 @@ const verifier = aws_jwt_verify_1.CognitoJwtVerifier.create({
     tokenUse: "access",
     clientId: clientId,
 });
-const avp = new client_verifiedpermissions_1.VerifiedPermissionsClient({});
+const avp = new client_verifiedpermissions_1.VerifiedPermissionsClient({ region: process.env.REGION || process.env.AWS_REGION });
 const handler = async (event) => {
     console.log("Authorizer Event:", JSON.stringify(event));
     try {

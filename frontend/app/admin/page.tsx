@@ -176,7 +176,7 @@ export default function AdminDashboard() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={() => router.push(`/admin/reports/${report.reportId}`)}
+                                                        onClick={() => router.push(`/admin/reports/details?id=${report.reportId}`)}
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
