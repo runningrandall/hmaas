@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "S&L Storm Water Reporting",
-  description: "Report storm water concerns to S&L Construction",
+  title: "Versa Property Management",
+  description: "Premium property management services - lawn care, pest control, window cleaning, and more in one simple bundle.",
 };
 
 export default function RootLayout({

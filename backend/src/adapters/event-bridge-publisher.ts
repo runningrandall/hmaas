@@ -1,4 +1,4 @@
-import { EventPublisher } from "../domain/item";
+import { EventPublisher } from "../domain/shared";
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { tracer, logger } from "../lib/observability";
 
@@ -20,7 +20,7 @@ export class EventBridgePublisher implements EventPublisher {
         try {
             await this.client.send(new PutEventsCommand({
                 Entries: [{
-                    Source: 'test.api',
+                    Source: 'versa.api',
                     DetailType: eventName,
                     Detail: JSON.stringify(payload),
                     EventBusName: this.busName,

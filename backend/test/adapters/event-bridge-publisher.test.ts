@@ -31,7 +31,7 @@ describe('EventBridgePublisher', () => {
         const callArgs = ebMock.call(0).args[0].input;
         expect(callArgs).toEqual(expect.objectContaining({
             Entries: [{
-                Source: 'test.api',
+                Source: 'versa.api',
                 DetailType: 'ItemCreated',
                 Detail: JSON.stringify({ itemId: '123', name: 'Test' }),
                 EventBusName: 'test-bus',

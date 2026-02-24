@@ -2,46 +2,26 @@
 
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
-import { listReports, Report } from '../../lib/api';
+import { useEffect, useState } from 'react';
+import { customersApi, Customer } from '../../lib/api';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, Eye, Search, ChevronLeft, ChevronRight } from "lucide-react"
-import { useDebounce } from 'use-debounce';
+import { Trash2, Plus, Loader2, Users, Building2, Wrench, DollarSign } from "lucide-react"
 
 export default function AdminDashboard() {
     const { authStatus } = useAuthenticator((context) => [context.authStatus]);
     const router = useRouter();
     const [isAuthorized, setIsAuthorized] = useState(false);
-
-    // Data State
-    const [reports, setReports] = useState<Report[]>([]);
-    const [nextToken, setNextToken] = useState<string | null>(null);
-
-
-    // UI State
-    const [search, setSearch] = useState('');
-    const [debouncedSearch] = useDebounce(search, 500);
-    const [loading, setLoading] = useState(false);
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [newFirstName, setNewFirstName] = useState('');
+    const [newLastName, setNewLastName] = useState('');
+    const [newEmail, setNewEmail] = useState('');
     const [error, setError] = useState('');
-
-    const loadReports = useCallback(async (token: string | null = null, searchQuery: string = '') => {
-        setLoading(true);
-        try {
-            const data = await listReports(10, token, searchQuery);
-            setReports(data.items);
-            setNextToken(data.nextToken);
-            setError('');
-        } catch (err: unknown) {
-            console.error(err);
-            setError('Failed to load reports.');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const [loading, setLoading] = useState(false);
+    const [creating, setCreating] = useState(false);
 
     useEffect(() => {
         if (authStatus === 'unauthenticated') {
@@ -53,7 +33,7 @@ export default function AdminDashboard() {
 
                 if (userGroups.includes('Admin') || userGroups.includes('Manager')) {
                     setIsAuthorized(true);
-                    // Initial load happens in the search effect below
+                    loadCustomers();
                 } else {
                     router.push('/profile');
                 }
@@ -61,41 +41,53 @@ export default function AdminDashboard() {
         }
     }, [authStatus, router]);
 
-    // Search Effect - Reset pagination on search change
-    useEffect(() => {
-        if (isAuthorized) {
-            loadReports(null, debouncedSearch);
-        }
-    }, [debouncedSearch, isAuthorized, loadReports]);
-
-
-
-    // Let's use a simpler approach:
-    // `currentStartToken`: The token used to fetch the current page.
-    // `history`: Array of tokens used for previous pages.
-    const [currentStartToken, setCurrentStartToken] = useState<string | null>(null);
-    const [history, setHistory] = useState<string[]>([]);
-
-    const fetchPage = (token: string | null) => {
-        loadReports(token, debouncedSearch);
-        setCurrentStartToken(token);
-    };
-
-    const onNext = () => {
-        if (nextToken) {
-            setHistory(prev => [...prev, currentStartToken || 'HEAD']); // Use 'HEAD' for null to distinguish
-            fetchPage(nextToken);
+    const loadCustomers = async () => {
+        setLoading(true);
+        try {
+            const data = await customersApi.list();
+            setCustomers(data.items || []);
+            setError('');
+        } catch (err: unknown) {
+            console.error(err);
+            setError('Failed to load customers. You might not have permission.');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const onPrev = () => {
-        if (history.length === 0) return;
-        const prevToken = history[history.length - 1];
-        const newHistory = history.slice(0, -1);
-        setHistory(newHistory);
-        fetchPage(prevToken === 'HEAD' ? null : prevToken);
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newFirstName.trim() || !newLastName.trim() || !newEmail.trim()) return;
+
+        setCreating(true);
+        try {
+            await customersApi.create({
+                firstName: newFirstName,
+                lastName: newLastName,
+                email: newEmail,
+            });
+            setNewFirstName('');
+            setNewLastName('');
+            setNewEmail('');
+            await loadCustomers();
+        } catch {
+            setError('Failed to create customer');
+        } finally {
+            setCreating(false);
+        }
     };
 
+    const handleDelete = async (customerId: string) => {
+        if (!confirm('Are you sure you want to delete this customer?')) return;
+
+        try {
+            await customersApi.delete(customerId);
+            await loadCustomers();
+        } catch (err: unknown) {
+            console.error(err);
+            setError('Failed to delete customer');
+        }
+    };
 
     if (authStatus !== 'authenticated' || !isAuthorized) {
         return (
@@ -108,30 +100,96 @@ export default function AdminDashboard() {
 
     return (
         <div className="space-y-6">
+            <div>
+                <h1 className="text-2xl font-bold">Versa Admin Dashboard</h1>
+                <p className="text-muted-foreground">Manage customers, properties, services, and more.</p>
+            </div>
+
             {error && (
                 <div className="bg-destructive/15 text-destructive p-3 rounded-md border border-destructive/20 text-sm">
                     {error}
                 </div>
             )}
-            <div className="flex justify-between items-center bg-card p-4 rounded-lg border shadow-sm">
-                <h2 className="text-lg font-semibold">Reports ({reports.length} visible)</h2>
-                <div className="relative w-64">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search reports..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="pl-8"
-                    />
-                </div>
+
+            <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Customers</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{customers.length}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Properties</CardTitle>
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">-</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Active Services</CardTitle>
+                        <Wrench className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">-</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">-</div>
+                    </CardContent>
+                </Card>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Reports List</CardTitle>
-                    <CardDescription>
-                        {debouncedSearch ? `Searching for "${debouncedSearch}"` : "Most recent submissions"}
-                    </CardDescription>
+                    <CardTitle>Add Customer</CardTitle>
+                    <CardDescription>Create a new customer with an associated account.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleCreate} className="flex gap-2">
+                        <Input
+                            type="text"
+                            value={newFirstName}
+                            onChange={(e) => setNewFirstName(e.target.value)}
+                            placeholder="First Name"
+                            className="flex-1"
+                        />
+                        <Input
+                            type="text"
+                            value={newLastName}
+                            onChange={(e) => setNewLastName(e.target.value)}
+                            placeholder="Last Name"
+                            className="flex-1"
+                        />
+                        <Input
+                            type="email"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            placeholder="Email"
+                            className="flex-1"
+                        />
+                        <Button type="submit" disabled={creating || !newFirstName.trim() || !newLastName.trim() || !newEmail.trim()}>
+                            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                            Add
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Customer Management</CardTitle>
+                    <CardDescription>View and manage existing customers.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
@@ -139,76 +197,54 @@ export default function AdminDashboard() {
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            <Table>
-                                <TableHeader>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {customers.length === 0 ? (
                                     <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead>Location</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                            No customers found. Create one above!
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {reports.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                                                No reports found.
+                                ) : (
+                                    customers.map((customer) => (
+                                        <TableRow key={customer.customerId}>
+                                            <TableCell className="font-medium">{customer.firstName} {customer.lastName}</TableCell>
+                                            <TableCell>{customer.email}</TableCell>
+                                            <TableCell>
+                                                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                                                    customer.status === 'active' ? 'bg-green-100 text-green-700' :
+                                                    customer.status === 'inactive' ? 'bg-gray-100 text-gray-700' :
+                                                    'bg-red-100 text-red-700'
+                                                }`}>
+                                                    {customer.status}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleDelete(customer.customerId)}
+                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
-                                    ) : (
-                                        reports.map((report) => (
-                                            <TableRow key={report.reportId}>
-                                                <TableCell className="font-medium whitespace-nowrap">
-                                                    {new Date(report.createdAt).toLocaleDateString()}
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {new Date(report.createdAt).toLocaleTimeString()}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="max-w-md truncate">
-                                                    <div className="font-medium">{report.concernType}</div>
-                                                    <div className="text-sm text-muted-foreground truncate">{report.description}</div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {report.emailLocation || (report.location ? `${report.location.lat.toFixed(4)}, ${report.location.lng.toFixed(4)}` : 'N/A')}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => router.push(`/admin/reports/details?id=${report.reportId}`)}
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
                     )}
                 </CardContent>
-                <CardFooter className="flex justify-between border-t p-4">
-                    <Button
-                        variant="outline"
-                        onClick={onPrev}
-                        disabled={history.length === 0 || loading}
-                    >
-                        <ChevronLeft className="h-4 w-4 mr-2" />
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={onNext}
-                        disabled={!nextToken || loading}
-                    >
-                        Next
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                    </Button>
-                </CardFooter>
             </Card>
         </div>
     );
 }
-

@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Inbox, Search, Settings, User } from "lucide-react"
+import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings } from "lucide-react"
 
 import {
     Sidebar,
@@ -13,49 +13,67 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-// Menu items.
-const items = [
-    {
-        title: "Dashboard",
-        url: "/admin",
-        icon: Home,
-    },
-    {
-        title: "Profile",
-        url: "/profile",
-        icon: User,
-    },
-    {
-        title: "Inbox",
-        url: "#",
-        icon: Inbox,
-    },
-    {
-        title: "Calendar",
-        url: "#",
-        icon: Calendar,
-    },
-    {
-        title: "Search",
-        url: "#",
-        icon: Search,
-    },
-    {
-        title: "Settings",
-        url: "#",
-        icon: Settings,
-    },
+const managementItems = [
+    { title: "Dashboard", url: "/admin", icon: Home },
+    { title: "Customers", url: "/admin/customers", icon: Users },
+    { title: "Properties", url: "/admin/properties", icon: Building2 },
+    { title: "Services", url: "/admin/services", icon: Wrench },
+    { title: "Plans", url: "/admin/plans", icon: FileText },
+]
+
+const operationsItems = [
+    { title: "Schedules", url: "/admin/schedules", icon: Calendar },
+    { title: "Employees", url: "/admin/employees", icon: UserCog },
+    { title: "Invoices", url: "/admin/invoices", icon: DollarSign },
+]
+
+const systemItems = [
+    { title: "Settings", url: "/admin/settings", icon: Settings },
 ]
 
 export function AppSidebar() {
     return (
-        <Sidebar variant="inset" collapsible="icon">
+        <Sidebar>
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarGroupLabel>Application</SidebarGroupLabel>
+                    <SidebarGroupLabel>Management</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {items.map((item) => (
+                            {managementItems.map((item) => (
+                                <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuButton asChild>
+                                        <a href={item.url}>
+                                            <item.icon />
+                                            <span>{item.title}</span>
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+                <SidebarGroup>
+                    <SidebarGroupLabel>Operations</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {operationsItems.map((item) => (
+                                <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuButton asChild>
+                                        <a href={item.url}>
+                                            <item.icon />
+                                            <span>{item.title}</span>
+                                        </a>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+                <SidebarGroup>
+                    <SidebarGroupLabel>System</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu>
+                            {systemItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild>
                                         <a href={item.url}>

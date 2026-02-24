@@ -6,17 +6,14 @@ import { AuthStack } from '../lib/auth-stack';
 
 test('Infra Stack Created', () => {
     const app = new cdk.App();
-    // WHEN
     const authStack = new AuthStack(app, 'AuthStack', {
         stageName: 'test',
     });
     const infraStack = new InfraStack(app, 'InfraStack', {
         auth: authStack,
         stageName: 'test',
-        frontendUrl: 'http://localhost:3000',
     });
 
-    // THEN
     const template = Template.fromStack(infraStack);
 
     // Verify DynamoDB Table
@@ -28,10 +25,11 @@ test('Infra Stack Created', () => {
     // Verify API Gateway
     template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
     template.hasResourceProperties('AWS::ApiGateway::RestApi', {
-        Name: 'Template Service test',
+        Name: 'Versa Service test',
     });
 
-
+    // Verify nested stacks are created
+    template.resourceCountIs('AWS::CloudFormation::Stack', 6);
 });
 
 test('Auth Stack Created', () => {

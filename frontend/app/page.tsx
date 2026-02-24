@@ -1,433 +1,72 @@
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
-import Script from "next/script";
-import {
-  GoogleReCaptchaProvider,
-  useGoogleReCaptcha,
-} from "react-google-recaptcha-v3";
-import LocationPicker from "../components/LocationPicker";
-import PhotoUploader from "../components/PhotoUploader";
-import { TimePicker12Hour } from "../components/TimePicker12Hour";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Loader2, CheckCircle2 } from "lucide-react";
-
-const CONCERN_TYPES = [
-  "Visible Sediment / Dirty Water",
-  "Illicit Discharge / Pollution",
-  "Runoff Flowing Unchecked by Control Devices",
-  "Damaged or Failing Control Devices",
-  "Erosion / Fresh Dirt Slide",
-  "Other",
-] as const;
-
-const RECAPTCHA_SITE_KEY =
-  process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
-
-function ReportForm() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [concernType, setConcernType] = useState("");
-  const [description, setDescription] = useState("");
-  const [locationDescription, setLocationDescription] = useState("");
-  const [dateObserved, setDateObserved] = useState("");
-  const [timeObserved, setTimeObserved] = useState("");
-  const [location, setLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const { executeRecaptcha } = useGoogleReCaptcha();
-
-  const GOOGLE_MAPS_API_KEY =
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
-
-  useEffect(() => {
-    if (!GOOGLE_MAPS_API_KEY) {
-      console.warn("Google Maps API Key is missing!");
-    }
-  }, [GOOGLE_MAPS_API_KEY]);
-
-  const getUploadUrl = async (contentType: string) => {
-    const res = await fetch(
-      `${API_URL}/upload-url?contentType=${encodeURIComponent(contentType)}`
-    );
-    if (!res.ok) throw new Error("Failed to get upload URL");
-    return res.json();
-  };
-
-  const uploadImage = async (url: string, file: File) => {
-    const res = await fetch(url, {
-      method: "PUT",
-      headers: { "Content-Type": file.type },
-      body: file,
-    });
-    if (!res.ok) throw new Error("Failed to upload image");
-  };
-
-  const createReport = async (
-    reportData: {
-      name: string;
-      email: string;
-      phone: string;
-      concernType: string;
-      description: string;
-      locationDescription: string;
-      dateObserved: string;
-      timeObserved: string;
-      location: { lat: number; lng: number };
-      imageKeys: string[];
-      captchaToken: string | null;
-    }
-  ) => {
-    const res = await fetch(`${API_URL}/reports`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(reportData),
-    });
-    if (!res.ok) throw new Error("Failed to create report");
-    return res.json();
-  };
-
-  const formatPhoneNumber = (value: string) => {
-    if (!value) return value;
-    const phoneNumber = value.replace(/[^\d]/g, "");
-    const phoneNumberLength = phoneNumber.length;
-    if (phoneNumberLength < 4) return phoneNumber;
-    if (phoneNumberLength < 7) {
-      return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
-    }
-    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(
-      3,
-      6
-    )}-${phoneNumber.slice(6, 10)}`;
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedPhoneNumber = formatPhoneNumber(e.target.value);
-    setPhone(formattedPhoneNumber);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!concernType || !location || imageFiles.length === 0) {
-      alert(
-        "Please fill in all required fields (Type of Concern, at least one Photo, Location)"
-      );
-      return;
-    }
-
-    // Get reCAPTCHA v3 token
-    let captchaToken: string | null = null;
-    if (RECAPTCHA_SITE_KEY && executeRecaptcha) {
-      try {
-        captchaToken = await executeRecaptcha('submit_report');
-      } catch {
-        alert("CAPTCHA verification failed. Please try again.");
-        return;
-      }
-    }
-
-    setIsSubmitting(true);
-    try {
-      // Upload all images
-      const imageKeys: string[] = [];
-      for (const file of imageFiles) {
-        const { uploadUrl, key } = await getUploadUrl(file.type);
-        await uploadImage(uploadUrl, file);
-        imageKeys.push(key);
-      }
-
-      // Submit report
-      await createReport({
-        name: name || "Anonymous",
-        email,
-        phone,
-        concernType,
-        description,
-        locationDescription,
-        dateObserved,
-        timeObserved,
-        location,
-        imageKeys,
-        captchaToken,
-      });
-
-      setSuccess(true);
-      // Reset
-      setName("");
-      setEmail("");
-      setPhone("");
-      setConcernType("");
-      setDescription("");
-      setLocationDescription("");
-      setDateObserved("");
-      setTimeObserved("");
-      setLocation(null);
-      setImageFiles([]);
-      // reCAPTCHA v3 token is obtained fresh each submit, no reset needed
-    } catch (error) {
-      console.error(error);
-      alert(
-        "Failed to submit report. Please try again."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleLocationSelect = useCallback(
-    (loc: { lat: number; lng: number }) => setLocation(loc),
-    []
-  );
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-primary/30">
-          <CardHeader className="text-center">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-green-500 mb-2" />
-            <CardTitle className="text-green-400">
-              Report Submitted!
-            </CardTitle>
-            <CardDescription>
-              Thank you for reporting the storm water concern. Our team will
-              review it shortly.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              className="w-full bg-primary hover:bg-primary/90"
-              onClick={() => setSuccess(false)}
-            >
-              Submit Another Report
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen p-4 flex flex-col items-center">
-      <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`}
-        strategy="afterInteractive"
-      />
-
-      {/* Header */}
-      <div className="w-full max-w-lg text-center mb-6 mt-4">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          S&L Construction
-        </h1>
-        <div className="h-1 w-16 bg-primary mx-auto mt-2 rounded-full" />
-        <p className="mt-2 text-sm text-muted-foreground">
-          Storm Water Concern Reporting
-        </p>
-      </div>
-
-      <Card className="w-full max-w-lg border-border/50">
-        <CardHeader>
-          <CardTitle className="text-lg">Report a Concern</CardTitle>
-          <CardDescription>
-            Fill out the form below to report a storm water issue.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Name (Optional)</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Leave Blank if you wish to remain anonymous"
-              />
-            </div>
-
-            {/* Contact */}
-            {/* Contact Info Split */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email (Optional)</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone (Optional)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  placeholder="(555) 555-5555"
-                  maxLength={14}
-                />
-              </div>
-            </div>
-
-            {/* Type of Concern */}
-            <div className="space-y-2">
-              <Label htmlFor="concernType">Type of Concern *</Label>
-              <select
-                id="concernType"
-                value={concernType}
-                onChange={(e) => setConcernType(e.target.value)}
-                required
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="">Select</option>
-                {CONCERN_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe what you observed. All details are helpful"
-                rows={3}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
-              />
-            </div>
-
-            {/* Date & Time */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="dateObserved">Date Observed</Label>
-                <div className="relative">
-                  <Input
-                    id="dateObserved"
-                    type="date"
-                    value={dateObserved}
-                    onChange={(e) => setDateObserved(e.target.value)}
-                    className="block w-full [color-scheme:dark] text-foreground bg-transparent border-input placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    style={{ colorScheme: 'dark' }} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="timeObserved">Time Observed</Label>
-                <TimePicker12Hour
-                  id="timeObserved"
-                  value={timeObserved}
-                  onChange={setTimeObserved}
-                />
-              </div>
-            </div>
-
-            {/* Location Description */}
-            <div className="space-y-2">
-              <Label htmlFor="locationDescription">Location Description</Label>
-              <Input
-                id="locationDescription"
-                value={locationDescription}
-                onChange={(e) => setLocationDescription(e.target.value)}
-                placeholder="trail crossing, picnic area"
-              />
-            </div>
-
-            {/* Photos */}
-            <div className="space-y-2">
-              <Label>Photos *</Label>
-              <PhotoUploader
-                files={imageFiles}
-                onFilesChange={setImageFiles}
-              />
-            </div>
-
-            {/* Location */}
-            <div className="space-y-2">
-              <Label>Location *</Label>
-              {GOOGLE_MAPS_API_KEY ? (
-                <LocationPicker
-                  onLocationSelect={handleLocationSelect}
-                  initialLocation={location || undefined}
-                />
-              ) : (
-                <div className="p-4 bg-yellow-900/30 text-yellow-300 rounded text-sm border border-yellow-700/50">
-                  Google Maps API Key missing. Please configure
-                  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.
-                </div>
-              )}
-              {location && (
-                <p className="text-xs text-muted-foreground">
-                  Lat: {location.lat.toFixed(6)}, Lng:{" "}
-                  {location.lng.toFixed(6)}
-                </p>
-              )}
-            </div>
-
-            {/* reCAPTCHA v3 is invisible — no UI widget needed */}
-
-            {/* Submit */}
-            <Button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                "Submit Report"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <div className="mt-8 mb-4 text-center text-xs text-muted-foreground">
-        &copy; {new Date().getFullYear()} S&L Construction &mdash;{" "}
-        <a
-          href="https://sandlinc.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary hover:underline"
-        >
-          sandlinc.com
-        </a>
-      </div>
-    </div>
-  );
-}
-
 export default function Home() {
-  if (!RECAPTCHA_SITE_KEY) {
-    return <ReportForm />;
+  const hasApi = !!process.env.NEXT_PUBLIC_API_URL;
+
+  if (!hasApi) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-100">
+        <div className="rounded-lg bg-white p-8 shadow-md max-w-lg">
+          <h1 className="mb-4 text-2xl font-bold text-red-600">Configuration Required</h1>
+          <p className="mb-4 text-gray-700">
+            Please configure the <code className="bg-gray-200 px-1 py-0.5 rounded">NEXT_PUBLIC_API_URL</code> environment variable.
+          </p>
+          <ol className="list-decimal list-inside space-y-2 text-gray-600">
+            <li>Deploy the backend using <code className="bg-gray-200 px-1 py-0.5 rounded">pnpm --filter infra run deploy</code></li>
+            <li>Copy the <strong>ApiUrl</strong> from the output.</li>
+            <li>Create <code className="bg-gray-200 px-1 py-0.5 rounded">frontend/.env.local</code> and add:</li>
+          </ol>
+          <pre className="mt-4 bg-gray-800 p-4 rounded text-white overflow-x-auto">
+            NEXT_PUBLIC_API_URL=https://your-api-url...
+          </pre>
+        </div>
+      </div>
+    );
   }
+
   return (
-    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
-      <ReportForm />
-    </GoogleReCaptchaProvider>
+    <main className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Versa</h1>
+            <p className="text-sm text-gray-500 mt-1">Premium Property Management</p>
+          </div>
+          <div className="flex gap-4">
+            <a href="/login" className="text-blue-600 hover:underline">Login / Sign Up</a>
+            <a href="/profile" className="text-blue-600 hover:underline">Profile</a>
+            <a href="/admin" className="text-blue-600 hover:underline">Admin Dashboard</a>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">All Your Property Needs, One Simple Bundle</h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Lawn care, pest control, window cleaning, fertilizer, sprinkler maintenance, winterizing, and more.
+            Save money and time with Versa.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
+          {[
+            { name: 'Lawn Care', desc: 'Regular mowing, edging, and maintenance' },
+            { name: 'Pest Control', desc: 'Keep your property pest-free year-round' },
+            { name: 'Window Cleaning', desc: 'Crystal clear windows inside and out' },
+            { name: 'Fertilizer', desc: 'Professional lawn fertilization programs' },
+            { name: 'Sprinkler', desc: 'Installation, repair, and maintenance' },
+            { name: 'Winterizing', desc: 'Prepare your property for winter' },
+            { name: 'Snow Removal', desc: 'Reliable snow clearing services' },
+            { name: 'Gutter Cleaning', desc: 'Keep gutters flowing freely' },
+            { name: 'Power Washing', desc: 'Deep clean driveways, decks, and siding' },
+            { name: 'Tree Trimming', desc: 'Professional tree care and trimming' },
+          ].map((service) => (
+            <div key={service.name} className="rounded-lg bg-white p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <h3 className="font-semibold text-gray-900 mb-2">{service.name}</h3>
+              <p className="text-sm text-gray-600">{service.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
   );
 }

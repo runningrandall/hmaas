@@ -1,6 +1,6 @@
 const { DynamoDBClient, CreateTableCommand, DescribeTableCommand } = require("@aws-sdk/client-dynamodb");
 
-const TABLE_NAME = "s-and-l-utils";
+const TABLE_NAME = "versa-table";
 const ENDPOINT = "http://localhost:8000";
 const REGION = "us-east-1";
 
@@ -28,10 +28,32 @@ const createTable = async () => {
                     AttributeDefinitions: [
                         { AttributeName: "pk", AttributeType: "S" },
                         { AttributeName: "sk", AttributeType: "S" },
+                        { AttributeName: "gsi1pk", AttributeType: "S" },
+                        { AttributeName: "gsi1sk", AttributeType: "S" },
+                        { AttributeName: "gsi2pk", AttributeType: "S" },
+                        { AttributeName: "gsi2sk", AttributeType: "S" },
                     ],
                     KeySchema: [
                         { AttributeName: "pk", KeyType: "HASH" },
                         { AttributeName: "sk", KeyType: "RANGE" },
+                    ],
+                    GlobalSecondaryIndexes: [
+                        {
+                            IndexName: "gsi1",
+                            KeySchema: [
+                                { AttributeName: "gsi1pk", KeyType: "HASH" },
+                                { AttributeName: "gsi1sk", KeyType: "RANGE" },
+                            ],
+                            Projection: { ProjectionType: "ALL" },
+                        },
+                        {
+                            IndexName: "gsi2",
+                            KeySchema: [
+                                { AttributeName: "gsi2pk", KeyType: "HASH" },
+                                { AttributeName: "gsi2sk", KeyType: "RANGE" },
+                            ],
+                            Projection: { ProjectionType: "ALL" },
+                        },
                     ],
                     BillingMode: "PAY_PER_REQUEST",
                 }));

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AdminDashboard from '../../../app/admin/page';
-import * as api from '../../../lib/api';
+import { customersApi } from '../../../lib/api';
 
 // Mocks
 const mockPush = vi.fn();
@@ -29,68 +29,50 @@ vi.mock('aws-amplify/auth', () => ({
     }),
 }));
 
-vi.mock('use-debounce', () => ({
-    useDebounce: <T,>(val: T) => [val],
-}));
-
 describe('AdminDashboard', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('should render reports list', async () => {
-        const mockReports = [
-            { reportId: '1', createdAt: '2024-01-01T10:00:00Z', concernType: 'Safety', description: 'Test', location: { lat: 0, lng: 0 }, imageKeys: [] },
+    it('should render customer list', async () => {
+        const mockCustomers = [
+            { customerId: '1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', status: 'active' },
         ];
-        vi.spyOn(api, 'listReports').mockResolvedValue({ items: mockReports, nextToken: null });
+        vi.spyOn(customersApi, 'list').mockResolvedValue({ items: mockCustomers });
 
         render(<AdminDashboard />);
 
-        // Wait for authorization and data load
         await waitFor(() => {
-            expect(api.listReports).toHaveBeenCalled();
+            expect(customersApi.list).toHaveBeenCalled();
         });
 
         await waitFor(() => {
-            expect(screen.getByText('Safety')).toBeInTheDocument();
+            expect(screen.getByText('John Doe')).toBeInTheDocument();
         });
-        expect(screen.getByText('Test')).toBeInTheDocument();
+        expect(screen.getByText('john@test.com')).toBeInTheDocument();
     });
 
-    it('should handle pagination', async () => {
-        vi.spyOn(api, 'listReports')
-            .mockResolvedValueOnce({ items: [{ reportId: '1', createdAt: '2024-01-01T10:00:00Z', concernType: 'Page1', description: 'Desc1', location: { lat: 0, lng: 0 }, imageKeys: [] }], nextToken: 'token-a' })
-            .mockResolvedValueOnce({ items: [{ reportId: '2', createdAt: '2024-01-01T10:00:00Z', concernType: 'Page2', description: 'Desc2', location: { lat: 0, lng: 0 }, imageKeys: [] }], nextToken: null });
+    it('should render dashboard stat cards', async () => {
+        vi.spyOn(customersApi, 'list').mockResolvedValue({ items: [] });
 
         render(<AdminDashboard />);
 
         await waitFor(() => {
-            expect(screen.getByText('Page1')).toBeInTheDocument();
+            expect(screen.getByText('Customers')).toBeInTheDocument();
         });
 
-        const nextBtn = screen.getByText('Next');
-        expect(nextBtn).toBeEnabled();
-        fireEvent.click(nextBtn);
-
-        await waitFor(() => {
-            expect(screen.getByText('Page2')).toBeInTheDocument();
-        });
+        expect(screen.getByText('Properties')).toBeInTheDocument();
+        expect(screen.getByText('Active Services')).toBeInTheDocument();
+        expect(screen.getByText('Revenue')).toBeInTheDocument();
     });
 
-    it('should handle search', async () => {
-        vi.spyOn(api, 'listReports').mockResolvedValue({ items: [], nextToken: null });
+    it('should show empty state when no customers', async () => {
+        vi.spyOn(customersApi, 'list').mockResolvedValue({ items: [] });
 
         render(<AdminDashboard />);
 
         await waitFor(() => {
-            expect(screen.getByPlaceholderText('Search reports...')).toBeInTheDocument();
-        });
-
-        const searchInput = screen.getByPlaceholderText('Search reports...');
-        fireEvent.change(searchInput, { target: { value: 'query' } });
-
-        await waitFor(() => {
-            expect(api.listReports).toHaveBeenCalledWith(10, null, 'query');
+            expect(screen.getByText('No customers found. Create one above!')).toBeInTheDocument();
         });
     });
 
@@ -100,7 +82,7 @@ describe('AdminDashboard', () => {
             tokens: {
                 accessToken: {
                     payload: {
-                        'cognito:groups': ['User'], // Not Admin
+                        'cognito:groups': ['User'], // Not Admin or Manager
                     },
                 },
             },

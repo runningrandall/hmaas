@@ -31,7 +31,7 @@ export class AuthStack extends cdk.Stack {
         });
 
         // 2. Groups
-        const groups = ['Admin', 'Manager', 'User'];
+        const groups = ['Admin', 'Manager', 'User', 'Servicer', 'Customer'];
         groups.forEach(groupName => {
             new cognito.CfnUserPoolGroup(this, `Group${groupName}`, {
                 userPoolId: this.userPool.userPoolId,
@@ -54,7 +54,7 @@ export class AuthStack extends cdk.Stack {
             },
             schema: {
                 cedarJson: JSON.stringify({
-                    "Test": {
+                    "Versa": {
                         "entityTypes": {
                             "User": {
                                 "shape": {
@@ -69,6 +69,7 @@ export class AuthStack extends cdk.Stack {
                                     }
                                 }
                             },
+                            "Action": {},
                             "Resource": {}
                         },
                         "actions": {
@@ -89,6 +90,60 @@ export class AuthStack extends cdk.Stack {
                                     "principalTypes": ["User"],
                                     "resourceTypes": ["Resource"]
                                 }
+                            },
+                            "ManageCustomers": {
+                                "appliesTo": {
+                                    "principalTypes": ["User"],
+                                    "resourceTypes": ["Resource"]
+                                }
+                            },
+                            "ManageProperties": {
+                                "appliesTo": {
+                                    "principalTypes": ["User"],
+                                    "resourceTypes": ["Resource"]
+                                }
+                            },
+                            "ManagePlans": {
+                                "appliesTo": {
+                                    "principalTypes": ["User"],
+                                    "resourceTypes": ["Resource"]
+                                }
+                            },
+                            "ManageEmployees": {
+                                "appliesTo": {
+                                    "principalTypes": ["User"],
+                                    "resourceTypes": ["Resource"]
+                                }
+                            },
+                            "ManageSchedules": {
+                                "appliesTo": {
+                                    "principalTypes": ["User"],
+                                    "resourceTypes": ["Resource"]
+                                }
+                            },
+                            "ManageInvoices": {
+                                "appliesTo": {
+                                    "principalTypes": ["User"],
+                                    "resourceTypes": ["Resource"]
+                                }
+                            },
+                            "ManageLookups": {
+                                "appliesTo": {
+                                    "principalTypes": ["User"],
+                                    "resourceTypes": ["Resource"]
+                                }
+                            },
+                            "ViewSchedules": {
+                                "appliesTo": {
+                                    "principalTypes": ["User"],
+                                    "resourceTypes": ["Resource"]
+                                }
+                            },
+                            "ViewOwnData": {
+                                "appliesTo": {
+                                    "principalTypes": ["User"],
+                                    "resourceTypes": ["Resource"]
+                                }
                             }
                         }
                     }
@@ -99,7 +154,7 @@ export class AuthStack extends cdk.Stack {
         this.policyStoreId = policyStore.attrPolicyStoreId;
 
         // 5. Policies
-        // Admin: Full Access (Conceptual, simplified)
+        // Admin: Full Access
         new verifiedpermissions.CfnPolicy(this, 'AdminPolicy', {
             policyStoreId: this.policyStoreId,
             definition: {
@@ -110,13 +165,13 @@ export class AuthStack extends cdk.Stack {
             }
         });
 
-        // Manager: Limited Access
+        // Manager: Can manage customers, properties, plans, schedules, invoices, lookups
         new verifiedpermissions.CfnPolicy(this, 'ManagerPolicy', {
             policyStoreId: this.policyStoreId,
             definition: {
                 static: {
-                    description: "Manager can read dashboard and manage users",
-                    statement: `permit(principal, action, resource) when { principal.groups.contains("Manager") && [Test::Action::"ReadDashboard", Test::Action::"ManageUsers"].contains(action) };`
+                    description: "Manager can manage most resources",
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("Manager") && [Action::"ReadDashboard", Action::"ManageUsers", Action::"ManageCustomers", Action::"ManageProperties", Action::"ManagePlans", Action::"ManageSchedules", Action::"ManageInvoices", Action::"ManageLookups"].contains(action) };`
                 }
             }
         });
@@ -127,20 +182,41 @@ export class AuthStack extends cdk.Stack {
             definition: {
                 static: {
                     description: "User can read profile",
-                    statement: `permit(principal, action, resource) when { principal.groups.contains("User") && action == Test::Action::"ReadProfile" };`
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("User") && action == Action::"ReadProfile" };`
                 }
             }
         });
 
+        // Servicer: Can view schedules and own data
+        new verifiedpermissions.CfnPolicy(this, 'ServicerPolicy', {
+            policyStoreId: this.policyStoreId,
+            definition: {
+                static: {
+                    description: "Servicer can view schedules and own data",
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("Servicer") && [Action::"ViewSchedules", Action::"ViewOwnData", Action::"ReadProfile"].contains(action) };`
+                }
+            }
+        });
+
+        // Customer: Can view own data
+        new verifiedpermissions.CfnPolicy(this, 'CustomerPolicy', {
+            policyStoreId: this.policyStoreId,
+            definition: {
+                static: {
+                    description: "Customer can view own data",
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("Customer") && [Action::"ViewOwnData", Action::"ReadProfile"].contains(action) };`
+                }
+            }
+        });
 
         new cdk.CfnOutput(this, 'UserPoolId', { value: this.userPool.userPoolId });
         new cdk.CfnOutput(this, 'UserPoolClientId', { value: this.userPoolClient.userPoolClientId });
         new cdk.CfnOutput(this, 'PolicyStoreId', { value: this.policyStoreId });
 
-        NagSuppressions.addResourceSuppressions(this.userPool, [
-            { id: 'AwsSolutions-COG1', reason: 'Custom password policy used for dev' },
-            { id: 'AwsSolutions-COG2', reason: 'MFA not required for dev' },
-            { id: 'AwsSolutions-COG3', reason: 'Advanced security mode not enforced for dev' },
-        ]);
+        NagSuppressions.addStackSuppressions(this, [
+            { id: 'AwsSolutions-COG1', reason: 'Special character requirement relaxed for dev stage' },
+            { id: 'AwsSolutions-COG2', reason: 'MFA not required for dev stage' },
+            { id: 'AwsSolutions-COG3', reason: 'Advanced security mode not required for dev stage' },
+        ], true);
     }
 }

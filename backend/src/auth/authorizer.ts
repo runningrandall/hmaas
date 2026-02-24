@@ -14,6 +14,37 @@ const verifier = CognitoJwtVerifier.create({
 
 const avp = new VerifiedPermissionsClient({ region: process.env.REGION || process.env.AWS_REGION });
 
+function mapPathToAction(httpMethod: string, resourcePath: string): string {
+    const isRead = httpMethod === 'GET';
+
+    if (resourcePath.startsWith('property-types') || resourcePath.startsWith('service-types') || resourcePath.startsWith('cost-types')) {
+        return isRead ? 'ReadDashboard' : 'ManageLookups';
+    }
+    if (resourcePath.startsWith('customers') || resourcePath.startsWith('accounts') || resourcePath.startsWith('delegates')) {
+        return isRead ? 'ReadDashboard' : 'ManageCustomers';
+    }
+    if (resourcePath.startsWith('properties')) {
+        return isRead ? 'ReadDashboard' : 'ManageProperties';
+    }
+    if (resourcePath.startsWith('plans') || resourcePath.startsWith('property-services') || resourcePath.startsWith('costs')) {
+        return isRead ? 'ReadDashboard' : 'ManagePlans';
+    }
+    if (resourcePath.startsWith('employees') || resourcePath.startsWith('servicers') || resourcePath.startsWith('capabilities')) {
+        return isRead ? 'ReadDashboard' : 'ManageEmployees';
+    }
+    if (resourcePath.startsWith('service-schedules')) {
+        return isRead ? 'ViewSchedules' : 'ManageSchedules';
+    }
+    if (resourcePath.startsWith('invoices') || resourcePath.startsWith('payment-methods') || resourcePath.startsWith('invoice-schedules')) {
+        return isRead ? 'ReadDashboard' : 'ManageInvoices';
+    }
+    if (resourcePath.startsWith('pay-schedules') || resourcePath.startsWith('pay')) {
+        return isRead ? 'ReadDashboard' : 'ManageEmployees';
+    }
+
+    return isRead ? 'ReadDashboard' : 'ManageUsers';
+}
+
 export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<AuthResponse> => {
     console.log("Authorizer Event:", JSON.stringify(event));
 
@@ -23,59 +54,30 @@ export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<Au
         const userId = payload.sub;
         const groups = (payload["cognito:groups"] || []) as string[];
 
-        // Map Method/Path to Action
-        // This is a naive mapping for demonstration.
-        // Real world would be more granular or use context.
-        // Resource is currently global "Resource" for simplicity in AVP schema.
-
-        let action = "ReadDashboard"; // Default safer read action
-        // Actually methodArn is the ARN of the method being called.
-        // But we might want to just check generic permissions.
-
-        // Let's infer action from the request context if possible, but Token Authorizer doesn't give path directly in event root
-        // The event.methodArn contains it.
-        // arn:aws:execute-api:region:account-id:api-id/stage-name/HTTP-VERB/resource-path-specifier
-
         const arnParts = event.methodArn.split('/');
-        const httpMethod = arnParts[2]; // GET, POST
-        const resourcePath = arnParts.slice(3).join('/'); // items, items/123
+        const httpMethod = arnParts[2];
+        const resourcePath = arnParts.slice(3).join('/');
 
-        if (resourcePath.startsWith('items')) {
-            if (httpMethod === 'GET') {
-                action = "ReadDashboard";
-            } else {
-                action = "ManageUsers"; // Write actions
-            }
-        }
+        const action = mapPathToAction(httpMethod, resourcePath);
 
-        // Call AVP
-        // Entity ID: using the 'sub' from Cognito
         const command = new IsAuthorizedCommand({
             policyStoreId,
             principal: {
-                entityType: "Test::User",
+                entityType: "Versa::User",
                 entityId: userId,
             },
             action: {
-                actionType: "Test::Action",
+                actionType: "Versa::Action",
                 actionId: action,
             },
             resource: {
-                entityType: "Test::Resource",
+                entityType: "Versa::Resource",
                 entityId: "default",
             },
-            // Pass groups as context or attributes?
-            // In the schema, User has 'groups' attribute. 
-            // But we can't easily populate the Entity Store in AVP in real-time without sync.
-            // Better to pass attributes in the 'context' or 'entities' field of IsAuthorized if using Slice/Context?
-            // Wait, standard IsAuthorized checks against the store. 
-            // If we didn't put the User in the store, we can use 'IsAuthorizedWithToken' (identity source) OR provide entities in the request.
-
-            // For this template, let's pass the User entity *in the request* (Transient Entity).
             entities: {
                 entityList: [
                     {
-                        identifier: { entityType: "Test::User", entityId: userId },
+                        identifier: { entityType: "Versa::User", entityId: userId },
                         attributes: {
                             groups: {
                                 set: groups.map(g => ({ string: g }))
@@ -91,15 +93,15 @@ export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<Au
 
         const isAllowed = avpResponse.decision === 'ALLOW';
 
-        return generatePolicy(userId, isAllowed ? 'Allow' : 'Deny', event.methodArn);
+        return generatePolicy(userId, isAllowed ? 'Allow' : 'Deny', event.methodArn, { userId, groups: groups.join(',') });
 
     } catch (err) {
         console.error("Auth Failed:", err);
-        throw new Error("Unauthorized"); // Refuses 401
+        throw new Error("Unauthorized");
     }
 };
 
-function generatePolicy(principalId: string, effect: string, resource: string): AuthResponse {
+function generatePolicy(principalId: string, effect: string, resource: string, context: Record<string, string> = {}): AuthResponse {
     return {
         principalId,
         policyDocument: {
@@ -110,8 +112,6 @@ function generatePolicy(principalId: string, effect: string, resource: string): 
                 Resource: resource,
             }],
         },
-        context: {
-            // Pass info to backend lambda if needed
-        }
+        context,
     };
 }

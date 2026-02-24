@@ -32,7 +32,7 @@ const getStageName = (): string => {
 };
 
 const stageName = getStageName();
-const appName = process.env.APP_NAME || 'Test';
+const appName = process.env.APP_NAME || 'Versa';
 console.log(`Deploying ${appName} to stage: ${stageName}`);
 
 // Apply cost allocation and resource tags

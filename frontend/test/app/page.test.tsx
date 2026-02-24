@@ -1,154 +1,44 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import Home from '../../app/page';
 
-// Mock child components to simplify testing
-vi.mock('../../components/LocationPicker', () => ({
-    default: ({ onLocationSelect }: { onLocationSelect: (loc: { lat: number; lng: number }) => void }) => (
-        <div data-testid="location-picker">
-            <button
-                type="button"
-                onClick={() => onLocationSelect({ lat: 40.7, lng: -111.9 })}
-            >
-                Select Location
-            </button>
-        </div>
-    ),
-}));
-
-vi.mock('../../components/PhotoUploader', () => ({
-    default: ({ onFilesChange }: { onFilesChange: (files: File[]) => void }) => (
-        <div data-testid="photo-uploader">
-            <button
-                type="button"
-                onClick={() => onFilesChange([new File(['content'], 'test.jpg', { type: 'image/jpeg' })])}
-            >
-                Add Photo
-            </button>
-        </div>
-    ),
-}));
-
-vi.mock('../../components/TimePicker12Hour', () => ({
-    TimePicker12Hour: ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
-        <input
-            data-testid="time-picker"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-        />
-    ),
-}));
-
-// Mock react-google-recaptcha-v3
-vi.mock('react-google-recaptcha-v3', () => ({
-    GoogleReCaptchaProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    useGoogleReCaptcha: () => ({
-        executeRecaptcha: vi.fn().mockResolvedValue('mock-captcha-token'),
-    }),
-}));
-
-const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
-
-describe('ReportForm', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        vi.stubEnv('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', 'mock-key');
-        vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3000');
-        vi.stubEnv('NEXT_PUBLIC_RECAPTCHA_SITE_KEY', 'mock-site-key');
-    });
-
-    it('should render the form title', () => {
-        render(<Home />);
-        expect(screen.getByText('S&L Construction')).toBeInTheDocument();
-        expect(screen.getByText('Report a Concern')).toBeInTheDocument();
-    });
-
-    it('should allow filling out the form and submitting', async () => {
-        // Mock getUploadUrl
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ uploadUrl: 'http://upload-url', key: 'image-key' }),
-        });
-        // Mock uploadImage (PUT)
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-        });
-        // Mock createReport (POST)
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ reportId: '123' }),
-        });
+describe('Home page', () => {
+    it('should show configuration required when API URL is not set', () => {
+        vi.stubEnv('NEXT_PUBLIC_API_URL', '');
 
         render(<Home />);
 
-        // Fill inputs
-        fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: 'John Doe' } });
-        fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: 'john@example.com' } });
-
-        // Select concern type
-        fireEvent.change(screen.getByLabelText(/Type of Concern/i), { target: { value: 'Visibile Sediment / Dirty Water' } }); // Note: typo in source? "Visible"
-
-        const concernSelect = screen.getByLabelText(/Type of Concern/i);
-        fireEvent.change(concernSelect, { target: { value: 'Visible Sediment / Dirty Water' } });
-
-        // Select location
-        fireEvent.click(screen.getByText('Select Location'));
-
-        // Add photo
-        fireEvent.click(screen.getByText('Add Photo'));
-
-        // Submit
-        const submitBtn = screen.getByText('Submit Report');
-        expect(submitBtn).toBeEnabled();
-        fireEvent.click(submitBtn);
-
-        await waitFor(() => {
-            expect(mockFetch).toHaveBeenCalledTimes(3); // getUploadUrl, upload, createReport
-        });
-
-        // Verify createReport call payload
-        const createReportCall = mockFetch.mock.calls[2];
-        expect(createReportCall[0]).toContain('/reports');
-        expect(JSON.parse(createReportCall[1].body)).toEqual(expect.objectContaining({
-            name: 'John Doe',
-            email: 'john@example.com',
-            concernType: 'Visible Sediment / Dirty Water',
-            imageKeys: ['image-key'],
-            location: { lat: 40.7, lng: -111.9 },
-        }));
-
-        // Expect success message
-        await waitFor(() => {
-            expect(screen.getByText('Report Submitted!')).toBeInTheDocument();
-        });
+        expect(screen.getByText('Configuration Required')).toBeInTheDocument();
     });
 
-    it('should show error if submission fails', async () => {
-        // Mock getUploadUrl
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ uploadUrl: 'http://upload-url', key: 'image-key' }),
-        });
-        // Mock uploadImage
-        mockFetch.mockResolvedValueOnce({ ok: true });
-        // Mock createReport failure
-        mockFetch.mockResolvedValueOnce({ ok: false });
+    it('should render the Versa landing page when API URL is set', () => {
+        vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3001/');
 
         render(<Home />);
 
-        // Fill minimal required
-        fireEvent.change(screen.getByLabelText(/Type of Concern/i), { target: { value: 'Other' } });
-        fireEvent.click(screen.getByText('Select Location'));
-        fireEvent.click(screen.getByText('Add Photo'));
+        expect(screen.getByText('Versa')).toBeInTheDocument();
+        expect(screen.getByText('Premium Property Management')).toBeInTheDocument();
+        expect(screen.getByText('All Your Property Needs, One Simple Bundle')).toBeInTheDocument();
+    });
 
-        // Spy on window.alert
-        const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { });
+    it('should render service cards', () => {
+        vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3001/');
 
-        fireEvent.click(screen.getByText('Submit Report'));
+        render(<Home />);
 
-        await waitFor(() => {
-            expect(alertSpy).toHaveBeenCalledWith('Failed to submit report. Please try again.');
-        });
+        expect(screen.getByText('Lawn Care')).toBeInTheDocument();
+        expect(screen.getByText('Pest Control')).toBeInTheDocument();
+        expect(screen.getByText('Window Cleaning')).toBeInTheDocument();
+        expect(screen.getByText('Snow Removal')).toBeInTheDocument();
+    });
+
+    it('should render navigation links', () => {
+        vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3001/');
+
+        render(<Home />);
+
+        expect(screen.getByText('Login / Sign Up')).toBeInTheDocument();
+        expect(screen.getByText('Profile')).toBeInTheDocument();
+        expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
     });
 });
