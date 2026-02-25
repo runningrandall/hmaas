@@ -75,7 +75,13 @@ pnpm dev
 
 ## Local Development
 
-Run the full stack locally without AWS:
+Run the full stack locally with a single command:
+
+```bash
+pnpm dev:local     # Start everything: DynamoDB, API, and Frontend
+```
+
+Or run services individually:
 
 ```bash
 pnpm dev           # Start frontend (Next.js dev server)
@@ -112,7 +118,7 @@ The documentation has been split into detailed guides:
 
 - **Backend**: Lambda (Node.js 22), Middy Middleware, ElectroDB (Single Table).
 - **Frontend**: Next.js 16, Tailwind, shadcn/ui.
-- **Infrastructure**: AWS CDK, ephemeral environments per branch.
+- **Infrastructure**: AWS CDK, dev and prod environments.
 - **Security**: WAF, cdk-nag, fine-grained permissions.
 - **Tools**: Plop generator, Husky git hooks.
 
@@ -127,12 +133,18 @@ The documentation has been split into detailed guides:
 | `pnpm test` | Run all unit tests |
 | `pnpm test:coverage` | Run all tests with coverage |
 | `pnpm deploy` | Deploy infrastructure to AWS |
+| `pnpm dev:local` | Start full local stack (DynamoDB + API + Frontend) |
 | `pnpm generate` | Scaffold new endpoint or component |
 
 ## Deployment
 
+CI/CD is handled via GitHub Actions with two environments:
+
+- **Dev**: Opening a PR from `dev` to `main` triggers a deploy to the dev environment.
+- **Prod**: Merging `dev` into `main` triggers semantic-release and deploys to production.
+
 ```bash
-pnpm deploy  # Ephemeral stack named after your username
+pnpm deploy  # Manual deploy (uses STAGE_NAME env var, defaults to 'dev')
 ```
 
 For detailed deployment and CI/CD info, see [CI/CD Pipelines](docs/cicd.md).

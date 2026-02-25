@@ -1,8 +1,8 @@
-name: Deploy Non-Prod
+name: Deploy Dev
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   id-token: write
@@ -12,6 +12,7 @@ permissions:
 jobs:
   test:
     name: Test & Coverage
+    if: github.head_ref == 'dev'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -47,10 +48,10 @@ jobs:
       - name: Generate Coverage Summary
         if: always()
         run: |
-          echo "## 📊 Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Backend coverage (Vitest outputs coverage-summary.json via v8)
+          # Backend coverage
           if [ -f backend/coverage/coverage-summary.json ]; then
             echo "### Backend (Vitest)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -67,11 +68,11 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
           else
             echo "### Backend" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ No coverage data found" >> $GITHUB_STEP_SUMMARY
+            echo "No coverage data found" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Infra coverage (Jest outputs coverage-summary.json)
+          # Infra coverage
           if [ -f infra/coverage/coverage-summary.json ]; then
             echo "### Infrastructure (Jest)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -87,7 +88,7 @@ jobs:
             " >> $GITHUB_STEP_SUMMARY
           else
             echo "### Infrastructure" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ No coverage data found" >> $GITHUB_STEP_SUMMARY
+            echo "No coverage data found" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Comment Coverage on PR
@@ -96,7 +97,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            let body = '## 📊 Test Coverage\n\n';
+            let body = '## Test Coverage\n\n';
 
             try {
               const backend = JSON.parse(fs.readFileSync('backend/coverage/coverage-summary.json', 'utf8')).total;
@@ -107,7 +108,7 @@ jobs:
               body += `| Branches | ${fmt(backend.branches)} |\n`;
               body += `| Functions | ${fmt(backend.functions)} |\n`;
               body += `| Lines | ${fmt(backend.lines)} |\n\n`;
-            } catch { body += '### Backend\n⚠️ No coverage data\n\n'; }
+            } catch { body += '### Backend\nNo coverage data\n\n'; }
 
             try {
               const infra = JSON.parse(fs.readFileSync('infra/coverage/coverage-summary.json', 'utf8')).total;
@@ -118,15 +119,14 @@ jobs:
               body += `| Branches | ${fmt(infra.branches)} |\n`;
               body += `| Functions | ${fmt(infra.functions)} |\n`;
               body += `| Lines | ${fmt(infra.lines)} |\n`;
-            } catch { body += '### Infrastructure\n⚠️ No coverage data\n'; }
+            } catch { body += '### Infrastructure\nNo coverage data\n'; }
 
-            // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const existing = comments.find(c => c.body.includes('## 📊 Test Coverage'));
+            const existing = comments.find(c => c.body.includes('## Test Coverage'));
 
             if (existing) {
               await github.rest.issues.updateComment({
@@ -146,6 +146,7 @@ jobs:
 
   cost-estimate:
     name: Infrastructure Cost Estimate
+    if: github.head_ref == 'dev'
     runs-on: ubuntu-latest
     needs: test
     steps:
@@ -173,12 +174,12 @@ jobs:
       - name: Synthesize CDK
         run: pnpm --filter infra run synth
         env:
+          STAGE_NAME: dev
           CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
           CDK_DEFAULT_REGION: us-east-1
 
       - name: Generate Cost Estimate
         run: |
-          # Find the synthesized CloudFormation templates
           for template in infra/cdk.out/*.template.json; do
             if [ -f "$template" ]; then
               TEMPLATE_NAME=$(basename "$template" .template.json)
@@ -189,7 +190,6 @@ jobs:
             fi
           done
 
-          # Merge all cost estimates
           COST_FILES=$(ls /tmp/infracost-*.json 2>/dev/null)
           if [ -n "$COST_FILES" ]; then
             infracost output --path "/tmp/infracost-*.json" \
@@ -200,8 +200,7 @@ jobs:
       - name: Post Cost Estimate to PR
         if: github.event_name == 'pull_request'
         run: |
-          # Generate markdown summary
-          echo "## 💰 Infrastructure Cost Estimate" >> $GITHUB_STEP_SUMMARY
+          echo "## Infrastructure Cost Estimate" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           for template in infra/cdk.out/*.template.json; do
@@ -224,10 +223,9 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            let body = '## 💰 Infrastructure Cost Estimate\n\n';
+            let body = '## Infrastructure Cost Estimate\n\n';
             body += '| Stack | Monthly Cost |\n|---|---|\n';
 
-            const glob = require('path');
             try {
               const files = fs.readdirSync('infra/cdk.out')
                 .filter(f => f.endsWith('.template.json'));
@@ -243,7 +241,7 @@ jobs:
                 }
               }
             } catch {
-              body += '| (no stacks found) | — |\n';
+              body += '| (no stacks found) | - |\n';
             }
 
             body += '\n> *Estimates are approximate. Serverless costs depend on usage.*\n';
@@ -254,7 +252,7 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const existing = comments.find(c => c.body.includes('## 💰 Infrastructure Cost Estimate'));
+            const existing = comments.find(c => c.body.includes('## Infrastructure Cost Estimate'));
 
             if (existing) {
               await github.rest.issues.updateComment({
@@ -273,9 +271,11 @@ jobs:
             }
 
   deploy:
-    name: Deploy
+    name: Deploy Dev
+    if: github.head_ref == 'dev'
     runs-on: ubuntu-latest
     needs: [test, cost-estimate]
+    environment: dev
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -302,6 +302,8 @@ jobs:
 
       - name: Deploy Infrastructure
         run: pnpm --filter infra run deploy --require-approval never
+        env:
+          STAGE_NAME: dev
 
       - name: Generate API Docs
         run: |
@@ -311,20 +313,9 @@ jobs:
 
       - name: Build and Deploy Frontend
         run: |
-          # Determine STAGE_NAME (Logic must match bin/infra.ts)
-          if [ -n "${{ github.head_ref }}" ]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${{ github.ref_name }}"
-          fi
-          # Sanitize: clean alphanumeric
-          STAGE_NAME=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]//g')
-          
-          # Determine API Stack Name
-          INFRA_STACK_NAME="TestInfraStack-$STAGE_NAME"
-          FRONTEND_STACK_NAME="TestFrontendStack"
-          
-          echo "Determined Stage: $STAGE_NAME"
+          INFRA_STACK_NAME="VersaInfraStack-dev"
+          FRONTEND_STACK_NAME="VersaFrontendStack"
+
           echo "Infra Stack: $INFRA_STACK_NAME"
           echo "Frontend Stack: $FRONTEND_STACK_NAME"
 
@@ -333,29 +324,20 @@ jobs:
           export NEXT_PUBLIC_API_URL=$API_URL
           echo "Found API_URL: $API_URL"
 
-          # Determine Bucket and Base Path
-          if [ "$BRANCH_NAME" == "main" ]; then
-             echo "Deploying to PROD"
-             BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ProdBucketName'].OutputValue" --output text)
-             DISTRO_ID=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ProdDistributionId'].OutputValue" --output text)
-             export NEXT_PUBLIC_BASE_PATH=""
-             S3_DEST="s3://${BUCKET_NAME}"
-          else
-             echo "Deploying to NON-PROD"
-             BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='NonProdBucketName'].OutputValue" --output text)
-             DISTRO_ID=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='NonProdDistributionId'].OutputValue" --output text)
-             export NEXT_PUBLIC_BASE_PATH="/${STAGE_NAME}" 
-             S3_DEST="s3://${BUCKET_NAME}/${STAGE_NAME}"
-          fi
-          
+          # Deploy to NonProd bucket under /dev
+          BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='NonProdBucketName'].OutputValue" --output text)
+          DISTRO_ID=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='NonProdDistributionId'].OutputValue" --output text)
+          export NEXT_PUBLIC_BASE_PATH="/dev"
+          S3_DEST="s3://${BUCKET_NAME}/dev"
+
           echo "Building with BASE_PATH: $NEXT_PUBLIC_BASE_PATH"
           pnpm --filter frontend run build
 
           echo "Deploying to: $S3_DEST"
           aws s3 sync frontend/out "$S3_DEST" --delete
-          
+
           # Invalidate CloudFront
           if [ -n "$DISTRO_ID" ]; then
-             echo "Invalidating CloudFront Distribution: $DISTRO_ID"
-             aws cloudfront create-invalidation --distribution-id "$DISTRO_ID" --paths "/*"
+            echo "Invalidating CloudFront Distribution: $DISTRO_ID"
+            aws cloudfront create-invalidation --distribution-id "$DISTRO_ID" --paths "/*"
           fi

@@ -20,14 +20,16 @@ cdk.Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION };
 
 const getStageName = (): string => {
-  // 1. CI: GITHUB_HEAD_REF (PR) or GITHUB_REF_NAME (Push)
-  // GITHUB_HEAD_REF is set only on pull_request events
+  // 1. Explicit STAGE_NAME env var (set by CI workflows)
+  if (process.env.STAGE_NAME) {
+    return process.env.STAGE_NAME.replace(/[^a-zA-Z0-9]/g, '');
+  }
+  // 2. CI: GITHUB_HEAD_REF (PR) or GITHUB_REF_NAME (Push)
   const branchName = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME;
   if (branchName) {
-    // Sanitize: allow only alphanumeric
     return branchName.replace(/[^a-zA-Z0-9]/g, '');
   }
-  // 2. Local: Hardcode to 'dev'
+  // 3. Local: Hardcode to 'dev'
   return 'dev';
 };
 
@@ -58,5 +60,4 @@ new InfraStack(app, `${appName}InfraStack-${stageName}`, {
   env,
   auth: authStack,
   stageName,
-  frontendUrl: `https://${frontendStack.distribution.distributionDomainName}`,
 });

@@ -1,35 +1,35 @@
 #!/bin/bash
 
+STAGE_NAME="${STAGE_NAME:-dev}"
+APP_NAME="${APP_NAME:-Versa}"
+STACK_NAME="${APP_NAME}InfraStack-${STAGE_NAME}"
+TEMPLATE_PATH="infra/cdk.out/${STACK_NAME}.template.json"
+
 # Synth the template (needed for SAM)
 pnpm --filter infra run synth
 
-# Start API Gateway locally
-# connecting to local DDB via host networking or special DNS
-# For Docker on Mac/Windows, host.docker.internal resolves to host machine
-
+if [ ! -f "$TEMPLATE_PATH" ]; then
+  echo "Error: Template not found at $TEMPLATE_PATH"
+  echo "Available templates:"
+  ls infra/cdk.out/*.template.json 2>/dev/null
+  exit 1
+fi
 
 # Generate env.json from current environment variables
-# We use node to create the JSON file safely
-node -e '
-  const fs = require("fs");
+node -e "
+  const fs = require('fs');
   const env = {
-    "InfraStack": {
-      "TABLE_NAME": process.env.TABLE_NAME,
-      "LOCAL_DYNAMODB_ENDPOINT": process.env.LOCAL_DYNAMODB_ENDPOINT,
-      "AWS_REGION": process.env.AWS_REGION
+    '${STACK_NAME}': {
+      'TABLE_NAME': process.env.TABLE_NAME,
+      'LOCAL_DYNAMODB_ENDPOINT': process.env.LOCAL_DYNAMODB_ENDPOINT,
+      'AWS_REGION': process.env.AWS_REGION
     }
   };
-  fs.writeFileSync("env.json", JSON.stringify(env, null, 2));
-'
+  fs.writeFileSync('env.json', JSON.stringify(env, null, 2));
+"
 
 sam local start-api \
-    -t infra/cdk.out/InfraStack.template.json \
+    -t "$TEMPLATE_PATH" \
     --warm-containers EAGER \
     --env-vars env.json \
-    --docker-network host 
-    # Network host might need adjustment depending on OS/Docker setup, 
-    # often accessing host.docker.internal works better for Mac
-
-# Clean up env.json after run (optional, but good practice)
-# rm env.json
-
+    --docker-network host
