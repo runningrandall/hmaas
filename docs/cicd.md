@@ -22,7 +22,7 @@ Triggers on: **Pull Request to `main`** (only from the `dev` branch).
    - Builds and deploys Frontend to the NonProd S3 bucket under `/dev`.
    - Generates & publishes API Docs.
 
-**Auth**: AWS access key / secret key (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
+**Auth**: OIDC role assumption (`GH_ACTION_ROLE_ARN`).
 
 ### 2. `deploy-prod.yml` (Production Environment)
 
@@ -37,7 +37,7 @@ Triggers on: **Push to `main`** (fires when a `dev` -> `main` PR is merged).
    - Builds and deploys Frontend to the Prod S3 bucket at root.
    - Generates & publishes API Docs.
 
-**Auth**: OIDC role assumption (`AWS_ROLE_ARN_PROD`).
+**Auth**: OIDC role assumption (`GH_ACTION_ROLE_ARN`).
 
 ## Stack Naming
 
@@ -57,12 +57,15 @@ Required GitHub Secrets:
 
 | Secret | Used By | Purpose |
 |---|---|---|
-| `AWS_ACCESS_KEY_ID` | Dev deploy | Deployer credentials |
-| `AWS_SECRET_ACCESS_KEY` | Dev deploy | Deployer secret |
-| `AWS_ROLE_ARN_PROD` | Prod deploy | OIDC role for production |
-| `AWS_ACCOUNT_ID` | Dev deploy | Account ID for CDK synth |
+| `GH_ACTION_ROLE_ARN` | Dev + Prod deploy | OIDC role ARN for AWS assume-role |
 | `INFRACOST_API_KEY` | Dev deploy | Cost estimation |
 | `GITHUB_TOKEN` | Prod deploy | Semantic-release (auto-provided) |
+
+Required GitHub Environment Variables (set per environment: `dev` / `production`):
+
+| Variable | Used By | Purpose |
+|---|---|---|
+| `AWS_ACCOUNT_ID` | Dev + Prod deploy | AWS account ID for CDK synth/deploy |
 
 ## Deployment Logic (`infra/bin/infra.ts`)
 
