@@ -1,7 +1,7 @@
 describe('Smoke Test', () => {
     it('should load the home page', () => {
         cy.visit('/');
-        cy.contains('Serverless Template App').should('be.visible');
+        cy.contains('Versa').should('be.visible');
     });
 
     it('should verify accessibility on home page', () => {
