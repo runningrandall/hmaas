@@ -132,7 +132,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Deploy Infrastructure
-        run: pnpm --filter infra run deploy --require-approval never
+        run: pnpm --filter infra run deploy --all --require-approval never
         env:
           STAGE_NAME: prod
           CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}

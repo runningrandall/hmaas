@@ -301,7 +301,7 @@ jobs:
         run: pnpm install
 
       - name: Deploy Infrastructure
-        run: pnpm --filter infra run deploy --require-approval never
+        run: pnpm --filter infra run deploy --all --require-approval never
         env:
           STAGE_NAME: dev
           CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
@@ -316,7 +316,7 @@ jobs:
       - name: Build and Deploy Frontend
         run: |
           INFRA_STACK_NAME="VersaInfraStack-dev"
-          FRONTEND_STACK_NAME="VersaFrontendStack"
+          FRONTEND_STACK_NAME="VersaFrontendStack-dev"
 
           echo "Infra Stack: $INFRA_STACK_NAME"
           echo "Frontend Stack: $FRONTEND_STACK_NAME"
