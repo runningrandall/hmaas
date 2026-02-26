@@ -69,7 +69,6 @@ export class AuthStack extends cdk.Stack {
                                     }
                                 }
                             },
-                            "Action": {},
                             "Resource": {}
                         },
                         "actions": {
