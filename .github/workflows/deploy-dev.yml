@@ -1,0 +1,345 @@
+name: Deploy Dev
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  test:
+    name: Test & Coverage
+    if: github.head_ref == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Run Backend Tests with Coverage
+        run: pnpm --filter backend test:coverage
+
+      - name: Run Infra Tests with Coverage
+        run: pnpm --filter infra test:coverage
+
+      - name: Run Linting
+        run: pnpm --filter frontend lint
+
+      - name: Run E2E Tests
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+        run: pnpm --filter frontend test:e2e
+
+      - name: Generate Coverage Summary
+        if: always()
+        run: |
+          echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Backend coverage
+          if [ -f backend/coverage/coverage-summary.json ]; then
+            echo "### Backend (Vitest)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            node -e "
+              const c = require('./backend/coverage/coverage-summary.json').total;
+              const fmt = (v) => v.pct + '%';
+              console.log('| Statements | ' + fmt(c.statements) + ' |');
+              console.log('| Branches | ' + fmt(c.branches) + ' |');
+              console.log('| Functions | ' + fmt(c.functions) + ' |');
+              console.log('| Lines | ' + fmt(c.lines) + ' |');
+            " >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Backend" >> $GITHUB_STEP_SUMMARY
+            echo "No coverage data found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Infra coverage
+          if [ -f infra/coverage/coverage-summary.json ]; then
+            echo "### Infrastructure (Jest)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Coverage |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            node -e "
+              const c = require('./infra/coverage/coverage-summary.json').total;
+              const fmt = (v) => v.pct + '%';
+              console.log('| Statements | ' + fmt(c.statements) + ' |');
+              console.log('| Branches | ' + fmt(c.branches) + ' |');
+              console.log('| Functions | ' + fmt(c.functions) + ' |');
+              console.log('| Lines | ' + fmt(c.lines) + ' |');
+            " >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Infrastructure" >> $GITHUB_STEP_SUMMARY
+            echo "No coverage data found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Comment Coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## Test Coverage\n\n';
+
+            try {
+              const backend = JSON.parse(fs.readFileSync('backend/coverage/coverage-summary.json', 'utf8')).total;
+              const fmt = (v) => `${v.pct}%`;
+              body += '### Backend\n';
+              body += '| Metric | Coverage |\n|---|---|\n';
+              body += `| Statements | ${fmt(backend.statements)} |\n`;
+              body += `| Branches | ${fmt(backend.branches)} |\n`;
+              body += `| Functions | ${fmt(backend.functions)} |\n`;
+              body += `| Lines | ${fmt(backend.lines)} |\n\n`;
+            } catch { body += '### Backend\nNo coverage data\n\n'; }
+
+            try {
+              const infra = JSON.parse(fs.readFileSync('infra/coverage/coverage-summary.json', 'utf8')).total;
+              const fmt = (v) => `${v.pct}%`;
+              body += '### Infrastructure\n';
+              body += '| Metric | Coverage |\n|---|---|\n';
+              body += `| Statements | ${fmt(infra.statements)} |\n`;
+              body += `| Branches | ${fmt(infra.branches)} |\n`;
+              body += `| Functions | ${fmt(infra.functions)} |\n`;
+              body += `| Lines | ${fmt(infra.lines)} |\n`;
+            } catch { body += '### Infrastructure\nNo coverage data\n'; }
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('## Test Coverage'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  cost-estimate:
+    name: Infrastructure Cost Estimate
+    if: github.head_ref == 'dev'
+    runs-on: ubuntu-latest
+    needs: test
+    environment: dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Synthesize CDK
+        run: pnpm --filter infra run synth
+        env:
+          STAGE_NAME: dev
+          CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: us-east-1
+
+      - name: Generate Cost Estimate
+        run: |
+          for template in infra/cdk.out/*.template.json; do
+            if [ -f "$template" ]; then
+              TEMPLATE_NAME=$(basename "$template" .template.json)
+              echo "Estimating cost for: $TEMPLATE_NAME"
+              infracost breakdown --path "$template" \
+                --format json \
+                --out-file "/tmp/infracost-${TEMPLATE_NAME}.json" || true
+            fi
+          done
+
+          COST_FILES=$(ls /tmp/infracost-*.json 2>/dev/null)
+          if [ -n "$COST_FILES" ]; then
+            infracost output --path "/tmp/infracost-*.json" \
+              --format json \
+              --out-file /tmp/infracost-combined.json || true
+          fi
+
+      - name: Post Cost Estimate to PR
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## Infrastructure Cost Estimate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          for template in infra/cdk.out/*.template.json; do
+            if [ -f "$template" ]; then
+              TEMPLATE_NAME=$(basename "$template" .template.json)
+              COST_FILE="/tmp/infracost-${TEMPLATE_NAME}.json"
+              if [ -f "$COST_FILE" ]; then
+                MONTHLY=$(cat "$COST_FILE" | node -e "
+                  const data = JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf8'));
+                  console.log(data.totalMonthlyCost || '0.00');
+                " 2>/dev/null || echo "N/A")
+                echo "| $TEMPLATE_NAME | \$${MONTHLY}/mo |" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          done
+
+      - name: Comment Cost on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## Infrastructure Cost Estimate\n\n';
+            body += '| Stack | Monthly Cost |\n|---|---|\n';
+
+            try {
+              const files = fs.readdirSync('infra/cdk.out')
+                .filter(f => f.endsWith('.template.json'));
+
+              for (const file of files) {
+                const name = file.replace('.template.json', '');
+                const costFile = `/tmp/infracost-${name}.json`;
+                try {
+                  const data = JSON.parse(fs.readFileSync(costFile, 'utf8'));
+                  body += `| ${name} | $${data.totalMonthlyCost || '0.00'}/mo |\n`;
+                } catch {
+                  body += `| ${name} | N/A |\n`;
+                }
+              }
+            } catch {
+              body += '| (no stacks found) | - |\n';
+            }
+
+            body += '\n> *Estimates are approximate. Serverless costs depend on usage.*\n';
+            body += '> *Powered by [Infracost](https://www.infracost.io/)*\n';
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('## Infrastructure Cost Estimate'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  deploy:
+    name: Deploy Dev
+    if: github.head_ref == 'dev'
+    runs-on: ubuntu-latest
+    needs: [test, cost-estimate]
+    environment: dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.GH_ACTION_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Deploy Infrastructure
+        run: pnpm --filter infra run deploy --all --require-approval never
+        env:
+          STAGE_NAME: dev
+          CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: us-east-1
+
+      - name: Generate API Docs
+        run: |
+          pnpm --filter backend gen:docs
+          mkdir -p frontend/public
+          cp docs/swagger.json frontend/public/swagger.json
+
+      - name: Build and Deploy Frontend
+        run: |
+          INFRA_STACK_NAME="VersaInfraStack-dev"
+          FRONTEND_STACK_NAME="VersaFrontendStack-dev"
+
+          echo "Infra Stack: $INFRA_STACK_NAME"
+          echo "Frontend Stack: $FRONTEND_STACK_NAME"
+
+          # Get API URL from Infra Stack
+          API_URL=$(aws cloudformation describe-stacks --stack-name $INFRA_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
+          export NEXT_PUBLIC_API_URL=$API_URL
+          echo "Found API_URL: $API_URL"
+
+          # Deploy to NonProd bucket under /dev
+          BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='NonProdBucketName'].OutputValue" --output text)
+          DISTRO_ID=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='NonProdDistributionId'].OutputValue" --output text)
+          export NEXT_PUBLIC_BASE_PATH="/dev"
+          S3_DEST="s3://${BUCKET_NAME}/dev"
+
+          echo "Building with BASE_PATH: $NEXT_PUBLIC_BASE_PATH"
+          pnpm --filter frontend run build
+
+          echo "Deploying to: $S3_DEST"
+          aws s3 sync frontend/out "$S3_DEST" --delete
+
+          # Invalidate CloudFront
+          if [ -n "$DISTRO_ID" ]; then
+            echo "Invalidating CloudFront Distribution: $DISTRO_ID"
+            aws cloudfront create-invalidation --distribution-id "$DISTRO_ID" --paths "/*"
+          fi
