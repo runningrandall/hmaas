@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/runningrandall/hmaas/compare/v1.0.0...v1.1.0) (2026-02-27)
+
+
+### Features
+
+* implement multi-tenancy with Organization entity ([#4](https://github.com/runningrandall/hmaas/issues/4)) ([649f967](https://github.com/runningrandall/hmaas/commit/649f9670623f78526666d2027e096426ac41ebe2)), closes [#3](https://github.com/runningrandall/hmaas/issues/3)
+
 # 1.0.0 (2026-02-25)
 
 
