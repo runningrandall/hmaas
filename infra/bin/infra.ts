@@ -48,7 +48,8 @@ cdk.Tags.of(app).add('ManagedBy', 'CDK');
 // OR we just deploy it every time.
 
 const frontendStack = new FrontendStack(app, `${appName}FrontendStack-${stageName}`, {
-  env
+  env,
+  stageName
 });
 
 const authStack = new AuthStack(app, `${appName}AuthStack-${stageName}`, {

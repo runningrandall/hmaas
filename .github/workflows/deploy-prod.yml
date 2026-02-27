@@ -147,7 +147,7 @@ jobs:
       - name: Build and Deploy Frontend
         run: |
           INFRA_STACK_NAME="VersaInfraStack-prod"
-          FRONTEND_STACK_NAME="VersaFrontendStack"
+          FRONTEND_STACK_NAME="VersaFrontendStack-prod"
 
           echo "Infra Stack: $INFRA_STACK_NAME"
           echo "Frontend Stack: $FRONTEND_STACK_NAME"
@@ -157,9 +157,9 @@ jobs:
           export NEXT_PUBLIC_API_URL=$API_URL
           echo "Found API_URL: $API_URL"
 
-          # Deploy to Prod bucket at root
-          BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ProdBucketName'].OutputValue" --output text)
-          DISTRO_ID=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='ProdDistributionId'].OutputValue" --output text)
+          # Deploy to stage-specific bucket
+          BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='BucketName'].OutputValue" --output text)
+          DISTRO_ID=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" --output text)
           export NEXT_PUBLIC_BASE_PATH=""
           S3_DEST="s3://${BUCKET_NAME}"
 
