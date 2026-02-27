@@ -1,18 +1,18 @@
-# Test Service Observability
+# Versa Observability
 
 We use **AWS Lambda Powertools for TypeScript** and **Amazon CloudWatch** for full-stack observability.
 
 ## 1. Metrics (`@aws-lambda-powertools/metrics`)
-Custom metrics are published to CloudWatch under the namespace `Test`.
+Custom metrics are published to CloudWatch under the namespace `Versa`.
 - **Standard**: ColdStart, Lambda Error Rate.
-- **Custom**: `ItemsCreated`, `ValidationErrors`, `EventPublishErrors`.
+- **Custom**: `CustomersCreated`, `PropertiesCreated`, `InvoicesCreated`, `ValidationErrors`, `EventPublishErrors`.
 
 **Usage:**
 ```typescript
 import { metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 
-metrics.addMetric('ItemCreated', MetricUnit.Count, 1);
+metrics.addMetric('CustomersCreated', MetricUnit.Count, 1);
 ```
 
 ## 2. Logging (`@aws-lambda-powertools/logger`)
@@ -23,7 +23,7 @@ Structured JSON logging with context injection.
 **Usage:**
 ```typescript
 import { logger } from "../lib/observability";
-logger.info("Processing item", { itemId: "123" });
+logger.info("Processing customer", { customerId: "cust_123" });
 ```
 
 ## 3. Tracing (`@aws-lambda-powertools/tracer`)
@@ -38,7 +38,7 @@ const ddb = tracer.captureAWSv3Client(new DynamoDBClient({}));
 ```
 
 ## 4. CloudWatch Dashboard
-A dashboard is automatically created for each stage: `<stage>-ServiceDashboard`.
+A dashboard is automatically created for each stage: `Versa-Dashboard-<stage>`.
 It visualizes:
 - **API**: Traffic, Latency, Errors.
 - **Functions**: Duration, Invocations, Errors.
