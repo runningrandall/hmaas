@@ -18,8 +18,8 @@ Triggers on: **Pull Request to `main`** (only from the `dev` branch).
 2. **Cost Estimate**: Runs Infracost to estimate monthly spend impact. Posts cost breakdown to the PR.
 3. **Deploy**:
    - Sets `STAGE_NAME=dev`.
-   - Deploys Infrastructure (`cdk deploy`) using `VersaInfraStack-dev` / `VersaAuthStack-dev`.
-   - Builds and deploys Frontend to the NonProd S3 bucket under `/dev`.
+   - Deploys Infrastructure (`cdk deploy --all`) using `VersaAuthStack-dev` / `VersaInfraStack-dev` / `VersaFrontendStack-dev`.
+   - Builds and deploys Frontend to the stage-specific S3 bucket (`versa-frontend-dev`).
    - Generates & publishes API Docs.
 
 **Auth**: OIDC role assumption (`GH_ACTION_ROLE_ARN`).
@@ -33,8 +33,8 @@ Triggers on: **Push to `main`** (fires when a `dev` -> `main` PR is merged).
 2. **Test & Coverage** (parallel with Release): Runs unit tests (Backend, Infra) and Linting.
 3. **Deploy** (depends on both Release and Test):
    - Sets `STAGE_NAME=prod`.
-   - Deploys Infrastructure (`cdk deploy`) using `VersaInfraStack-prod` / `VersaAuthStack-prod`.
-   - Builds and deploys Frontend to the Prod S3 bucket at root.
+   - Deploys Infrastructure (`cdk deploy --all`) using `VersaAuthStack-prod` / `VersaInfraStack-prod` / `VersaFrontendStack-prod`.
+   - Builds and deploys Frontend to the stage-specific S3 bucket (`versa-frontend-prod`).
    - Generates & publishes API Docs.
 
 **Auth**: OIDC role assumption (`GH_ACTION_ROLE_ARN`).
@@ -47,9 +47,9 @@ All stacks use the `Versa` prefix:
 |---|---|---|
 | Infrastructure | `VersaInfraStack-dev` | `VersaInfraStack-prod` |
 | Auth | `VersaAuthStack-dev` | `VersaAuthStack-prod` |
-| Frontend | `VersaFrontendStack` | `VersaFrontendStack` |
+| Frontend | `VersaFrontendStack-dev` | `VersaFrontendStack-prod` |
 
-The Frontend stack is shared across environments (prod and non-prod buckets + CloudFront distributions are defined within it).
+Each stack is stage-specific, including Frontend. Each stage gets its own S3 bucket (`versa-frontend-{stage}`) and CloudFront distribution.
 
 ## Environment Variables / Secrets
 
