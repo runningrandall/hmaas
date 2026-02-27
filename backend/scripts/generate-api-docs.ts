@@ -10,9 +10,6 @@ import { generateOpenApiSpec } from '../src/lib/openapi';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Ensure schemas are registered by importing schemas.ts
-import '../src/lib/schemas';
-
 const spec = generateOpenApiSpec();
 const docsDir = path.join(__dirname, '../../docs');
 
