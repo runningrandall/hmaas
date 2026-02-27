@@ -12,6 +12,7 @@ const service = new PayScheduleService(repository);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const payScheduleId = event.pathParameters?.payScheduleId;
     if (!payScheduleId) {
         throw new AppError("Missing payScheduleId", 400);
@@ -28,7 +29,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         throw parseResult.error;
     }
 
-    const result = await service.updatePaySchedule(payScheduleId, parseResult.data);
+    const result = await service.updatePaySchedule(organizationId, payScheduleId, parseResult.data);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

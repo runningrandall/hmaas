@@ -12,11 +12,12 @@ const service = new PropertyService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const propertyId = event.pathParameters?.propertyId;
     if (!propertyId) {
         throw new AppError("Missing propertyId", 400);
     }
-    await service.deleteProperty(propertyId);
+    await service.deleteProperty(organizationId, propertyId);
     return { statusCode: 200, body: JSON.stringify({ message: "Property deleted" }) };
 };
 

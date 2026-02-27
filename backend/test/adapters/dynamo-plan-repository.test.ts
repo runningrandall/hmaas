@@ -12,7 +12,9 @@ vi.mock('../../src/entities/service', () => ({
             plan: {
                 create: vi.fn(),
                 get: vi.fn(),
-                scan: { go: vi.fn() },
+                query: {
+                    byOrgPlans: vi.fn(),
+                },
                 patch: vi.fn(),
                 delete: vi.fn(),
             },
@@ -24,6 +26,7 @@ import { DynamoPlanRepository } from '../../src/adapters/dynamo-plan-repository'
 import { DBService } from '../../src/entities/service';
 
 const mockPlan = {
+    organizationId: 'org-test-123',
     planId: 'plan-1',
     name: 'Basic Bundle',
     description: 'Basic property management bundle',
@@ -65,7 +68,7 @@ describe('DynamoPlanRepository', () => {
         it('should return a parsed plan when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockPlan }) });
 
-            const result = await repo.get('plan-1');
+            const result = await repo.get('org-test-123', 'plan-1');
 
             expect(result).not.toBeNull();
             expect(result!.planId).toBe('plan-1');
@@ -74,7 +77,7 @@ describe('DynamoPlanRepository', () => {
         it('should return null when plan not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('plan-1');
+            const result = await repo.get('org-test-123', 'plan-1');
 
             expect(result).toBeNull();
         });
@@ -82,36 +85,41 @@ describe('DynamoPlanRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('plan-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'plan-1')).rejects.toThrow('Data integrity error');
         });
     });
 
     describe('list', () => {
         it('should return paginated list of plans', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockPlan], cursor: null });
+            mockEntity.query.byOrgPlans.mockReturnValue({
+                go: vi.fn().mockResolvedValue({ data: [mockPlan], cursor: null }),
+            });
 
-            const result = await repo.list();
+            const result = await repo.list('org-test-123');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].planId).toBe('plan-1');
             expect(result.cursor).toBeNull();
         });
 
-        it('should pass limit and cursor options to scan', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockPlan], cursor: 'next-page' });
+        it('should pass limit and cursor options', async () => {
+            const mockGo = vi.fn().mockResolvedValue({ data: [mockPlan], cursor: 'next-page' });
+            mockEntity.query.byOrgPlans.mockReturnValue({ go: mockGo });
 
-            const result = await repo.list({ limit: 5, cursor: 'some-cursor' });
+            const result = await repo.list('org-test-123', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
+            expect(mockEntity.query.byOrgPlans).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
 
         it('should use default page size when no options provided', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [], cursor: null });
+            const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
+            mockEntity.query.byOrgPlans.mockReturnValue({ go: mockGo });
 
-            await repo.list();
+            await repo.list('org-test-123');
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 20 });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
     });
 
@@ -122,7 +130,7 @@ describe('DynamoPlanRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updated }) }),
             });
 
-            const result = await repo.update('plan-1', { name: 'Premium Bundle' });
+            const result = await repo.update('org-test-123', 'plan-1', { name: 'Premium Bundle' });
 
             expect(result.name).toBe('Premium Bundle');
         });
@@ -132,7 +140,7 @@ describe('DynamoPlanRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('plan-1', { name: 'Premium Bundle' })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'plan-1', { name: 'Premium Bundle' })).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -140,8 +148,8 @@ describe('DynamoPlanRepository', () => {
         it('should delete a plan', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('plan-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ planId: 'plan-1' });
+            await expect(repo.delete('org-test-123', 'plan-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', planId: 'plan-1' });
         });
     });
 });

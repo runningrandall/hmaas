@@ -12,11 +12,12 @@ const service = new PropertyServiceService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const serviceId = event.pathParameters?.serviceId;
     if (!serviceId) {
         throw new AppError("Missing serviceId", 400);
     }
-    const result = await service.getPropertyService(serviceId);
+    const result = await service.getPropertyService(organizationId, serviceId);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

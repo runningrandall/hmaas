@@ -129,7 +129,7 @@ describe('Payment Method Handlers', () => {
             expect(result.statusCode).toBe(200);
             const body = JSON.parse(result.body);
             expect(body.items).toHaveLength(1);
-            expect(mockListPaymentMethodsByCustomer).toHaveBeenCalledWith('cust-123', { limit: undefined, cursor: undefined });
+            expect(mockListPaymentMethodsByCustomer).toHaveBeenCalledWith('org-test-123', 'cust-123', { limit: undefined, cursor: undefined });
         });
 
         it('should return 200 with pagination params passed to service', async () => {
@@ -140,7 +140,7 @@ describe('Payment Method Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListPaymentMethodsByCustomer).toHaveBeenCalledWith('cust-123', { limit: 5, cursor: 'some-cursor' });
+            expect(mockListPaymentMethodsByCustomer).toHaveBeenCalledWith('org-test-123', 'cust-123', { limit: 5, cursor: 'some-cursor' });
         });
 
         it('should return 400 when customerId is missing', async () => {

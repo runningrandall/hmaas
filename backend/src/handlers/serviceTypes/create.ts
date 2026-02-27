@@ -14,6 +14,7 @@ const service = new ServiceTypeService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const body = event.body as unknown as any;
     if (!body) {
         throw new AppError("Missing request body", 400);
@@ -26,7 +27,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         throw parseResult.error;
     }
 
-    const result = await service.createServiceType(parseResult.data);
+    const result = await service.createServiceType(organizationId, parseResult.data);
     return { statusCode: 201, body: JSON.stringify(result) };
 };
 

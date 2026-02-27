@@ -12,11 +12,12 @@ const service = new PaymentMethodService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const paymentMethodId = event.pathParameters?.paymentMethodId;
     if (!paymentMethodId) {
         throw new AppError("Missing paymentMethodId", 400);
     }
-    await service.deletePaymentMethod(paymentMethodId);
+    await service.deletePaymentMethod(organizationId, paymentMethodId);
     return { statusCode: 200, body: JSON.stringify({ message: "Payment method deleted" }) };
 };
 

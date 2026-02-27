@@ -31,8 +31,8 @@ test('Infra Stack Created', () => {
         Name: 'Versa-Api-test',
     });
 
-    // Verify nested stacks are created
-    template.resourceCountIs('AWS::CloudFormation::Stack', 6);
+    // Verify nested stacks are created (7: lookup, customer, property, plan, workforce, billing, organization)
+    template.resourceCountIs('AWS::CloudFormation::Stack', 7);
 });
 
 test('Auth Stack Created', () => {
@@ -53,6 +53,17 @@ test('Auth Stack Created', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
         ClientName: 'frontend-client',
     });
+
+    // Verify 6 groups (SuperAdmin, Admin, Manager, User, Servicer, Customer)
+    template.resourceCountIs('AWS::Cognito::UserPoolGroup', 6);
+
+    // Verify SuperAdmin group exists
+    template.hasResourceProperties('AWS::Cognito::UserPoolGroup', {
+        GroupName: 'SuperAdmin',
+    });
+
+    // Verify Pre Token Generation Lambda exists
+    template.resourceCountIs('AWS::Lambda::Function', 1);
 });
 
 test('Frontend Stack Created', () => {

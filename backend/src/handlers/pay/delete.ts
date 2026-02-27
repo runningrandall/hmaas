@@ -10,11 +10,12 @@ const service = new PayService(repository);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const payId = event.pathParameters?.payId;
     if (!payId) {
         throw new AppError("Missing payId", 400);
     }
-    await service.deletePay(payId);
+    await service.deletePay(organizationId, payId);
     return { statusCode: 200, body: JSON.stringify({ message: "Pay record deleted" }) };
 };
 

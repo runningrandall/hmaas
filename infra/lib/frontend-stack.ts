@@ -47,6 +47,26 @@ export class FrontendStack extends cdk.Stack {
             encryption: s3.BucketEncryption.S3_MANAGED,
         });
 
+        // --- URL Rewrite Function ---
+        // Next.js static export generates .html files (e.g., api-docs.html).
+        // This function rewrites clean URLs like /api-docs to /api-docs.html
+        // so S3 can serve the correct file.
+        const urlRewriteFunction = new cloudfront.Function(this, 'UrlRewriteFunction', {
+            code: cloudfront.FunctionCode.fromInline(`
+function handler(event) {
+    var request = event.request;
+    var uri = request.uri;
+    if (uri.endsWith('/')) {
+        request.uri += 'index.html';
+    } else if (!uri.includes('.')) {
+        request.uri += '.html';
+    }
+    return request;
+}
+            `.trim()),
+            runtime: cloudfront.FunctionRuntime.JS_2_0,
+        });
+
         // --- CloudFront Distribution ---
         this.distribution = new cloudfront.Distribution(this, 'Distribution', {
             defaultBehavior: {
@@ -56,6 +76,10 @@ export class FrontendStack extends cdk.Stack {
                 cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
                 compress: true,
                 responseHeadersPolicy: securityHeaders,
+                functionAssociations: [{
+                    function: urlRewriteFunction,
+                    eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+                }],
             },
             defaultRootObject: 'index.html',
             errorResponses: [

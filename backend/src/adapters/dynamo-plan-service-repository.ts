@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoPlanServiceSchema = z.object({
+    organizationId: z.string(),
     planId: z.string(),
     serviceTypeId: z.string(),
     includedVisits: z.number().optional().nullable(),
@@ -31,15 +32,15 @@ export class DynamoPlanServiceRepository implements PlanServiceRepository {
         return parsePlanService(result.data);
     }
 
-    async get(planId: string, serviceTypeId: string): Promise<PlanService | null> {
-        const result = await DBService.entities.planService.get({ planId, serviceTypeId }).go();
+    async get(organizationId: string, planId: string, serviceTypeId: string): Promise<PlanService | null> {
+        const result = await DBService.entities.planService.get({ organizationId, planId, serviceTypeId }).go();
         if (!result.data) return null;
         return parsePlanService(result.data);
     }
 
-    async listByPlanId(planId: string, options?: PaginationOptions): Promise<PaginatedResult<PlanService>> {
+    async listByPlanId(organizationId: string, planId: string, options?: PaginationOptions): Promise<PaginatedResult<PlanService>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.planService.query.byPlanAndServiceType({ planId }).go({
+        const result = await DBService.entities.planService.query.byPlanAndServiceType({ organizationId, planId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -49,7 +50,7 @@ export class DynamoPlanServiceRepository implements PlanServiceRepository {
         };
     }
 
-    async delete(planId: string, serviceTypeId: string): Promise<void> {
-        await DBService.entities.planService.delete({ planId, serviceTypeId }).go();
+    async delete(organizationId: string, planId: string, serviceTypeId: string): Promise<void> {
+        await DBService.entities.planService.delete({ organizationId, planId, serviceTypeId }).go();
     }
 }

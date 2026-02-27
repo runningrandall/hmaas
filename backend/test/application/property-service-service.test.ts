@@ -19,6 +19,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('PropertyServiceService', () => {
     let service: PropertyServiceService;
 
@@ -39,6 +41,7 @@ describe('PropertyServiceService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 serviceId: 'psvc-1',
                 ...request,
                 status: 'active',
@@ -50,15 +53,16 @@ describe('PropertyServiceService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createPropertyService(request as any);
+            const result = await service.createPropertyService(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyServiceActivated', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyServiceActivated', expect.objectContaining({
+                organizationId: ORG_ID,
                 serviceId: created.serviceId,
                 propertyId: request.propertyId,
                 serviceTypeId: request.serviceTypeId,
-            });
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('PropertyServicesCreated', expect.any(String), 1);
         });
 
@@ -74,7 +78,7 @@ describe('PropertyServiceService', () => {
             mockRepo.create.mockImplementation(async (ps: any) => ps);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createPropertyService(request as any);
+            const result = await service.createPropertyService(ORG_ID, request as any);
 
             expect(result.status).toBe('active');
             expect(result.serviceId).toEqual(expect.any(String));
@@ -84,88 +88,90 @@ describe('PropertyServiceService', () => {
 
     describe('getPropertyService', () => {
         it('should return property service when found', async () => {
-            const ps = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
+            const ps = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
             mockRepo.get.mockResolvedValue(ps);
 
-            const result = await service.getPropertyService('psvc-1');
+            const result = await service.getPropertyService(ORG_ID, 'psvc-1');
 
             expect(result).toEqual(ps);
-            expect(mockRepo.get).toHaveBeenCalledWith('psvc-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'psvc-1');
         });
 
         it('should throw AppError 404 when property service not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getPropertyService('missing')).rejects.toThrow(AppError);
-            await expect(service.getPropertyService('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getPropertyService(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getPropertyService(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listPropertyServicesByProperty', () => {
         it('should delegate to repo.listByPropertyId', async () => {
-            const paginated = { items: [{ serviceId: 'psvc-1', propertyId: 'prop-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1' }], count: 1 };
             mockRepo.listByPropertyId.mockResolvedValue(paginated);
 
-            const result = await service.listPropertyServicesByProperty('prop-1', { limit: 10 });
+            const result = await service.listPropertyServicesByProperty(ORG_ID, 'prop-1', { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.listByPropertyId).toHaveBeenCalledWith('prop-1', { limit: 10 });
+            expect(mockRepo.listByPropertyId).toHaveBeenCalledWith(ORG_ID, 'prop-1', { limit: 10 });
         });
     });
 
     describe('updatePropertyService', () => {
         it('should publish PropertyServiceCancelled when status changes to cancelled', async () => {
-            const existing = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
-            const updated = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'cancelled' };
+            const existing = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
+            const updated = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'cancelled' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.updatePropertyService('psvc-1', { status: 'cancelled' });
+            const result = await service.updatePropertyService(ORG_ID, 'psvc-1', { status: 'cancelled' });
 
             expect(result).toEqual(updated);
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyServiceCancelled', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyServiceCancelled', expect.objectContaining({
+                organizationId: ORG_ID,
                 serviceId: 'psvc-1',
                 propertyId: 'prop-1',
                 serviceTypeId: 'st-1',
-            });
+            }));
         });
 
         it('should publish PropertyServiceActivated when status changes to active from non-active', async () => {
-            const existing = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'suspended' };
-            const updated = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
+            const existing = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'suspended' };
+            const updated = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.updatePropertyService('psvc-1', { status: 'active' });
+            await service.updatePropertyService(ORG_ID, 'psvc-1', { status: 'active' });
 
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyServiceActivated', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyServiceActivated', expect.objectContaining({
+                organizationId: ORG_ID,
                 serviceId: 'psvc-1',
                 propertyId: 'prop-1',
                 serviceTypeId: 'st-1',
-            });
+            }));
         });
 
         it('should not publish event when status does not change', async () => {
-            const existing = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
-            const updated = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active', frequency: 'weekly' };
+            const existing = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
+            const updated = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active', frequency: 'weekly' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.updatePropertyService('psvc-1', { frequency: 'weekly' });
+            await service.updatePropertyService(ORG_ID, 'psvc-1', { frequency: 'weekly' });
 
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
 
         it('should not publish event when status stays active', async () => {
-            const existing = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
-            const updated = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
+            const existing = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
+            const updated = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
 
-            await service.updatePropertyService('psvc-1', { status: 'active' });
+            await service.updatePropertyService(ORG_ID, 'psvc-1', { status: 'active' });
 
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
@@ -173,32 +179,33 @@ describe('PropertyServiceService', () => {
         it('should throw 404 if property service not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.updatePropertyService('missing', { status: 'cancelled' })).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.updatePropertyService(ORG_ID, 'missing', { status: 'cancelled' })).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('deletePropertyService', () => {
         it('should fetch service first, delete it, and always publish PropertyServiceCancelled', async () => {
-            const existing = { serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
+            const existing = { organizationId: ORG_ID, serviceId: 'psvc-1', propertyId: 'prop-1', serviceTypeId: 'st-1', status: 'active' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.delete.mockResolvedValue(undefined);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.deletePropertyService('psvc-1');
+            await service.deletePropertyService(ORG_ID, 'psvc-1');
 
-            expect(mockRepo.get).toHaveBeenCalledWith('psvc-1');
-            expect(mockRepo.delete).toHaveBeenCalledWith('psvc-1');
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyServiceCancelled', {
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'psvc-1');
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'psvc-1');
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyServiceCancelled', expect.objectContaining({
+                organizationId: ORG_ID,
                 serviceId: 'psvc-1',
                 propertyId: 'prop-1',
                 serviceTypeId: 'st-1',
-            });
+            }));
         });
 
         it('should throw 404 if property service not found before deleting', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.deletePropertyService('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.deletePropertyService(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
             expect(mockRepo.delete).not.toHaveBeenCalled();
         });
     });

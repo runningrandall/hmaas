@@ -1,6 +1,7 @@
 import { PaginationOptions, PaginatedResult } from "./shared";
 
 export interface CostType {
+    organizationId: string;
     costTypeId: string;
     name: string;
     description?: string;
@@ -20,8 +21,8 @@ export interface UpdateCostTypeRequest {
 
 export interface CostTypeRepository {
     create(costType: CostType): Promise<CostType>;
-    get(costTypeId: string): Promise<CostType | null>;
-    list(options?: PaginationOptions): Promise<PaginatedResult<CostType>>;
-    update(costTypeId: string, data: UpdateCostTypeRequest): Promise<CostType>;
-    delete(costTypeId: string): Promise<void>;
+    get(organizationId: string, costTypeId: string): Promise<CostType | null>;
+    list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<CostType>>;
+    update(organizationId: string, costTypeId: string, data: UpdateCostTypeRequest): Promise<CostType>;
+    delete(organizationId: string, costTypeId: string): Promise<void>;
 }

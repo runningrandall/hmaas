@@ -14,6 +14,7 @@ const service = new InvoiceScheduleService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const invoiceScheduleId = event.pathParameters?.invoiceScheduleId;
     if (!invoiceScheduleId) {
         throw new AppError("Missing invoiceScheduleId", 400);
@@ -28,7 +29,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         metrics.addMetric('ValidationErrors', MetricUnit.Count, 1);
         throw parseResult.error;
     }
-    const result = await service.updateInvoiceSchedule(invoiceScheduleId, parseResult.data);
+    const result = await service.updateInvoiceSchedule(organizationId, invoiceScheduleId, parseResult.data);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

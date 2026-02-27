@@ -26,6 +26,7 @@ import { DynamoPayRepository } from '../../src/adapters/dynamo-pay-repository';
 import { DBService } from '../../src/entities/service';
 
 const mockPay = {
+    organizationId: 'org-test-123',
     payId: 'pay-1',
     employeeId: 'emp-1',
     payScheduleId: 'ps-1',
@@ -67,7 +68,7 @@ describe('DynamoPayRepository', () => {
         it('should return a parsed pay record when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockPay }) });
 
-            const result = await repo.get('pay-1');
+            const result = await repo.get('org-test-123', 'pay-1');
 
             expect(result).not.toBeNull();
             expect(result!.payId).toBe('pay-1');
@@ -76,7 +77,7 @@ describe('DynamoPayRepository', () => {
         it('should return null when pay record not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('pay-1');
+            const result = await repo.get('org-test-123', 'pay-1');
 
             expect(result).toBeNull();
         });
@@ -84,7 +85,7 @@ describe('DynamoPayRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('pay-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'pay-1')).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -94,7 +95,7 @@ describe('DynamoPayRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [mockPay], cursor: null }),
             });
 
-            const result = await repo.listByEmployeeId('emp-1');
+            const result = await repo.listByEmployeeId('org-test-123', 'emp-1');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].payId).toBe('pay-1');
@@ -105,9 +106,9 @@ describe('DynamoPayRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockPay], cursor: 'next-page' });
             mockEntity.query.byEmployeeId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.listByEmployeeId('emp-1', { limit: 5, cursor: 'some-cursor' });
+            const result = await repo.listByEmployeeId('org-test-123', 'emp-1', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byEmployeeId).toHaveBeenCalledWith({ employeeId: 'emp-1' });
+            expect(mockEntity.query.byEmployeeId).toHaveBeenCalledWith({ organizationId: 'org-test-123', employeeId: 'emp-1' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
@@ -116,7 +117,7 @@ describe('DynamoPayRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
             mockEntity.query.byEmployeeId.mockReturnValue({ go: mockGo });
 
-            await repo.listByEmployeeId('emp-1');
+            await repo.listByEmployeeId('org-test-123', 'emp-1');
 
             expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
@@ -129,7 +130,7 @@ describe('DynamoPayRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updated }) }),
             });
 
-            const result = await repo.update('pay-1', { rate: 3000 });
+            const result = await repo.update('org-test-123', 'pay-1', { rate: 3000 });
 
             expect(result.rate).toBe(3000);
         });
@@ -139,7 +140,7 @@ describe('DynamoPayRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('pay-1', { rate: 3000 })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'pay-1', { rate: 3000 })).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -147,8 +148,8 @@ describe('DynamoPayRepository', () => {
         it('should delete a pay record', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('pay-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ payId: 'pay-1' });
+            await expect(repo.delete('org-test-123', 'pay-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', payId: 'pay-1' });
         });
     });
 });

@@ -113,6 +113,7 @@ describe('Invoice Schedule Handlers', () => {
             await handler(event, mockContext);
 
             expect(mockCreateInvoiceSchedule).toHaveBeenCalledWith(
+                'org-test-123',
                 expect.objectContaining({ frequency: 'annually', nextInvoiceDate: '2027-01-01', customerId: 'cust-456' }),
             );
         });
@@ -152,7 +153,7 @@ describe('Invoice Schedule Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListInvoiceSchedulesByCustomer).toHaveBeenCalledWith('cust-123', { limit: 5, cursor: 'some-cursor' });
+            expect(mockListInvoiceSchedulesByCustomer).toHaveBeenCalledWith('org-test-123', 'cust-123', { limit: 5, cursor: 'some-cursor' });
         });
     });
 
@@ -231,7 +232,7 @@ describe('Invoice Schedule Handlers', () => {
             const event = makeDeleteEvent({ invoiceScheduleId: 'is-789' });
             await handler(event, mockContext);
 
-            expect(mockDeleteInvoiceSchedule).toHaveBeenCalledWith('is-789');
+            expect(mockDeleteInvoiceSchedule).toHaveBeenCalledWith('org-test-123', 'is-789');
         });
     });
 });

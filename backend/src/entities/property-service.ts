@@ -11,6 +11,7 @@ export const PropertyServiceEntity = new Entity(
             service: "versa",
         },
         attributes: {
+            organizationId: { type: "string", required: true },
             serviceId: { type: "string", required: true },
             propertyId: { type: "string", required: true },
             serviceTypeId: { type: "string", required: true },
@@ -24,13 +25,18 @@ export const PropertyServiceEntity = new Entity(
         },
         indexes: {
             byServiceId: {
-                pk: { field: "pk", composite: ["serviceId"] },
+                pk: { field: "pk", composite: ["organizationId", "serviceId"] },
                 sk: { field: "sk", composite: [] },
             },
             byPropertyId: {
                 index: "gsi1",
-                pk: { field: "gsi1pk", composite: ["propertyId"] },
+                pk: { field: "gsi1pk", composite: ["organizationId", "propertyId"] },
                 sk: { field: "gsi1sk", composite: ["serviceId"] },
+            },
+            byOrg: {
+                index: "gsi2",
+                pk: { field: "gsi2pk", composite: [] },
+                sk: { field: "gsi2sk", composite: ["organizationId", "serviceId"] },
             },
         },
     },

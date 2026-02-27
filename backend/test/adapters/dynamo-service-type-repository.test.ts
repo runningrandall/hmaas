@@ -12,7 +12,9 @@ vi.mock('../../src/entities/service', () => ({
             serviceType: {
                 create: vi.fn(),
                 get: vi.fn(),
-                scan: { go: vi.fn() },
+                query: {
+                    byServiceTypeId: vi.fn(),
+                },
                 patch: vi.fn(),
                 delete: vi.fn(),
             },
@@ -24,6 +26,7 @@ import { DynamoServiceTypeRepository } from '../../src/adapters/dynamo-service-t
 import { DBService } from '../../src/entities/service';
 
 const mockServiceType = {
+    organizationId: 'org-test-123',
     serviceTypeId: 'st-1',
     name: 'Lawn Mowing',
     description: 'Regular lawn mowing service',
@@ -62,7 +65,7 @@ describe('DynamoServiceTypeRepository', () => {
         it('should return a parsed service type when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockServiceType }) });
 
-            const result = await repo.get('st-1');
+            const result = await repo.get('org-test-123', 'st-1');
 
             expect(result).not.toBeNull();
             expect(result!.serviceTypeId).toBe('st-1');
@@ -71,7 +74,7 @@ describe('DynamoServiceTypeRepository', () => {
         it('should return null when service type not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('st-1');
+            const result = await repo.get('org-test-123', 'st-1');
 
             expect(result).toBeNull();
         });
@@ -79,36 +82,41 @@ describe('DynamoServiceTypeRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('st-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'st-1')).rejects.toThrow('Data integrity error');
         });
     });
 
     describe('list', () => {
         it('should return paginated list of service types', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockServiceType], cursor: null });
+            mockEntity.query.byServiceTypeId.mockReturnValue({
+                go: vi.fn().mockResolvedValue({ data: [mockServiceType], cursor: null }),
+            });
 
-            const result = await repo.list();
+            const result = await repo.list('org-test-123');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].serviceTypeId).toBe('st-1');
             expect(result.cursor).toBeNull();
         });
 
-        it('should pass limit and cursor options to scan', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockServiceType], cursor: 'next-page' });
+        it('should pass limit and cursor options', async () => {
+            const mockGo = vi.fn().mockResolvedValue({ data: [mockServiceType], cursor: 'next-page' });
+            mockEntity.query.byServiceTypeId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.list({ limit: 5, cursor: 'some-cursor' });
+            const result = await repo.list('org-test-123', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
+            expect(mockEntity.query.byServiceTypeId).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
 
         it('should use default page size when no options provided', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [], cursor: null });
+            const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
+            mockEntity.query.byServiceTypeId.mockReturnValue({ go: mockGo });
 
-            await repo.list();
+            await repo.list('org-test-123');
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 20 });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
     });
 
@@ -119,7 +127,7 @@ describe('DynamoServiceTypeRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updated }) }),
             });
 
-            const result = await repo.update('st-1', { name: 'Lawn Care' });
+            const result = await repo.update('org-test-123', 'st-1', { name: 'Lawn Care' });
 
             expect(result.name).toBe('Lawn Care');
         });
@@ -129,7 +137,7 @@ describe('DynamoServiceTypeRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('st-1', { name: 'Lawn Care' })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'st-1', { name: 'Lawn Care' })).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -137,8 +145,8 @@ describe('DynamoServiceTypeRepository', () => {
         it('should delete a service type', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('st-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ serviceTypeId: 'st-1' });
+            await expect(repo.delete('org-test-123', 'st-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', serviceTypeId: 'st-1' });
         });
     });
 });

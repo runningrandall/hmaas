@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoCapabilitySchema = z.object({
+    organizationId: z.string(),
     capabilityId: z.string(),
     employeeId: z.string(),
     serviceTypeId: z.string(),
@@ -32,15 +33,15 @@ export class DynamoCapabilityRepository implements CapabilityRepository {
         return parseCapability(result.data);
     }
 
-    async get(capabilityId: string): Promise<Capability | null> {
-        const result = await DBService.entities.capability.get({ capabilityId }).go();
+    async get(organizationId: string, capabilityId: string): Promise<Capability | null> {
+        const result = await DBService.entities.capability.get({ organizationId, capabilityId }).go();
         if (!result.data) return null;
         return parseCapability(result.data);
     }
 
-    async listByEmployeeId(employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Capability>> {
+    async listByEmployeeId(organizationId: string, employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Capability>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.capability.query.byEmployeeId({ employeeId }).go({
+        const result = await DBService.entities.capability.query.byEmployeeId({ organizationId, employeeId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -50,7 +51,7 @@ export class DynamoCapabilityRepository implements CapabilityRepository {
         };
     }
 
-    async delete(capabilityId: string): Promise<void> {
-        await DBService.entities.capability.delete({ capabilityId }).go();
+    async delete(organizationId: string, capabilityId: string): Promise<void> {
+        await DBService.entities.capability.delete({ organizationId, capabilityId }).go();
     }
 }

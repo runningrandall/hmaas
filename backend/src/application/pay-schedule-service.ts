@@ -10,10 +10,11 @@ export class PayScheduleService {
         private repository: PayScheduleRepository,
     ) {}
 
-    async createPaySchedule(request: CreatePayScheduleRequest): Promise<PaySchedule> {
+    async createPaySchedule(organizationId: string, request: CreatePayScheduleRequest): Promise<PaySchedule> {
         logger.info("Creating pay schedule", { name: request.name, frequency: request.frequency });
 
         const paySchedule: PaySchedule = {
+            organizationId,
             payScheduleId: randomUUID(),
             name: request.name,
             frequency: request.frequency,
@@ -28,25 +29,25 @@ export class PayScheduleService {
         return created;
     }
 
-    async getPaySchedule(payScheduleId: string): Promise<PaySchedule> {
-        const paySchedule = await this.repository.get(payScheduleId);
+    async getPaySchedule(organizationId: string, payScheduleId: string): Promise<PaySchedule> {
+        const paySchedule = await this.repository.get(organizationId, payScheduleId);
         if (!paySchedule) {
             throw new AppError("Pay schedule not found", 404);
         }
         return paySchedule;
     }
 
-    async listPaySchedules(options?: PaginationOptions): Promise<PaginatedResult<PaySchedule>> {
-        return this.repository.list(options);
+    async listPaySchedules(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<PaySchedule>> {
+        return this.repository.list(organizationId, options);
     }
 
-    async updatePaySchedule(payScheduleId: string, request: UpdatePayScheduleRequest): Promise<PaySchedule> {
-        await this.getPaySchedule(payScheduleId);
-        return this.repository.update(payScheduleId, request);
+    async updatePaySchedule(organizationId: string, payScheduleId: string, request: UpdatePayScheduleRequest): Promise<PaySchedule> {
+        await this.getPaySchedule(organizationId, payScheduleId);
+        return this.repository.update(organizationId, payScheduleId, request);
     }
 
-    async deletePaySchedule(payScheduleId: string): Promise<void> {
-        await this.repository.delete(payScheduleId);
+    async deletePaySchedule(organizationId: string, payScheduleId: string): Promise<void> {
+        await this.repository.delete(organizationId, payScheduleId);
         logger.info("Pay schedule deleted", { payScheduleId });
     }
 }

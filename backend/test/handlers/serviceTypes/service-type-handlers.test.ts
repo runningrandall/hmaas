@@ -179,7 +179,7 @@ describe('Service Type Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListServiceTypes).toHaveBeenCalledWith({ limit: 20, cursor: 'some-cursor' });
+            expect(mockListServiceTypes).toHaveBeenCalledWith('org-test-123', { limit: 20, cursor: 'some-cursor' });
         });
     });
 

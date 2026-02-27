@@ -12,11 +12,12 @@ const service = new InvoiceService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const invoiceId = event.pathParameters?.invoiceId;
     if (!invoiceId) {
         throw new AppError("Missing invoiceId", 400);
     }
-    const result = await service.getInvoice(invoiceId);
+    const result = await service.getInvoice(organizationId, invoiceId);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

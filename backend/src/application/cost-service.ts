@@ -11,10 +11,11 @@ export class CostService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createCost(request: CreateCostRequest): Promise<Cost> {
+    async createCost(organizationId: string, request: CreateCostRequest): Promise<Cost> {
         logger.info("Creating cost", { serviceId: request.serviceId, costTypeId: request.costTypeId });
 
         const cost: Cost = {
+            organizationId,
             costId: randomUUID(),
             serviceId: request.serviceId,
             costTypeId: request.costTypeId,
@@ -27,6 +28,7 @@ export class CostService {
         const created = await this.repository.create(cost);
         metrics.addMetric('CostsCreated', MetricUnit.Count, 1);
         await this.eventPublisher.publish("CostAdded", {
+            organizationId,
             costId: created.costId,
             serviceId: request.serviceId,
             amount: request.amount,
@@ -35,22 +37,22 @@ export class CostService {
         return created;
     }
 
-    async getCost(costId: string): Promise<Cost> {
-        const cost = await this.repository.get(costId);
+    async getCost(organizationId: string, costId: string): Promise<Cost> {
+        const cost = await this.repository.get(organizationId, costId);
         if (!cost) {
             throw new AppError("Cost not found", 404);
         }
         return cost;
     }
 
-    async listCostsByService(serviceId: string, options?: PaginationOptions): Promise<PaginatedResult<Cost>> {
-        return this.repository.listByServiceId(serviceId, options);
+    async listCostsByService(organizationId: string, serviceId: string, options?: PaginationOptions): Promise<PaginatedResult<Cost>> {
+        return this.repository.listByServiceId(organizationId, serviceId, options);
     }
 
-    async deleteCost(costId: string): Promise<void> {
-        const cost = await this.getCost(costId);
-        await this.repository.delete(costId);
-        await this.eventPublisher.publish("CostRemoved", { costId, serviceId: cost.serviceId });
+    async deleteCost(organizationId: string, costId: string): Promise<void> {
+        const cost = await this.getCost(organizationId, costId);
+        await this.repository.delete(organizationId, costId);
+        await this.eventPublisher.publish("CostRemoved", { organizationId, costId, serviceId: cost.serviceId });
         logger.info("Cost deleted", { costId });
     }
 }

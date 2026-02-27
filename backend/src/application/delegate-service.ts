@@ -11,10 +11,11 @@ export class DelegateService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createDelegate(request: CreateDelegateRequest): Promise<Delegate> {
+    async createDelegate(organizationId: string, request: CreateDelegateRequest): Promise<Delegate> {
         logger.info("Creating delegate", { accountId: request.accountId, email: request.email });
 
         const delegate: Delegate = {
+            organizationId,
             delegateId: randomUUID(),
             accountId: request.accountId,
             email: request.email,
@@ -26,27 +27,27 @@ export class DelegateService {
 
         const created = await this.repository.create(delegate);
         metrics.addMetric('DelegatesCreated', MetricUnit.Count, 1);
-        await this.eventPublisher.publish("DelegateAdded", { delegateId: created.delegateId, accountId: request.accountId });
+        await this.eventPublisher.publish("DelegateAdded", { organizationId, delegateId: created.delegateId, accountId: request.accountId });
 
         return created;
     }
 
-    async getDelegate(delegateId: string): Promise<Delegate> {
-        const delegate = await this.repository.get(delegateId);
+    async getDelegate(organizationId: string, delegateId: string): Promise<Delegate> {
+        const delegate = await this.repository.get(organizationId, delegateId);
         if (!delegate) {
             throw new AppError("Delegate not found", 404);
         }
         return delegate;
     }
 
-    async listDelegatesByAccount(accountId: string, options?: PaginationOptions): Promise<PaginatedResult<Delegate>> {
-        return this.repository.listByAccountId(accountId, options);
+    async listDelegatesByAccount(organizationId: string, accountId: string, options?: PaginationOptions): Promise<PaginatedResult<Delegate>> {
+        return this.repository.listByAccountId(organizationId, accountId, options);
     }
 
-    async deleteDelegate(delegateId: string): Promise<void> {
-        const delegate = await this.getDelegate(delegateId);
-        await this.repository.delete(delegateId);
-        await this.eventPublisher.publish("DelegateRemoved", { delegateId, accountId: delegate.accountId });
+    async deleteDelegate(organizationId: string, delegateId: string): Promise<void> {
+        const delegate = await this.getDelegate(organizationId, delegateId);
+        await this.repository.delete(organizationId, delegateId);
+        await this.eventPublisher.publish("DelegateRemoved", { organizationId, delegateId, accountId: delegate.accountId });
         logger.info("Delegate deleted", { delegateId });
     }
 }

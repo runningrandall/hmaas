@@ -3,6 +3,7 @@ import { PaginationOptions, PaginatedResult } from "./shared";
 export type DelegateStatus = "active" | "inactive";
 
 export interface Delegate {
+    organizationId: string;
     delegateId: string;
     accountId: string;
     email: string;
@@ -22,7 +23,7 @@ export interface CreateDelegateRequest {
 
 export interface DelegateRepository {
     create(delegate: Delegate): Promise<Delegate>;
-    get(delegateId: string): Promise<Delegate | null>;
-    listByAccountId(accountId: string, options?: PaginationOptions): Promise<PaginatedResult<Delegate>>;
-    delete(delegateId: string): Promise<void>;
+    get(organizationId: string, delegateId: string): Promise<Delegate | null>;
+    listByAccountId(organizationId: string, accountId: string, options?: PaginationOptions): Promise<PaginatedResult<Delegate>>;
+    delete(organizationId: string, delegateId: string): Promise<void>;
 }

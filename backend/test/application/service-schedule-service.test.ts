@@ -18,6 +18,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('ServiceScheduleService', () => {
     let service: ServiceScheduleService;
 
@@ -37,6 +39,7 @@ describe('ServiceScheduleService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 serviceScheduleId: 'ss-1',
                 ...request,
                 status: 'scheduled',
@@ -48,15 +51,16 @@ describe('ServiceScheduleService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createServiceSchedule(request as any);
+            const result = await service.createServiceSchedule(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('ServiceScheduleCreated', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('ServiceScheduleCreated', expect.objectContaining({
+                organizationId: ORG_ID,
                 serviceScheduleId: created.serviceScheduleId,
                 serviceId: request.serviceId,
                 servicerId: request.servicerId,
-            });
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('ServiceSchedulesCreated', expect.any(String), 1);
         });
 
@@ -72,7 +76,7 @@ describe('ServiceScheduleService', () => {
             mockRepo.create.mockImplementation(async (ss: any) => ss);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createServiceSchedule(request as any);
+            const result = await service.createServiceSchedule(ORG_ID, request as any);
 
             expect(result.status).toBe('scheduled');
             expect(result.serviceScheduleId).toEqual(expect.any(String));
@@ -82,73 +86,74 @@ describe('ServiceScheduleService', () => {
 
     describe('getServiceSchedule', () => {
         it('should return service schedule when found', async () => {
-            const schedule = { serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'scheduled' };
+            const schedule = { organizationId: ORG_ID, serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'scheduled' };
             mockRepo.get.mockResolvedValue(schedule);
 
-            const result = await service.getServiceSchedule('ss-1');
+            const result = await service.getServiceSchedule(ORG_ID, 'ss-1');
 
             expect(result).toEqual(schedule);
-            expect(mockRepo.get).toHaveBeenCalledWith('ss-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'ss-1');
         });
 
         it('should throw AppError 404 when service schedule not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getServiceSchedule('missing')).rejects.toThrow(AppError);
-            await expect(service.getServiceSchedule('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getServiceSchedule(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getServiceSchedule(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listByServicerId', () => {
         it('should delegate to repo.listByServicerId', async () => {
-            const paginated = { items: [{ serviceScheduleId: 'ss-1', servicerId: 'svc-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, serviceScheduleId: 'ss-1', servicerId: 'svc-1' }], count: 1 };
             mockRepo.listByServicerId.mockResolvedValue(paginated);
 
-            const result = await service.listByServicerId('svc-1', { limit: 10 });
+            const result = await service.listByServicerId(ORG_ID, 'svc-1', { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.listByServicerId).toHaveBeenCalledWith('svc-1', { limit: 10 });
+            expect(mockRepo.listByServicerId).toHaveBeenCalledWith(ORG_ID, 'svc-1', { limit: 10 });
         });
     });
 
     describe('updateServiceSchedule', () => {
         it('should update service schedule without publishing event when status does not change to completed', async () => {
-            const existing = { serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'scheduled' };
-            const updated = { serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'in_progress' };
+            const existing = { organizationId: ORG_ID, serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'scheduled' };
+            const updated = { organizationId: ORG_ID, serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'in_progress' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.updateServiceSchedule('ss-1', { status: 'in_progress' } as any);
+            const result = await service.updateServiceSchedule(ORG_ID, 'ss-1', { status: 'in_progress' } as any);
 
             expect(result).toEqual(updated);
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
 
         it('should publish ServiceScheduleCompleted when status changes from non-completed to completed', async () => {
-            const existing = { serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'in_progress' };
-            const updated = { serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'completed' };
+            const existing = { organizationId: ORG_ID, serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'in_progress' };
+            const updated = { organizationId: ORG_ID, serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'completed' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.updateServiceSchedule('ss-1', { status: 'completed' } as any);
+            const result = await service.updateServiceSchedule(ORG_ID, 'ss-1', { status: 'completed' } as any);
 
             expect(result).toEqual(updated);
-            expect(mockPublisher.publish).toHaveBeenCalledWith('ServiceScheduleCompleted', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('ServiceScheduleCompleted', expect.objectContaining({
+                organizationId: ORG_ID,
                 serviceScheduleId: 'ss-1',
                 serviceId: 'psvc-1',
                 servicerId: 'svc-1',
-            });
+            }));
         });
 
         it('should not publish ServiceScheduleCompleted when status was already completed', async () => {
-            const existing = { serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'completed' };
-            const updated = { serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'completed' };
+            const existing = { organizationId: ORG_ID, serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'completed' };
+            const updated = { organizationId: ORG_ID, serviceScheduleId: 'ss-1', serviceId: 'psvc-1', servicerId: 'svc-1', status: 'completed' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
 
-            await service.updateServiceSchedule('ss-1', { status: 'completed' } as any);
+            await service.updateServiceSchedule(ORG_ID, 'ss-1', { status: 'completed' } as any);
 
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
@@ -156,7 +161,7 @@ describe('ServiceScheduleService', () => {
         it('should throw 404 if service schedule not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.updateServiceSchedule('missing', { status: 'completed' } as any)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.updateServiceSchedule(ORG_ID, 'missing', { status: 'completed' } as any)).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 });

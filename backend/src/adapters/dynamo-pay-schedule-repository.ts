@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoPayScheduleSchema = z.object({
+    organizationId: z.string(),
     payScheduleId: z.string(),
     name: z.string(),
     frequency: z.enum(["weekly", "biweekly", "semimonthly", "monthly"]),
@@ -32,15 +33,15 @@ export class DynamoPayScheduleRepository implements PayScheduleRepository {
         return parsePaySchedule(result.data);
     }
 
-    async get(payScheduleId: string): Promise<PaySchedule | null> {
-        const result = await DBService.entities.paySchedule.get({ payScheduleId }).go();
+    async get(organizationId: string, payScheduleId: string): Promise<PaySchedule | null> {
+        const result = await DBService.entities.paySchedule.get({ organizationId, payScheduleId }).go();
         if (!result.data) return null;
         return parsePaySchedule(result.data);
     }
 
-    async list(options?: PaginationOptions): Promise<PaginatedResult<PaySchedule>> {
+    async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<PaySchedule>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.paySchedule.scan.go({
+        const result = await DBService.entities.paySchedule.query.byOrgSchedules({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -50,12 +51,12 @@ export class DynamoPayScheduleRepository implements PayScheduleRepository {
         };
     }
 
-    async update(payScheduleId: string, data: UpdatePayScheduleRequest): Promise<PaySchedule> {
-        const result = await DBService.entities.paySchedule.patch({ payScheduleId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, payScheduleId: string, data: UpdatePayScheduleRequest): Promise<PaySchedule> {
+        const result = await DBService.entities.paySchedule.patch({ organizationId, payScheduleId }).set(data).go({ response: "all_new" });
         return parsePaySchedule(result.data);
     }
 
-    async delete(payScheduleId: string): Promise<void> {
-        await DBService.entities.paySchedule.delete({ payScheduleId }).go();
+    async delete(organizationId: string, payScheduleId: string): Promise<void> {
+        await DBService.entities.paySchedule.delete({ organizationId, payScheduleId }).go();
     }
 }

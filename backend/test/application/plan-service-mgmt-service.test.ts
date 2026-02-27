@@ -18,6 +18,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('PlanServiceMgmtService', () => {
     let service: PlanServiceMgmtService;
 
@@ -36,6 +38,7 @@ describe('PlanServiceMgmtService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 planId: 'plan-1',
                 serviceTypeId: 'svc-type-1',
                 includedVisits: 4,
@@ -48,14 +51,15 @@ describe('PlanServiceMgmtService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createPlanService(request as any);
+            const result = await service.createPlanService(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PlanServiceAdded', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PlanServiceAdded', expect.objectContaining({
+                organizationId: ORG_ID,
                 planId: 'plan-1',
                 serviceTypeId: 'svc-type-1',
-            });
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('PlanServicesCreated', expect.any(String), 1);
         });
 
@@ -70,7 +74,7 @@ describe('PlanServiceMgmtService', () => {
             mockRepo.create.mockImplementation(async (ps: any) => ps);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createPlanService(request as any);
+            const result = await service.createPlanService(ORG_ID, request as any);
 
             expect(result.createdAt).toEqual(expect.any(String));
         });
@@ -78,32 +82,32 @@ describe('PlanServiceMgmtService', () => {
 
     describe('getPlanService', () => {
         it('should return plan service when found', async () => {
-            const planService = { planId: 'plan-1', serviceTypeId: 'svc-type-1', includedVisits: 4 };
+            const planService = { organizationId: ORG_ID, planId: 'plan-1', serviceTypeId: 'svc-type-1', includedVisits: 4 };
             mockRepo.get.mockResolvedValue(planService);
 
-            const result = await service.getPlanService('plan-1', 'svc-type-1');
+            const result = await service.getPlanService(ORG_ID, 'plan-1', 'svc-type-1');
 
             expect(result).toEqual(planService);
-            expect(mockRepo.get).toHaveBeenCalledWith('plan-1', 'svc-type-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'plan-1', 'svc-type-1');
         });
 
         it('should throw AppError 404 when plan service not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getPlanService('plan-1', 'missing')).rejects.toThrow(AppError);
-            await expect(service.getPlanService('plan-1', 'missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getPlanService(ORG_ID, 'plan-1', 'missing')).rejects.toThrow(AppError);
+            await expect(service.getPlanService(ORG_ID, 'plan-1', 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listPlanServices', () => {
         it('should delegate to repo.listByPlanId', async () => {
-            const paginated = { items: [{ planId: 'plan-1', serviceTypeId: 'svc-type-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, planId: 'plan-1', serviceTypeId: 'svc-type-1' }], count: 1 };
             mockRepo.listByPlanId.mockResolvedValue(paginated);
 
-            const result = await service.listPlanServices('plan-1', { limit: 10 });
+            const result = await service.listPlanServices(ORG_ID, 'plan-1', { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.listByPlanId).toHaveBeenCalledWith('plan-1', { limit: 10 });
+            expect(mockRepo.listByPlanId).toHaveBeenCalledWith(ORG_ID, 'plan-1', { limit: 10 });
         });
     });
 
@@ -112,13 +116,14 @@ describe('PlanServiceMgmtService', () => {
             mockRepo.delete.mockResolvedValue(undefined);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.deletePlanService('plan-1', 'svc-type-1');
+            await service.deletePlanService(ORG_ID, 'plan-1', 'svc-type-1');
 
-            expect(mockRepo.delete).toHaveBeenCalledWith('plan-1', 'svc-type-1');
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PlanServiceRemoved', {
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'plan-1', 'svc-type-1');
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PlanServiceRemoved', expect.objectContaining({
+                organizationId: ORG_ID,
                 planId: 'plan-1',
                 serviceTypeId: 'svc-type-1',
-            });
+            }));
         });
     });
 });

@@ -11,10 +11,11 @@ export class ServiceTypeService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createServiceType(request: CreateServiceTypeRequest): Promise<ServiceType> {
+    async createServiceType(organizationId: string, request: CreateServiceTypeRequest): Promise<ServiceType> {
         logger.info("Creating service type", { name: request.name });
 
         const serviceType: ServiceType = {
+            organizationId,
             serviceTypeId: randomUUID(),
             name: request.name,
             description: request.description,
@@ -27,25 +28,25 @@ export class ServiceTypeService {
         return created;
     }
 
-    async getServiceType(serviceTypeId: string): Promise<ServiceType> {
-        const serviceType = await this.repository.get(serviceTypeId);
+    async getServiceType(organizationId: string, serviceTypeId: string): Promise<ServiceType> {
+        const serviceType = await this.repository.get(organizationId, serviceTypeId);
         if (!serviceType) {
             throw new AppError("Service type not found", 404);
         }
         return serviceType;
     }
 
-    async listServiceTypes(options?: PaginationOptions): Promise<PaginatedResult<ServiceType>> {
-        return this.repository.list(options);
+    async listServiceTypes(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceType>> {
+        return this.repository.list(organizationId, options);
     }
 
-    async updateServiceType(serviceTypeId: string, request: UpdateServiceTypeRequest): Promise<ServiceType> {
-        await this.getServiceType(serviceTypeId);
-        return this.repository.update(serviceTypeId, request);
+    async updateServiceType(organizationId: string, serviceTypeId: string, request: UpdateServiceTypeRequest): Promise<ServiceType> {
+        await this.getServiceType(organizationId, serviceTypeId);
+        return this.repository.update(organizationId, serviceTypeId, request);
     }
 
-    async deleteServiceType(serviceTypeId: string): Promise<void> {
-        await this.repository.delete(serviceTypeId);
+    async deleteServiceType(organizationId: string, serviceTypeId: string): Promise<void> {
+        await this.repository.delete(organizationId, serviceTypeId);
         logger.info("Service type deleted", { serviceTypeId });
     }
 }

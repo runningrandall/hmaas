@@ -4,6 +4,7 @@ export type PaymentMethodType = "credit_card" | "debit_card" | "bank_account" | 
 export type PaymentMethodStatus = "active" | "inactive";
 
 export interface PaymentMethod {
+    organizationId: string;
     paymentMethodId: string;
     customerId: string;
     type: PaymentMethodType;
@@ -23,7 +24,7 @@ export interface CreatePaymentMethodRequest {
 
 export interface PaymentMethodRepository {
     create(paymentMethod: PaymentMethod): Promise<PaymentMethod>;
-    get(paymentMethodId: string): Promise<PaymentMethod | null>;
-    listByCustomerId(customerId: string, options?: PaginationOptions): Promise<PaginatedResult<PaymentMethod>>;
-    delete(paymentMethodId: string): Promise<void>;
+    get(organizationId: string, paymentMethodId: string): Promise<PaymentMethod | null>;
+    listByCustomerId(organizationId: string, customerId: string, options?: PaginationOptions): Promise<PaginatedResult<PaymentMethod>>;
+    delete(organizationId: string, paymentMethodId: string): Promise<void>;
 }

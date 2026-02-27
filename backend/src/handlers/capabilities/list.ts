@@ -12,13 +12,14 @@ const service = new CapabilityService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const employeeId = event.pathParameters?.employeeId;
     if (!employeeId) {
         throw new AppError("Missing employeeId", 400);
     }
     const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : undefined;
     const cursor = event.queryStringParameters?.cursor || undefined;
-    const result = await service.listCapabilitiesByEmployee(employeeId, { limit, cursor });
+    const result = await service.listCapabilitiesByEmployee(organizationId, employeeId, { limit, cursor });
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

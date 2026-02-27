@@ -14,11 +14,12 @@ const service = new CustomerService(customerRepo, accountRepo, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const customerId = event.pathParameters?.customerId;
     if (!customerId) {
         throw new AppError("Missing customerId", 400);
     }
-    const result = await service.getCustomerAccount(customerId);
+    const result = await service.getCustomerAccount(organizationId, customerId);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

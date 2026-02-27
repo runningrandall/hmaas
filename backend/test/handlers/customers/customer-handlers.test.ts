@@ -155,7 +155,7 @@ describe('Customer Handlers', () => {
             expect(result.statusCode).toBe(200);
             const body = JSON.parse(result.body);
             expect(body.items).toHaveLength(1);
-            expect(mockListCustomers).toHaveBeenCalledWith({ limit: 10, cursor: 'some-cursor' });
+            expect(mockListCustomers).toHaveBeenCalledWith('org-test-123', { limit: 10, cursor: 'some-cursor' });
         });
     });
 

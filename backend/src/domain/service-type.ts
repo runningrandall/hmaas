@@ -1,6 +1,7 @@
 import { PaginationOptions, PaginatedResult } from "./shared";
 
 export interface ServiceType {
+    organizationId: string;
     serviceTypeId: string;
     name: string;
     description?: string;
@@ -23,8 +24,8 @@ export interface UpdateServiceTypeRequest {
 
 export interface ServiceTypeRepository {
     create(serviceType: ServiceType): Promise<ServiceType>;
-    get(serviceTypeId: string): Promise<ServiceType | null>;
-    list(options?: PaginationOptions): Promise<PaginatedResult<ServiceType>>;
-    update(serviceTypeId: string, data: UpdateServiceTypeRequest): Promise<ServiceType>;
-    delete(serviceTypeId: string): Promise<void>;
+    get(organizationId: string, serviceTypeId: string): Promise<ServiceType | null>;
+    list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceType>>;
+    update(organizationId: string, serviceTypeId: string, data: UpdateServiceTypeRequest): Promise<ServiceType>;
+    delete(organizationId: string, serviceTypeId: string): Promise<void>;
 }

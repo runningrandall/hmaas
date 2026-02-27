@@ -11,6 +11,7 @@ export const PlanServiceEntity = new Entity(
             service: "versa",
         },
         attributes: {
+            organizationId: { type: "string", required: true },
             planId: { type: "string", required: true },
             serviceTypeId: { type: "string", required: true },
             includedVisits: { type: "number" },
@@ -20,8 +21,13 @@ export const PlanServiceEntity = new Entity(
         },
         indexes: {
             byPlanAndServiceType: {
-                pk: { field: "pk", composite: ["planId"] },
+                pk: { field: "pk", composite: ["organizationId", "planId"] },
                 sk: { field: "sk", composite: ["serviceTypeId"] },
+            },
+            byOrg: {
+                index: "gsi2",
+                pk: { field: "gsi2pk", composite: [] },
+                sk: { field: "gsi2sk", composite: ["organizationId", "planId"] },
             },
         },
     },

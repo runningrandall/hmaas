@@ -7,6 +7,7 @@ export const PropertyEntity = new Entity(
     {
         model: { entity: "property", version: "1", service: "versa" },
         attributes: {
+            organizationId: { type: "string", required: true },
             propertyId: { type: "string", required: true },
             customerId: { type: "string", required: true },
             propertyTypeId: { type: "string", required: true },
@@ -25,13 +26,18 @@ export const PropertyEntity = new Entity(
         },
         indexes: {
             byPropertyId: {
-                pk: { field: "pk", composite: ["propertyId"] },
+                pk: { field: "pk", composite: ["organizationId", "propertyId"] },
                 sk: { field: "sk", composite: [] },
             },
             byCustomerId: {
                 index: "gsi1",
-                pk: { field: "gsi1pk", composite: ["customerId"] },
+                pk: { field: "gsi1pk", composite: ["organizationId", "customerId"] },
                 sk: { field: "gsi1sk", composite: ["propertyId"] },
+            },
+            byOrg: {
+                index: "gsi2",
+                pk: { field: "gsi2pk", composite: [] },
+                sk: { field: "gsi2sk", composite: ["organizationId", "propertyId"] },
             },
         },
     },

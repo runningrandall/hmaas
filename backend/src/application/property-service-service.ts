@@ -11,10 +11,11 @@ export class PropertyServiceService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createPropertyService(request: CreatePropertyServiceRequest): Promise<PropertyService> {
+    async createPropertyService(organizationId: string, request: CreatePropertyServiceRequest): Promise<PropertyService> {
         logger.info("Creating property service", { propertyId: request.propertyId, serviceTypeId: request.serviceTypeId });
 
         const propertyService: PropertyService = {
+            organizationId,
             serviceId: randomUUID(),
             propertyId: request.propertyId,
             serviceTypeId: request.serviceTypeId,
@@ -29,6 +30,7 @@ export class PropertyServiceService {
         const created = await this.repository.create(propertyService);
         metrics.addMetric('PropertyServicesCreated', MetricUnit.Count, 1);
         await this.eventPublisher.publish("PropertyServiceActivated", {
+            organizationId,
             serviceId: created.serviceId,
             propertyId: request.propertyId,
             serviceTypeId: request.serviceTypeId,
@@ -37,31 +39,33 @@ export class PropertyServiceService {
         return created;
     }
 
-    async getPropertyService(serviceId: string): Promise<PropertyService> {
-        const propertyService = await this.repository.get(serviceId);
+    async getPropertyService(organizationId: string, serviceId: string): Promise<PropertyService> {
+        const propertyService = await this.repository.get(organizationId, serviceId);
         if (!propertyService) {
             throw new AppError("Property service not found", 404);
         }
         return propertyService;
     }
 
-    async listPropertyServicesByProperty(propertyId: string, options?: PaginationOptions): Promise<PaginatedResult<PropertyService>> {
-        return this.repository.listByPropertyId(propertyId, options);
+    async listPropertyServicesByProperty(organizationId: string, propertyId: string, options?: PaginationOptions): Promise<PaginatedResult<PropertyService>> {
+        return this.repository.listByPropertyId(organizationId, propertyId, options);
     }
 
-    async updatePropertyService(serviceId: string, request: UpdatePropertyServiceRequest): Promise<PropertyService> {
-        const existing = await this.getPropertyService(serviceId);
-        const updated = await this.repository.update(serviceId, request);
+    async updatePropertyService(organizationId: string, serviceId: string, request: UpdatePropertyServiceRequest): Promise<PropertyService> {
+        const existing = await this.getPropertyService(organizationId, serviceId);
+        const updated = await this.repository.update(organizationId, serviceId, request);
 
         if (request.status && request.status !== existing.status) {
             if (request.status === "cancelled") {
                 await this.eventPublisher.publish("PropertyServiceCancelled", {
+                    organizationId,
                     serviceId,
                     propertyId: existing.propertyId,
                     serviceTypeId: existing.serviceTypeId,
                 });
             } else if (request.status === "active" && existing.status !== "active") {
                 await this.eventPublisher.publish("PropertyServiceActivated", {
+                    organizationId,
                     serviceId,
                     propertyId: existing.propertyId,
                     serviceTypeId: existing.serviceTypeId,
@@ -72,10 +76,11 @@ export class PropertyServiceService {
         return updated;
     }
 
-    async deletePropertyService(serviceId: string): Promise<void> {
-        const existing = await this.getPropertyService(serviceId);
-        await this.repository.delete(serviceId);
+    async deletePropertyService(organizationId: string, serviceId: string): Promise<void> {
+        const existing = await this.getPropertyService(organizationId, serviceId);
+        await this.repository.delete(organizationId, serviceId);
         await this.eventPublisher.publish("PropertyServiceCancelled", {
+            organizationId,
             serviceId,
             propertyId: existing.propertyId,
             serviceTypeId: existing.serviceTypeId,

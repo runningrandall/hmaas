@@ -139,7 +139,7 @@ describe('Property Service Handlers', () => {
             expect(result.statusCode).toBe(200);
             const body = JSON.parse(result.body);
             expect(body.items).toHaveLength(1);
-            expect(mockListPropertyServicesByProperty).toHaveBeenCalledWith('prop-456', { limit: undefined, cursor: undefined });
+            expect(mockListPropertyServicesByProperty).toHaveBeenCalledWith('org-test-123', 'prop-456', { limit: undefined, cursor: undefined });
         });
 
         it('should return 400 when propertyId is missing', async () => {
@@ -160,7 +160,7 @@ describe('Property Service Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListPropertyServicesByProperty).toHaveBeenCalledWith('prop-456', { limit: 5, cursor: 'some-cursor' });
+            expect(mockListPropertyServicesByProperty).toHaveBeenCalledWith('org-test-123', 'prop-456', { limit: 5, cursor: 'some-cursor' });
         });
     });
 

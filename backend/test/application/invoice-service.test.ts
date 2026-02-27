@@ -18,6 +18,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('InvoiceService', () => {
     let service: InvoiceService;
 
@@ -40,6 +42,7 @@ describe('InvoiceService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 invoiceId: 'inv-1',
                 ...request,
                 status: 'draft',
@@ -51,14 +54,15 @@ describe('InvoiceService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createInvoice(request as any);
+            const result = await service.createInvoice(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('InvoiceCreated', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('InvoiceCreated', expect.objectContaining({
+                organizationId: ORG_ID,
                 invoiceId: created.invoiceId,
                 customerId: request.customerId,
-            });
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('InvoicesCreated', expect.any(String), 1);
         });
 
@@ -77,7 +81,7 @@ describe('InvoiceService', () => {
             mockRepo.create.mockImplementation(async (i: any) => i);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createInvoice(request as any);
+            const result = await service.createInvoice(ORG_ID, request as any);
 
             expect(result.status).toBe('draft');
             expect(result.invoiceId).toEqual(expect.any(String));
@@ -87,52 +91,53 @@ describe('InvoiceService', () => {
 
     describe('getInvoice', () => {
         it('should return invoice when found', async () => {
-            const invoice = { invoiceId: 'inv-1', customerId: 'cust-1', status: 'draft' };
+            const invoice = { organizationId: ORG_ID, invoiceId: 'inv-1', customerId: 'cust-1', status: 'draft' };
             mockRepo.get.mockResolvedValue(invoice);
 
-            const result = await service.getInvoice('inv-1');
+            const result = await service.getInvoice(ORG_ID, 'inv-1');
 
             expect(result).toEqual(invoice);
-            expect(mockRepo.get).toHaveBeenCalledWith('inv-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'inv-1');
         });
 
         it('should throw AppError 404 when invoice not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getInvoice('missing')).rejects.toThrow(AppError);
-            await expect(service.getInvoice('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getInvoice(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getInvoice(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listInvoicesByCustomer', () => {
         it('should delegate to repo.listByCustomerId', async () => {
-            const paginated = { items: [{ invoiceId: 'inv-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, invoiceId: 'inv-1' }], count: 1 };
             mockRepo.listByCustomerId.mockResolvedValue(paginated);
 
-            const result = await service.listInvoicesByCustomer('cust-1', { limit: 10 });
+            const result = await service.listInvoicesByCustomer(ORG_ID, 'cust-1', { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.listByCustomerId).toHaveBeenCalledWith('cust-1', { limit: 10 });
+            expect(mockRepo.listByCustomerId).toHaveBeenCalledWith(ORG_ID, 'cust-1', { limit: 10 });
         });
     });
 
     describe('updateInvoice', () => {
         it('should update invoice without special behavior when status does not change to paid', async () => {
-            const existing = { invoiceId: 'inv-1', customerId: 'cust-1', status: 'draft', total: 9900 };
-            const updated = { invoiceId: 'inv-1', customerId: 'cust-1', status: 'sent', total: 9900 };
+            const existing = { organizationId: ORG_ID, invoiceId: 'inv-1', customerId: 'cust-1', status: 'draft', total: 9900 };
+            const updated = { organizationId: ORG_ID, invoiceId: 'inv-1', customerId: 'cust-1', status: 'sent', total: 9900 };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.updateInvoice('inv-1', { status: 'sent' });
+            const result = await service.updateInvoice(ORG_ID, 'inv-1', { status: 'sent' });
 
             expect(result).toEqual(updated);
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
 
         it('should auto-set paidAt, publish InvoicePaid event, and record metric when status changes to paid', async () => {
-            const existing = { invoiceId: 'inv-1', customerId: 'cust-1', status: 'sent', total: 9900 };
+            const existing = { organizationId: ORG_ID, invoiceId: 'inv-1', customerId: 'cust-1', status: 'sent', total: 9900 };
             const updated = {
+                organizationId: ORG_ID,
                 invoiceId: 'inv-1',
                 customerId: 'cust-1',
                 status: 'paid',
@@ -145,10 +150,11 @@ describe('InvoiceService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.updateInvoice('inv-1', { status: 'paid' });
+            const result = await service.updateInvoice(ORG_ID, 'inv-1', { status: 'paid' });
 
             expect(result).toEqual(updated);
             expect(mockPublisher.publish).toHaveBeenCalledWith('InvoicePaid', expect.objectContaining({
+                organizationId: ORG_ID,
                 invoiceId: 'inv-1',
                 customerId: 'cust-1',
                 total: 9900,
@@ -158,12 +164,12 @@ describe('InvoiceService', () => {
         });
 
         it('should not publish InvoicePaid when invoice is already paid', async () => {
-            const existing = { invoiceId: 'inv-1', customerId: 'cust-1', status: 'paid', total: 9900 };
-            const updated = { invoiceId: 'inv-1', customerId: 'cust-1', status: 'paid', total: 9900 };
+            const existing = { organizationId: ORG_ID, invoiceId: 'inv-1', customerId: 'cust-1', status: 'paid', total: 9900 };
+            const updated = { organizationId: ORG_ID, invoiceId: 'inv-1', customerId: 'cust-1', status: 'paid', total: 9900 };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
 
-            await service.updateInvoice('inv-1', { status: 'paid' });
+            await service.updateInvoice(ORG_ID, 'inv-1', { status: 'paid' });
 
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
@@ -171,7 +177,7 @@ describe('InvoiceService', () => {
         it('should throw 404 if invoice not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.updateInvoice('missing', { status: 'sent' })).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.updateInvoice(ORG_ID, 'missing', { status: 'sent' })).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 });

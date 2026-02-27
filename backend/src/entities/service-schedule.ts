@@ -11,6 +11,7 @@ export const ServiceScheduleEntity = new Entity(
             service: "versa",
         },
         attributes: {
+            organizationId: { type: "string", required: true },
             serviceScheduleId: { type: "string", required: true },
             serviceId: { type: "string", required: true },
             servicerId: { type: "string", required: true },
@@ -24,13 +25,18 @@ export const ServiceScheduleEntity = new Entity(
         },
         indexes: {
             byServiceScheduleId: {
-                pk: { field: "pk", composite: ["serviceScheduleId"] },
+                pk: { field: "pk", composite: ["organizationId", "serviceScheduleId"] },
                 sk: { field: "sk", composite: [] },
             },
             byServicerId: {
                 index: "gsi1",
-                pk: { field: "gsi1pk", composite: ["servicerId"] },
+                pk: { field: "gsi1pk", composite: ["organizationId", "servicerId"] },
                 sk: { field: "gsi1sk", composite: ["scheduledDate"] },
+            },
+            byOrg: {
+                index: "gsi2",
+                pk: { field: "gsi2pk", composite: [] },
+                sk: { field: "gsi2sk", composite: ["organizationId", "serviceScheduleId"] },
             },
         },
     },

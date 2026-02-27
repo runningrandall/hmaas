@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoPropertyTypeSchema = z.object({
+    organizationId: z.string(),
     propertyTypeId: z.string(),
     name: z.string(),
     description: z.string().optional().nullable(),
@@ -30,15 +31,15 @@ export class DynamoPropertyTypeRepository implements PropertyTypeRepository {
         return parsePropertyType(result.data);
     }
 
-    async get(propertyTypeId: string): Promise<PropertyType | null> {
-        const result = await DBService.entities.propertyType.get({ propertyTypeId }).go();
+    async get(organizationId: string, propertyTypeId: string): Promise<PropertyType | null> {
+        const result = await DBService.entities.propertyType.get({ organizationId, propertyTypeId }).go();
         if (!result.data) return null;
         return parsePropertyType(result.data);
     }
 
-    async list(options?: PaginationOptions): Promise<PaginatedResult<PropertyType>> {
+    async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<PropertyType>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.propertyType.scan.go({
+        const result = await DBService.entities.propertyType.query.byPropertyTypeId({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -48,12 +49,12 @@ export class DynamoPropertyTypeRepository implements PropertyTypeRepository {
         };
     }
 
-    async update(propertyTypeId: string, data: UpdatePropertyTypeRequest): Promise<PropertyType> {
-        const result = await DBService.entities.propertyType.patch({ propertyTypeId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, propertyTypeId: string, data: UpdatePropertyTypeRequest): Promise<PropertyType> {
+        const result = await DBService.entities.propertyType.patch({ organizationId, propertyTypeId }).set(data).go({ response: "all_new" });
         return parsePropertyType(result.data);
     }
 
-    async delete(propertyTypeId: string): Promise<void> {
-        await DBService.entities.propertyType.delete({ propertyTypeId }).go();
+    async delete(organizationId: string, propertyTypeId: string): Promise<void> {
+        await DBService.entities.propertyType.delete({ organizationId, propertyTypeId }).go();
     }
 }

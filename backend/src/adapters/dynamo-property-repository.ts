@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoPropertySchema = z.object({
+    organizationId: z.string(),
     propertyId: z.string(),
     customerId: z.string(),
     propertyTypeId: z.string(),
@@ -40,15 +41,15 @@ export class DynamoPropertyRepository implements PropertyRepository {
         return parseProperty(result.data);
     }
 
-    async get(propertyId: string): Promise<Property | null> {
-        const result = await DBService.entities.property.get({ propertyId }).go();
+    async get(organizationId: string, propertyId: string): Promise<Property | null> {
+        const result = await DBService.entities.property.get({ organizationId, propertyId }).go();
         if (!result.data) return null;
         return parseProperty(result.data);
     }
 
-    async listByCustomerId(customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Property>> {
+    async listByCustomerId(organizationId: string, customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Property>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.property.query.byCustomerId({ customerId }).go({
+        const result = await DBService.entities.property.query.byCustomerId({ organizationId, customerId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -58,12 +59,12 @@ export class DynamoPropertyRepository implements PropertyRepository {
         };
     }
 
-    async update(propertyId: string, data: UpdatePropertyRequest): Promise<Property> {
-        const result = await DBService.entities.property.patch({ propertyId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, propertyId: string, data: UpdatePropertyRequest): Promise<Property> {
+        const result = await DBService.entities.property.patch({ organizationId, propertyId }).set(data).go({ response: "all_new" });
         return parseProperty(result.data);
     }
 
-    async delete(propertyId: string): Promise<void> {
-        await DBService.entities.property.delete({ propertyId }).go();
+    async delete(organizationId: string, propertyId: string): Promise<void> {
+        await DBService.entities.property.delete({ organizationId, propertyId }).go();
     }
 }

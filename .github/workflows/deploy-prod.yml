@@ -157,6 +157,13 @@ jobs:
           export NEXT_PUBLIC_API_URL=$API_URL
           echo "Found API_URL: $API_URL"
 
+          # Get Cognito config from Auth Stack
+          AUTH_STACK_NAME="VersaAuthStack-prod"
+          export NEXT_PUBLIC_USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name $AUTH_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" --output text)
+          export NEXT_PUBLIC_USER_POOL_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name $AUTH_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='UserPoolClientId'].OutputValue" --output text)
+          echo "Found UserPoolId: $NEXT_PUBLIC_USER_POOL_ID"
+          echo "Found UserPoolClientId: $NEXT_PUBLIC_USER_POOL_CLIENT_ID"
+
           # Deploy to stage-specific bucket
           BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='BucketName'].OutputValue" --output text)
           DISTRO_ID=$(aws cloudformation describe-stacks --stack-name $FRONTEND_STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" --output text)

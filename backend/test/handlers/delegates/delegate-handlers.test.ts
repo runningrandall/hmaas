@@ -111,6 +111,7 @@ describe('Delegate Handlers', () => {
             await handler(event, mockContext);
 
             expect(mockCreateDelegate).toHaveBeenCalledWith(
+                'org-test-123',
                 expect.objectContaining({ email: 'other@example.com', name: 'Bob Jones', accountId: 'acct-456' }),
             );
         });
@@ -150,7 +151,7 @@ describe('Delegate Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListDelegatesByAccount).toHaveBeenCalledWith('acct-123', { limit: 10, cursor: 'some-cursor' });
+            expect(mockListDelegatesByAccount).toHaveBeenCalledWith('org-test-123', 'acct-123', { limit: 10, cursor: 'some-cursor' });
         });
     });
 
@@ -186,7 +187,7 @@ describe('Delegate Handlers', () => {
             const event = makeDeleteEvent({ delegateId: 'del-789' });
             await handler(event, mockContext);
 
-            expect(mockDeleteDelegate).toHaveBeenCalledWith('del-789');
+            expect(mockDeleteDelegate).toHaveBeenCalledWith('org-test-123', 'del-789');
         });
     });
 });

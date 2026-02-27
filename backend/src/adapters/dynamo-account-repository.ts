@@ -4,6 +4,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoAccountSchema = z.object({
+    organizationId: z.string(),
     accountId: z.string(),
     customerId: z.string(),
     cognitoUserId: z.string().optional().nullable(),
@@ -30,24 +31,24 @@ export class DynamoAccountRepository implements AccountRepository {
         return parseAccount(result.data);
     }
 
-    async get(accountId: string): Promise<Account | null> {
-        const result = await DBService.entities.account.get({ accountId }).go();
+    async get(organizationId: string, accountId: string): Promise<Account | null> {
+        const result = await DBService.entities.account.get({ organizationId, accountId }).go();
         if (!result.data) return null;
         return parseAccount(result.data);
     }
 
-    async getByCustomerId(customerId: string): Promise<Account | null> {
-        const result = await DBService.entities.account.query.byCustomerId({ customerId }).go();
+    async getByCustomerId(organizationId: string, customerId: string): Promise<Account | null> {
+        const result = await DBService.entities.account.query.byCustomerId({ organizationId, customerId }).go();
         if (!result.data || result.data.length === 0) return null;
         return parseAccount(result.data[0]);
     }
 
-    async update(accountId: string, data: UpdateAccountRequest): Promise<Account> {
-        const result = await DBService.entities.account.patch({ accountId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, accountId: string, data: UpdateAccountRequest): Promise<Account> {
+        const result = await DBService.entities.account.patch({ organizationId, accountId }).set(data).go({ response: "all_new" });
         return parseAccount(result.data);
     }
 
-    async delete(accountId: string): Promise<void> {
-        await DBService.entities.account.delete({ accountId }).go();
+    async delete(organizationId: string, accountId: string): Promise<void> {
+        await DBService.entities.account.delete({ organizationId, accountId }).go();
     }
 }

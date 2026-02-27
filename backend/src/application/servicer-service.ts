@@ -11,10 +11,11 @@ export class ServicerService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createServicer(request: CreateServicerRequest): Promise<Servicer> {
+    async createServicer(organizationId: string, request: CreateServicerRequest): Promise<Servicer> {
         logger.info("Creating servicer", { employeeId: request.employeeId });
 
         const servicer: Servicer = {
+            organizationId,
             servicerId: randomUUID(),
             employeeId: request.employeeId,
             serviceArea: request.serviceArea,
@@ -25,31 +26,31 @@ export class ServicerService {
 
         const created = await this.repository.create(servicer);
         metrics.addMetric('ServicersCreated', MetricUnit.Count, 1);
-        await this.eventPublisher.publish("ServicerCreated", { servicerId: created.servicerId, employeeId: request.employeeId });
+        await this.eventPublisher.publish("ServicerCreated", { organizationId, servicerId: created.servicerId, employeeId: request.employeeId });
 
         return created;
     }
 
-    async getServicer(servicerId: string): Promise<Servicer> {
-        const servicer = await this.repository.get(servicerId);
+    async getServicer(organizationId: string, servicerId: string): Promise<Servicer> {
+        const servicer = await this.repository.get(organizationId, servicerId);
         if (!servicer) {
             throw new AppError("Servicer not found", 404);
         }
         return servicer;
     }
 
-    async getServicerByEmployeeId(employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Servicer>> {
-        return this.repository.getByEmployeeId(employeeId, options);
+    async getServicerByEmployeeId(organizationId: string, employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Servicer>> {
+        return this.repository.getByEmployeeId(organizationId, employeeId, options);
     }
 
-    async updateServicer(servicerId: string, request: UpdateServicerRequest): Promise<Servicer> {
-        await this.getServicer(servicerId);
-        const updated = await this.repository.update(servicerId, request);
+    async updateServicer(organizationId: string, servicerId: string, request: UpdateServicerRequest): Promise<Servicer> {
+        await this.getServicer(organizationId, servicerId);
+        const updated = await this.repository.update(organizationId, servicerId, request);
         return updated;
     }
 
-    async deleteServicer(servicerId: string): Promise<void> {
-        await this.repository.delete(servicerId);
+    async deleteServicer(organizationId: string, servicerId: string): Promise<void> {
+        await this.repository.delete(organizationId, servicerId);
         logger.info("Servicer deleted", { servicerId });
     }
 }

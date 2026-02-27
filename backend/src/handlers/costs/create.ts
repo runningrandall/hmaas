@@ -14,6 +14,7 @@ const service = new CostService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const serviceId = event.pathParameters?.serviceId;
     if (!serviceId) {
         throw new AppError("Missing serviceId", 400);
@@ -28,7 +29,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         metrics.addMetric('ValidationErrors', MetricUnit.Count, 1);
         throw parseResult.error;
     }
-    const result = await service.createCost({ ...parseResult.data, serviceId });
+    const result = await service.createCost(organizationId, { ...parseResult.data, serviceId });
     return { statusCode: 201, body: JSON.stringify(result) };
 };
 

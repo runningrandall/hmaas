@@ -19,6 +19,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('PlanAppService', () => {
     let service: PlanAppService;
 
@@ -37,6 +39,7 @@ describe('PlanAppService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 planId: 'plan-1',
                 ...request,
                 status: 'active',
@@ -48,11 +51,14 @@ describe('PlanAppService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createPlan(request as any);
+            const result = await service.createPlan(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PlanCreated', { planId: created.planId });
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PlanCreated', expect.objectContaining({
+                organizationId: ORG_ID,
+                planId: created.planId,
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('PlansCreated', expect.any(String), 1);
         });
 
@@ -68,7 +74,7 @@ describe('PlanAppService', () => {
             mockRepo.create.mockImplementation(async (p: any) => p);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createPlan(request);
+            const result = await service.createPlan(ORG_ID, request);
 
             expect(result.status).toBe('inactive');
         });
@@ -84,7 +90,7 @@ describe('PlanAppService', () => {
             mockRepo.create.mockImplementation(async (p: any) => p);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createPlan(request as any);
+            const result = await service.createPlan(ORG_ID, request as any);
 
             expect(result.status).toBe('active');
         });
@@ -92,43 +98,43 @@ describe('PlanAppService', () => {
 
     describe('getPlan', () => {
         it('should return plan when found', async () => {
-            const plan = { planId: 'plan-1', name: 'Basic Plan', status: 'active' };
+            const plan = { organizationId: ORG_ID, planId: 'plan-1', name: 'Basic Plan', status: 'active' };
             mockRepo.get.mockResolvedValue(plan);
 
-            const result = await service.getPlan('plan-1');
+            const result = await service.getPlan(ORG_ID, 'plan-1');
 
             expect(result).toEqual(plan);
-            expect(mockRepo.get).toHaveBeenCalledWith('plan-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'plan-1');
         });
 
         it('should throw AppError 404 when plan not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getPlan('missing')).rejects.toThrow(AppError);
-            await expect(service.getPlan('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getPlan(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getPlan(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listPlans', () => {
         it('should delegate to repo.list', async () => {
-            const paginated = { items: [{ planId: 'plan-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, planId: 'plan-1' }], count: 1 };
             mockRepo.list.mockResolvedValue(paginated);
 
-            const result = await service.listPlans({ limit: 5 });
+            const result = await service.listPlans(ORG_ID, { limit: 5 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.list).toHaveBeenCalledWith({ limit: 5 });
+            expect(mockRepo.list).toHaveBeenCalledWith(ORG_ID, { limit: 5 });
         });
     });
 
     describe('updatePlan', () => {
         it('should update plan and return updated plan without publishing event', async () => {
-            const existing = { planId: 'plan-1', name: 'Basic Plan', status: 'active' };
-            const updated = { planId: 'plan-1', name: 'Basic Plan v2', status: 'active' };
+            const existing = { organizationId: ORG_ID, planId: 'plan-1', name: 'Basic Plan', status: 'active' };
+            const updated = { organizationId: ORG_ID, planId: 'plan-1', name: 'Basic Plan v2', status: 'active' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
 
-            const result = await service.updatePlan('plan-1', { name: 'Basic Plan v2' });
+            const result = await service.updatePlan(ORG_ID, 'plan-1', { name: 'Basic Plan v2' });
 
             expect(result).toEqual(updated);
             expect(mockPublisher.publish).not.toHaveBeenCalled();
@@ -137,7 +143,7 @@ describe('PlanAppService', () => {
         it('should throw 404 if plan not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.updatePlan('missing', { name: 'x' })).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.updatePlan(ORG_ID, 'missing', { name: 'x' })).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
@@ -145,9 +151,9 @@ describe('PlanAppService', () => {
         it('should delete plan without publishing event', async () => {
             mockRepo.delete.mockResolvedValue(undefined);
 
-            await service.deletePlan('plan-1');
+            await service.deletePlan(ORG_ID, 'plan-1');
 
-            expect(mockRepo.delete).toHaveBeenCalledWith('plan-1');
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'plan-1');
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
     });

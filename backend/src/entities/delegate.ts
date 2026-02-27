@@ -11,6 +11,7 @@ export const DelegateEntity = new Entity(
             service: "versa",
         },
         attributes: {
+            organizationId: { type: "string", required: true },
             delegateId: { type: "string", required: true },
             accountId: { type: "string", required: true },
             email: { type: "string", required: true },
@@ -22,13 +23,18 @@ export const DelegateEntity = new Entity(
         },
         indexes: {
             byDelegateId: {
-                pk: { field: "pk", composite: ["delegateId"] },
+                pk: { field: "pk", composite: ["organizationId", "delegateId"] },
                 sk: { field: "sk", composite: [] },
             },
             byAccountId: {
                 index: "gsi1",
-                pk: { field: "gsi1pk", composite: ["accountId"] },
+                pk: { field: "gsi1pk", composite: ["organizationId", "accountId"] },
                 sk: { field: "gsi1sk", composite: ["delegateId"] },
+            },
+            byOrg: {
+                index: "gsi2",
+                pk: { field: "gsi2pk", composite: [] },
+                sk: { field: "gsi2sk", composite: ["organizationId", "delegateId"] },
             },
         },
     },

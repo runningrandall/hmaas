@@ -12,13 +12,14 @@ const service = new PlanServiceMgmtService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const planId = event.pathParameters?.planId;
     if (!planId) {
         throw new AppError("Missing planId", 400);
     }
     const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : undefined;
     const cursor = event.queryStringParameters?.cursor || undefined;
-    const result = await service.listPlanServices(planId, { limit, cursor });
+    const result = await service.listPlanServices(organizationId, planId, { limit, cursor });
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

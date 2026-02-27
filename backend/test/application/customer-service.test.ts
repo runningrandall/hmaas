@@ -25,6 +25,8 @@ const mockAccountRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('CustomerService', () => {
     let service: CustomerService;
 
@@ -44,12 +46,14 @@ describe('CustomerService', () => {
             };
 
             const createdCustomer = {
+                organizationId: ORG_ID,
                 customerId: 'cust-1',
                 ...request,
                 status: 'active',
                 createdAt: '2024-01-01T00:00:00.000Z',
             };
             const createdAccount = {
+                organizationId: ORG_ID,
                 accountId: 'acct-1',
                 customerId: 'cust-1',
                 status: 'active',
@@ -63,13 +67,14 @@ describe('CustomerService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createCustomer(request);
+            const result = await service.createCustomer(ORG_ID, request);
 
             expect(result.customer).toEqual(createdCustomer);
             expect(result.account).toEqual(createdAccount);
             expect(mockCustomerRepo.create).toHaveBeenCalledOnce();
             expect(mockAccountRepo.create).toHaveBeenCalledOnce();
             expect(mockPublisher.publish).toHaveBeenCalledWith('CustomerCreated', expect.objectContaining({
+                organizationId: ORG_ID,
                 customerId: expect.any(String),
                 accountId: expect.any(String),
             }));
@@ -88,7 +93,7 @@ describe('CustomerService', () => {
             mockAccountRepo.create.mockImplementation(async (a: any) => a);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createCustomer(request);
+            const result = await service.createCustomer(ORG_ID, request);
 
             expect(result.customer.status).toBe('active');
             expect(result.customer.createdAt).toEqual(expect.any(String));
@@ -98,60 +103,61 @@ describe('CustomerService', () => {
 
     describe('getCustomer', () => {
         it('should return customer when found', async () => {
-            const customer = { customerId: 'cust-1', firstName: 'John', status: 'active' };
+            const customer = { organizationId: ORG_ID, customerId: 'cust-1', firstName: 'John', status: 'active' };
             mockCustomerRepo.get.mockResolvedValue(customer);
 
-            const result = await service.getCustomer('cust-1');
+            const result = await service.getCustomer(ORG_ID, 'cust-1');
 
             expect(result).toEqual(customer);
-            expect(mockCustomerRepo.get).toHaveBeenCalledWith('cust-1');
+            expect(mockCustomerRepo.get).toHaveBeenCalledWith(ORG_ID, 'cust-1');
         });
 
         it('should throw AppError 404 when customer not found', async () => {
             mockCustomerRepo.get.mockResolvedValue(null);
 
-            await expect(service.getCustomer('missing')).rejects.toThrow(AppError);
-            await expect(service.getCustomer('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getCustomer(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getCustomer(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listCustomers', () => {
         it('should delegate to repo.list with options', async () => {
-            const paginated = { items: [{ customerId: 'cust-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, customerId: 'cust-1' }], count: 1 };
             mockCustomerRepo.list.mockResolvedValue(paginated);
 
             const options = { limit: 10 };
-            const result = await service.listCustomers(options);
+            const result = await service.listCustomers(ORG_ID, options);
 
             expect(result).toEqual(paginated);
-            expect(mockCustomerRepo.list).toHaveBeenCalledWith(options);
+            expect(mockCustomerRepo.list).toHaveBeenCalledWith(ORG_ID, options);
         });
     });
 
     describe('updateCustomer', () => {
         it('should update customer successfully', async () => {
-            const existing = { customerId: 'cust-1', status: 'active' };
-            const updated = { customerId: 'cust-1', status: 'active', phone: '555-9999' };
+            const existing = { organizationId: ORG_ID, customerId: 'cust-1', status: 'active' };
+            const updated = { organizationId: ORG_ID, customerId: 'cust-1', status: 'active', phone: '555-9999' };
             mockCustomerRepo.get.mockResolvedValue(existing);
             mockCustomerRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.updateCustomer('cust-1', { phone: '555-9999' });
+            const result = await service.updateCustomer(ORG_ID, 'cust-1', { phone: '555-9999' });
 
             expect(result).toEqual(updated);
-            expect(mockCustomerRepo.update).toHaveBeenCalledWith('cust-1', { phone: '555-9999' });
+            expect(mockCustomerRepo.update).toHaveBeenCalledWith(ORG_ID, 'cust-1', { phone: '555-9999' });
         });
 
         it('should publish CustomerStatusChanged when status changes', async () => {
-            const existing = { customerId: 'cust-1', status: 'active' };
-            const updated = { customerId: 'cust-1', status: 'inactive' };
+            const existing = { organizationId: ORG_ID, customerId: 'cust-1', status: 'active' };
+            const updated = { organizationId: ORG_ID, customerId: 'cust-1', status: 'inactive' };
             mockCustomerRepo.get.mockResolvedValue(existing);
             mockCustomerRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.updateCustomer('cust-1', { status: 'inactive' });
+            await service.updateCustomer(ORG_ID, 'cust-1', { status: 'inactive' });
 
             expect(mockPublisher.publish).toHaveBeenCalledWith('CustomerStatusChanged', {
+                organizationId: ORG_ID,
                 customerId: 'cust-1',
                 previousStatus: 'active',
                 newStatus: 'inactive',
@@ -159,13 +165,13 @@ describe('CustomerService', () => {
         });
 
         it('should NOT publish CustomerStatusChanged when status does not change', async () => {
-            const existing = { customerId: 'cust-1', status: 'active' };
-            const updated = { customerId: 'cust-1', status: 'active', phone: '555-1234' };
+            const existing = { organizationId: ORG_ID, customerId: 'cust-1', status: 'active' };
+            const updated = { organizationId: ORG_ID, customerId: 'cust-1', status: 'active', phone: '555-1234' };
             mockCustomerRepo.get.mockResolvedValue(existing);
             mockCustomerRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.updateCustomer('cust-1', { phone: '555-1234', status: 'active' });
+            await service.updateCustomer(ORG_ID, 'cust-1', { phone: '555-1234', status: 'active' });
 
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
@@ -173,7 +179,7 @@ describe('CustomerService', () => {
         it('should throw 404 if customer not found during update', async () => {
             mockCustomerRepo.get.mockResolvedValue(null);
 
-            await expect(service.updateCustomer('missing', { phone: '555-0000' })).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.updateCustomer(ORG_ID, 'missing', { phone: '555-0000' })).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
@@ -181,37 +187,37 @@ describe('CustomerService', () => {
         it('should delete customer', async () => {
             mockCustomerRepo.delete.mockResolvedValue(undefined);
 
-            await service.deleteCustomer('cust-1');
+            await service.deleteCustomer(ORG_ID, 'cust-1');
 
-            expect(mockCustomerRepo.delete).toHaveBeenCalledWith('cust-1');
+            expect(mockCustomerRepo.delete).toHaveBeenCalledWith(ORG_ID, 'cust-1');
         });
     });
 
     describe('getCustomerAccount', () => {
         it('should return account for a valid customer', async () => {
-            const customer = { customerId: 'cust-1' };
-            const account = { accountId: 'acct-1', customerId: 'cust-1' };
+            const customer = { organizationId: ORG_ID, customerId: 'cust-1' };
+            const account = { organizationId: ORG_ID, accountId: 'acct-1', customerId: 'cust-1' };
             mockCustomerRepo.get.mockResolvedValue(customer);
             mockAccountRepo.getByCustomerId.mockResolvedValue(account);
 
-            const result = await service.getCustomerAccount('cust-1');
+            const result = await service.getCustomerAccount(ORG_ID, 'cust-1');
 
             expect(result).toEqual(account);
-            expect(mockAccountRepo.getByCustomerId).toHaveBeenCalledWith('cust-1');
+            expect(mockAccountRepo.getByCustomerId).toHaveBeenCalledWith(ORG_ID, 'cust-1');
         });
 
         it('should throw 404 if customer not found', async () => {
             mockCustomerRepo.get.mockResolvedValue(null);
 
-            await expect(service.getCustomerAccount('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getCustomerAccount(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
 
         it('should throw 404 if account not found for customer', async () => {
-            const customer = { customerId: 'cust-1' };
+            const customer = { organizationId: ORG_ID, customerId: 'cust-1' };
             mockCustomerRepo.get.mockResolvedValue(customer);
             mockAccountRepo.getByCustomerId.mockResolvedValue(null);
 
-            await expect(service.getCustomerAccount('cust-1')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getCustomerAccount(ORG_ID, 'cust-1')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 });

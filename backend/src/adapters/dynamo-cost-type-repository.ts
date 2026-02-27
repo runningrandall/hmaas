@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoCostTypeSchema = z.object({
+    organizationId: z.string(),
     costTypeId: z.string(),
     name: z.string(),
     description: z.string().optional().nullable(),
@@ -30,15 +31,15 @@ export class DynamoCostTypeRepository implements CostTypeRepository {
         return parseCostType(result.data);
     }
 
-    async get(costTypeId: string): Promise<CostType | null> {
-        const result = await DBService.entities.costType.get({ costTypeId }).go();
+    async get(organizationId: string, costTypeId: string): Promise<CostType | null> {
+        const result = await DBService.entities.costType.get({ organizationId, costTypeId }).go();
         if (!result.data) return null;
         return parseCostType(result.data);
     }
 
-    async list(options?: PaginationOptions): Promise<PaginatedResult<CostType>> {
+    async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<CostType>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.costType.scan.go({
+        const result = await DBService.entities.costType.query.byCostTypeId({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -48,12 +49,12 @@ export class DynamoCostTypeRepository implements CostTypeRepository {
         };
     }
 
-    async update(costTypeId: string, data: UpdateCostTypeRequest): Promise<CostType> {
-        const result = await DBService.entities.costType.patch({ costTypeId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, costTypeId: string, data: UpdateCostTypeRequest): Promise<CostType> {
+        const result = await DBService.entities.costType.patch({ organizationId, costTypeId }).set(data).go({ response: "all_new" });
         return parseCostType(result.data);
     }
 
-    async delete(costTypeId: string): Promise<void> {
-        await DBService.entities.costType.delete({ costTypeId }).go();
+    async delete(organizationId: string, costTypeId: string): Promise<void> {
+        await DBService.entities.costType.delete({ organizationId, costTypeId }).go();
     }
 }

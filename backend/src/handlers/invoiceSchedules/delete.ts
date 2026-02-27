@@ -12,11 +12,12 @@ const service = new InvoiceScheduleService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const invoiceScheduleId = event.pathParameters?.invoiceScheduleId;
     if (!invoiceScheduleId) {
         throw new AppError("Missing invoiceScheduleId", 400);
     }
-    await service.deleteInvoiceSchedule(invoiceScheduleId);
+    await service.deleteInvoiceSchedule(organizationId, invoiceScheduleId);
     return { statusCode: 200, body: JSON.stringify({ message: "Invoice schedule deleted" }) };
 };
 

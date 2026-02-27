@@ -8,6 +8,10 @@ export interface PaginatedResult<T> {
     cursor?: string | null;
 }
 
+export interface OrganizationContext {
+    organizationId: string;
+}
+
 export interface EventPublisher {
     publish(eventName: string, payload: unknown): Promise<void>;
 }

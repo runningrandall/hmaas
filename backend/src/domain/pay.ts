@@ -3,6 +3,7 @@ import { PaginationOptions, PaginatedResult } from "./shared";
 export type PayType = "hourly" | "salary" | "commission" | "bonus";
 
 export interface Pay {
+    organizationId: string;
     payId: string;
     employeeId: string;
     payScheduleId?: string;
@@ -30,8 +31,8 @@ export interface UpdatePayRequest {
 
 export interface PayRepository {
     create(pay: Pay): Promise<Pay>;
-    get(payId: string): Promise<Pay | null>;
-    listByEmployeeId(employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Pay>>;
-    update(payId: string, data: UpdatePayRequest): Promise<Pay>;
-    delete(payId: string): Promise<void>;
+    get(organizationId: string, payId: string): Promise<Pay | null>;
+    listByEmployeeId(organizationId: string, employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Pay>>;
+    update(organizationId: string, payId: string, data: UpdatePayRequest): Promise<Pay>;
+    delete(organizationId: string, payId: string): Promise<void>;
 }

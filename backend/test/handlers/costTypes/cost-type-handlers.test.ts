@@ -174,7 +174,7 @@ describe('Cost Type Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListCostTypes).toHaveBeenCalledWith({ limit: 15, cursor: 'some-cursor' });
+            expect(mockListCostTypes).toHaveBeenCalledWith('org-test-123', { limit: 15, cursor: 'some-cursor' });
         });
     });
 

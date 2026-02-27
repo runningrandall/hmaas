@@ -3,6 +3,7 @@ import { PaginationOptions, PaginatedResult } from "./shared";
 export type ServiceScheduleStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 
 export interface ServiceSchedule {
+    organizationId: string;
     serviceScheduleId: string;
     serviceId: string;
     servicerId: string;
@@ -33,7 +34,7 @@ export interface UpdateServiceScheduleRequest {
 
 export interface ServiceScheduleRepository {
     create(schedule: ServiceSchedule): Promise<ServiceSchedule>;
-    get(serviceScheduleId: string): Promise<ServiceSchedule | null>;
-    listByServicerId(servicerId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceSchedule>>;
-    update(serviceScheduleId: string, data: UpdateServiceScheduleRequest): Promise<ServiceSchedule>;
+    get(organizationId: string, serviceScheduleId: string): Promise<ServiceSchedule | null>;
+    listByServicerId(organizationId: string, servicerId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceSchedule>>;
+    update(organizationId: string, serviceScheduleId: string, data: UpdateServiceScheduleRequest): Promise<ServiceSchedule>;
 }

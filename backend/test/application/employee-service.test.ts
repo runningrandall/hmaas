@@ -19,6 +19,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('EmployeeService', () => {
     let service: EmployeeService;
 
@@ -39,6 +41,7 @@ describe('EmployeeService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 employeeId: 'emp-1',
                 ...request,
                 status: 'active',
@@ -50,11 +53,14 @@ describe('EmployeeService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createEmployee(request as any);
+            const result = await service.createEmployee(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('EmployeeCreated', { employeeId: created.employeeId });
+            expect(mockPublisher.publish).toHaveBeenCalledWith('EmployeeCreated', expect.objectContaining({
+                organizationId: ORG_ID,
+                employeeId: created.employeeId,
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('EmployeesCreated', expect.any(String), 1);
         });
 
@@ -71,7 +77,7 @@ describe('EmployeeService', () => {
             mockRepo.create.mockImplementation(async (e: any) => e);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createEmployee(request as any);
+            const result = await service.createEmployee(ORG_ID, request as any);
 
             expect(result.status).toBe('active');
             expect(result.createdAt).toEqual(expect.any(String));
@@ -81,43 +87,43 @@ describe('EmployeeService', () => {
 
     describe('getEmployee', () => {
         it('should return employee when found', async () => {
-            const employee = { employeeId: 'emp-1', firstName: 'Alice', status: 'active' };
+            const employee = { organizationId: ORG_ID, employeeId: 'emp-1', firstName: 'Alice', status: 'active' };
             mockRepo.get.mockResolvedValue(employee);
 
-            const result = await service.getEmployee('emp-1');
+            const result = await service.getEmployee(ORG_ID, 'emp-1');
 
             expect(result).toEqual(employee);
-            expect(mockRepo.get).toHaveBeenCalledWith('emp-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'emp-1');
         });
 
         it('should throw AppError 404 when employee not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getEmployee('missing')).rejects.toThrow(AppError);
-            await expect(service.getEmployee('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getEmployee(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getEmployee(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listEmployees', () => {
         it('should delegate to repo.list', async () => {
-            const paginated = { items: [{ employeeId: 'emp-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, employeeId: 'emp-1' }], count: 1 };
             mockRepo.list.mockResolvedValue(paginated);
 
-            const result = await service.listEmployees({ limit: 20 });
+            const result = await service.listEmployees(ORG_ID, { limit: 20 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.list).toHaveBeenCalledWith({ limit: 20 });
+            expect(mockRepo.list).toHaveBeenCalledWith(ORG_ID, { limit: 20 });
         });
     });
 
     describe('updateEmployee', () => {
         it('should update employee and return updated without publishing event', async () => {
-            const existing = { employeeId: 'emp-1', firstName: 'Alice', status: 'active' };
-            const updated = { employeeId: 'emp-1', firstName: 'Alice', phone: '555-9999', status: 'active' };
+            const existing = { organizationId: ORG_ID, employeeId: 'emp-1', firstName: 'Alice', status: 'active' };
+            const updated = { organizationId: ORG_ID, employeeId: 'emp-1', firstName: 'Alice', phone: '555-9999', status: 'active' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
 
-            const result = await service.updateEmployee('emp-1', { phone: '555-9999' });
+            const result = await service.updateEmployee(ORG_ID, 'emp-1', { phone: '555-9999' });
 
             expect(result).toEqual(updated);
             expect(mockPublisher.publish).not.toHaveBeenCalled();
@@ -126,7 +132,7 @@ describe('EmployeeService', () => {
         it('should throw 404 if employee not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.updateEmployee('missing', { phone: '555-0000' })).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.updateEmployee(ORG_ID, 'missing', { phone: '555-0000' })).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
@@ -134,9 +140,9 @@ describe('EmployeeService', () => {
         it('should delete employee without publishing event', async () => {
             mockRepo.delete.mockResolvedValue(undefined);
 
-            await service.deleteEmployee('emp-1');
+            await service.deleteEmployee(ORG_ID, 'emp-1');
 
-            expect(mockRepo.delete).toHaveBeenCalledWith('emp-1');
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'emp-1');
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
     });

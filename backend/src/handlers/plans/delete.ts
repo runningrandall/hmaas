@@ -12,11 +12,12 @@ const service = new PlanAppService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const planId = event.pathParameters?.planId;
     if (!planId) {
         throw new AppError("Missing planId", 400);
     }
-    await service.deletePlan(planId);
+    await service.deletePlan(organizationId, planId);
     return { statusCode: 204, body: "" };
 };
 

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoServicerSchema = z.object({
+    organizationId: z.string(),
     servicerId: z.string(),
     employeeId: z.string(),
     serviceArea: z.string().optional().nullable(),
@@ -33,15 +34,15 @@ export class DynamoServicerRepository implements ServicerRepository {
         return parseServicer(result.data);
     }
 
-    async get(servicerId: string): Promise<Servicer | null> {
-        const result = await DBService.entities.servicer.get({ servicerId }).go();
+    async get(organizationId: string, servicerId: string): Promise<Servicer | null> {
+        const result = await DBService.entities.servicer.get({ organizationId, servicerId }).go();
         if (!result.data) return null;
         return parseServicer(result.data);
     }
 
-    async getByEmployeeId(employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Servicer>> {
+    async getByEmployeeId(organizationId: string, employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Servicer>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.servicer.query.byEmployeeId({ employeeId }).go({
+        const result = await DBService.entities.servicer.query.byEmployeeId({ organizationId, employeeId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -51,12 +52,12 @@ export class DynamoServicerRepository implements ServicerRepository {
         };
     }
 
-    async update(servicerId: string, data: UpdateServicerRequest): Promise<Servicer> {
-        const result = await DBService.entities.servicer.patch({ servicerId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, servicerId: string, data: UpdateServicerRequest): Promise<Servicer> {
+        const result = await DBService.entities.servicer.patch({ organizationId, servicerId }).set(data).go({ response: "all_new" });
         return parseServicer(result.data);
     }
 
-    async delete(servicerId: string): Promise<void> {
-        await DBService.entities.servicer.delete({ servicerId }).go();
+    async delete(organizationId: string, servicerId: string): Promise<void> {
+        await DBService.entities.servicer.delete({ organizationId, servicerId }).go();
     }
 }

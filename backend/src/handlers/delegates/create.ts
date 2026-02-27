@@ -14,6 +14,7 @@ const service = new DelegateService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const accountId = event.pathParameters?.accountId;
     if (!accountId) {
         throw new AppError("Missing accountId", 400);
@@ -28,7 +29,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         metrics.addMetric('ValidationErrors', MetricUnit.Count, 1);
         throw parseResult.error;
     }
-    const result = await service.createDelegate({ ...parseResult.data, accountId });
+    const result = await service.createDelegate(organizationId, { ...parseResult.data, accountId });
     return { statusCode: 201, body: JSON.stringify(result) };
 };
 

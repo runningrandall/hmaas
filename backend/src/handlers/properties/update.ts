@@ -14,6 +14,7 @@ const service = new PropertyService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const propertyId = event.pathParameters?.propertyId;
     if (!propertyId) {
         throw new AppError("Missing propertyId", 400);
@@ -28,7 +29,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         metrics.addMetric('ValidationErrors', MetricUnit.Count, 1);
         throw parseResult.error;
     }
-    const result = await service.updateProperty(propertyId, parseResult.data);
+    const result = await service.updateProperty(organizationId, propertyId, parseResult.data);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

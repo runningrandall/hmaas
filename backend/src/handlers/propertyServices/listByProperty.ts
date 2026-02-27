@@ -12,13 +12,14 @@ const service = new PropertyServiceService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const propertyId = event.pathParameters?.propertyId;
     if (!propertyId) {
         throw new AppError("Missing propertyId", 400);
     }
     const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : undefined;
     const cursor = event.queryStringParameters?.cursor || undefined;
-    const result = await service.listPropertyServicesByProperty(propertyId, { limit, cursor });
+    const result = await service.listPropertyServicesByProperty(organizationId, propertyId, { limit, cursor });
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

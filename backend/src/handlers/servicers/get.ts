@@ -12,11 +12,12 @@ const service = new ServicerService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const servicerId = event.pathParameters?.servicerId;
     if (!servicerId) {
         throw new AppError("Missing servicerId", 400);
     }
-    const result = await service.getServicer(servicerId);
+    const result = await service.getServicer(organizationId, servicerId);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

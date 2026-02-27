@@ -10,6 +10,7 @@ export interface LineItem {
 }
 
 export interface Invoice {
+    organizationId: string;
     invoiceId: string;
     customerId: string;
     invoiceNumber: string;
@@ -49,7 +50,7 @@ export interface UpdateInvoiceRequest {
 
 export interface InvoiceRepository {
     create(invoice: Invoice): Promise<Invoice>;
-    get(invoiceId: string): Promise<Invoice | null>;
-    listByCustomerId(customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Invoice>>;
-    update(invoiceId: string, data: UpdateInvoiceRequest): Promise<Invoice>;
+    get(organizationId: string, invoiceId: string): Promise<Invoice | null>;
+    listByCustomerId(organizationId: string, customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Invoice>>;
+    update(organizationId: string, invoiceId: string, data: UpdateInvoiceRequest): Promise<Invoice>;
 }

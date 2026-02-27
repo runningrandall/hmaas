@@ -12,11 +12,12 @@ const service = new EmployeeService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const employeeId = event.pathParameters?.employeeId;
     if (!employeeId) {
         throw new AppError("Missing employeeId", 400);
     }
-    const result = await service.getEmployee(employeeId);
+    const result = await service.getEmployee(organizationId, employeeId);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

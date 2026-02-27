@@ -12,7 +12,9 @@ vi.mock('../../src/entities/service', () => ({
             customer: {
                 create: vi.fn(),
                 get: vi.fn(),
-                scan: { go: vi.fn() },
+                query: {
+                    byCustomerId: vi.fn(),
+                },
                 patch: vi.fn(),
                 delete: vi.fn(),
             },
@@ -24,6 +26,7 @@ import { DynamoCustomerRepository } from '../../src/adapters/dynamo-customer-rep
 import { DBService } from '../../src/entities/service';
 
 const mockCustomer = {
+    organizationId: 'org-test-123',
     customerId: 'cust-1',
     firstName: 'John',
     lastName: 'Doe',
@@ -66,7 +69,7 @@ describe('DynamoCustomerRepository', () => {
         it('should return a parsed customer when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockCustomer }) });
 
-            const result = await repo.get('cust-1');
+            const result = await repo.get('org-test-123', 'cust-1');
 
             expect(result).not.toBeNull();
             expect(result!.customerId).toBe('cust-1');
@@ -75,7 +78,7 @@ describe('DynamoCustomerRepository', () => {
         it('should return null when customer not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('cust-1');
+            const result = await repo.get('org-test-123', 'cust-1');
 
             expect(result).toBeNull();
         });
@@ -83,36 +86,41 @@ describe('DynamoCustomerRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('cust-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'cust-1')).rejects.toThrow('Data integrity error');
         });
     });
 
     describe('list', () => {
         it('should return paginated list of customers', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockCustomer], cursor: null });
+            mockEntity.query.byCustomerId.mockReturnValue({
+                go: vi.fn().mockResolvedValue({ data: [mockCustomer], cursor: null }),
+            });
 
-            const result = await repo.list();
+            const result = await repo.list('org-test-123');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].customerId).toBe('cust-1');
             expect(result.cursor).toBeNull();
         });
 
-        it('should pass limit and cursor options to scan', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockCustomer], cursor: 'next-page' });
+        it('should pass limit and cursor options', async () => {
+            const mockGo = vi.fn().mockResolvedValue({ data: [mockCustomer], cursor: 'next-page' });
+            mockEntity.query.byCustomerId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.list({ limit: 5, cursor: 'some-cursor' });
+            const result = await repo.list('org-test-123', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
+            expect(mockEntity.query.byCustomerId).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
 
         it('should use default page size when no options provided', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [], cursor: null });
+            const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
+            mockEntity.query.byCustomerId.mockReturnValue({ go: mockGo });
 
-            await repo.list();
+            await repo.list('org-test-123');
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 20 });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
     });
 
@@ -123,7 +131,7 @@ describe('DynamoCustomerRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updatedCustomer }) }),
             });
 
-            const result = await repo.update('cust-1', { firstName: 'Jane' });
+            const result = await repo.update('org-test-123', 'cust-1', { firstName: 'Jane' });
 
             expect(result.firstName).toBe('Jane');
         });
@@ -133,7 +141,7 @@ describe('DynamoCustomerRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('cust-1', { firstName: 'Jane' })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'cust-1', { firstName: 'Jane' })).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -141,8 +149,8 @@ describe('DynamoCustomerRepository', () => {
         it('should delete a customer', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('cust-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ customerId: 'cust-1' });
+            await expect(repo.delete('org-test-123', 'cust-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', customerId: 'cust-1' });
         });
     });
 });

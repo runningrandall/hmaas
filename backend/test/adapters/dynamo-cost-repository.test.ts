@@ -25,6 +25,7 @@ import { DynamoCostRepository } from '../../src/adapters/dynamo-cost-repository'
 import { DBService } from '../../src/entities/service';
 
 const mockCost = {
+    organizationId: 'org-test-123',
     costId: 'cost-1',
     serviceId: 'svc-1',
     costTypeId: 'ct-1',
@@ -65,7 +66,7 @@ describe('DynamoCostRepository', () => {
         it('should return a parsed cost when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockCost }) });
 
-            const result = await repo.get('cost-1');
+            const result = await repo.get('org-test-123', 'cost-1');
 
             expect(result).not.toBeNull();
             expect(result!.costId).toBe('cost-1');
@@ -74,7 +75,7 @@ describe('DynamoCostRepository', () => {
         it('should return null when cost not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('cost-1');
+            const result = await repo.get('org-test-123', 'cost-1');
 
             expect(result).toBeNull();
         });
@@ -82,7 +83,7 @@ describe('DynamoCostRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('cost-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'cost-1')).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -92,7 +93,7 @@ describe('DynamoCostRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [mockCost], cursor: null }),
             });
 
-            const result = await repo.listByServiceId('svc-1');
+            const result = await repo.listByServiceId('org-test-123', 'svc-1');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].costId).toBe('cost-1');
@@ -103,9 +104,9 @@ describe('DynamoCostRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockCost], cursor: 'next-page' });
             mockEntity.query.byServiceId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.listByServiceId('svc-1', { limit: 5, cursor: 'some-cursor' });
+            const result = await repo.listByServiceId('org-test-123', 'svc-1', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byServiceId).toHaveBeenCalledWith({ serviceId: 'svc-1' });
+            expect(mockEntity.query.byServiceId).toHaveBeenCalledWith({ organizationId: 'org-test-123', serviceId: 'svc-1' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
@@ -114,7 +115,7 @@ describe('DynamoCostRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
             mockEntity.query.byServiceId.mockReturnValue({ go: mockGo });
 
-            await repo.listByServiceId('svc-1');
+            await repo.listByServiceId('org-test-123', 'svc-1');
 
             expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
@@ -124,8 +125,8 @@ describe('DynamoCostRepository', () => {
         it('should delete a cost', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('cost-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ costId: 'cost-1' });
+            await expect(repo.delete('org-test-123', 'cost-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', costId: 'cost-1' });
         });
     });
 });

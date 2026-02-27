@@ -12,11 +12,12 @@ const service = new CapabilityService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const capabilityId = event.pathParameters?.capabilityId;
     if (!capabilityId) {
         throw new AppError("Missing capabilityId", 400);
     }
-    await service.deleteCapability(capabilityId);
+    await service.deleteCapability(organizationId, capabilityId);
     return { statusCode: 200, body: JSON.stringify({ message: "Capability deleted" }) };
 };
 

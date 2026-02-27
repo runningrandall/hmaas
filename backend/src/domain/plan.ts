@@ -3,6 +3,7 @@ import { PaginationOptions, PaginatedResult } from "./shared";
 export type PlanStatus = "active" | "inactive";
 
 export interface Plan {
+    organizationId: string;
     planId: string;
     name: string;
     description?: string;
@@ -31,8 +32,8 @@ export interface UpdatePlanRequest {
 
 export interface PlanRepository {
     create(plan: Plan): Promise<Plan>;
-    get(planId: string): Promise<Plan | null>;
-    list(options?: PaginationOptions): Promise<PaginatedResult<Plan>>;
-    update(planId: string, data: UpdatePlanRequest): Promise<Plan>;
-    delete(planId: string): Promise<void>;
+    get(organizationId: string, planId: string): Promise<Plan | null>;
+    list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Plan>>;
+    update(organizationId: string, planId: string, data: UpdatePlanRequest): Promise<Plan>;
+    delete(organizationId: string, planId: string): Promise<void>;
 }

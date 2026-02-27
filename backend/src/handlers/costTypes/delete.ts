@@ -12,11 +12,12 @@ const service = new CostTypeService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const costTypeId = event.pathParameters?.costTypeId;
     if (!costTypeId) {
         throw new AppError("Missing costTypeId", 400);
     }
-    await service.deleteCostType(costTypeId);
+    await service.deleteCostType(organizationId, costTypeId);
     return { statusCode: 200, body: JSON.stringify({ message: "Cost type deleted" }) };
 };
 

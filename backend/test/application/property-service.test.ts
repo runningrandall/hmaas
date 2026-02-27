@@ -20,6 +20,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('PropertyService', () => {
     let service: PropertyService;
 
@@ -45,6 +47,7 @@ describe('PropertyService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 propertyId: 'prop-1',
                 ...request,
                 status: 'active',
@@ -56,14 +59,15 @@ describe('PropertyService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createProperty(request);
+            const result = await service.createProperty(ORG_ID, request);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyCreated', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyCreated', expect.objectContaining({
+                organizationId: ORG_ID,
                 propertyId: created.propertyId,
                 customerId: request.customerId,
-            });
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('PropertiesCreated', expect.any(String), 1);
         });
 
@@ -81,7 +85,7 @@ describe('PropertyService', () => {
             mockRepo.create.mockImplementation(async (p: any) => p);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createProperty(request as any);
+            const result = await service.createProperty(ORG_ID, request as any);
 
             expect(result.status).toBe('active');
             expect(result.createdAt).toEqual(expect.any(String));
@@ -91,56 +95,57 @@ describe('PropertyService', () => {
 
     describe('getProperty', () => {
         it('should return property when found', async () => {
-            const property = { propertyId: 'prop-1', name: 'Main House', status: 'active' };
+            const property = { organizationId: ORG_ID, propertyId: 'prop-1', name: 'Main House', status: 'active' };
             mockRepo.get.mockResolvedValue(property);
 
-            const result = await service.getProperty('prop-1');
+            const result = await service.getProperty(ORG_ID, 'prop-1');
 
             expect(result).toEqual(property);
-            expect(mockRepo.get).toHaveBeenCalledWith('prop-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'prop-1');
         });
 
         it('should throw AppError 404 when property not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getProperty('missing')).rejects.toThrow(AppError);
-            await expect(service.getProperty('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getProperty(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getProperty(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listPropertiesByCustomer', () => {
         it('should delegate to repo.listByCustomerId', async () => {
-            const paginated = { items: [{ propertyId: 'prop-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, propertyId: 'prop-1' }], count: 1 };
             mockRepo.listByCustomerId.mockResolvedValue(paginated);
 
-            const result = await service.listPropertiesByCustomer('cust-1', { limit: 10 });
+            const result = await service.listPropertiesByCustomer(ORG_ID, 'cust-1', { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.listByCustomerId).toHaveBeenCalledWith('cust-1', { limit: 10 });
+            expect(mockRepo.listByCustomerId).toHaveBeenCalledWith(ORG_ID, 'cust-1', { limit: 10 });
         });
     });
 
     describe('updateProperty', () => {
         it('should update property and publish PropertyUpdated event', async () => {
-            const existing = { propertyId: 'prop-1', customerId: 'cust-1', status: 'active' };
-            const updated = { propertyId: 'prop-1', customerId: 'cust-1', status: 'active', name: 'Updated House' };
+            const existing = { organizationId: ORG_ID, propertyId: 'prop-1', customerId: 'cust-1', status: 'active' };
+            const updated = { organizationId: ORG_ID, propertyId: 'prop-1', customerId: 'cust-1', status: 'active', name: 'Updated House' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.updateProperty('prop-1', { name: 'Updated House' });
+            const result = await service.updateProperty(ORG_ID, 'prop-1', { name: 'Updated House' });
 
             expect(result).toEqual(updated);
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyUpdated', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PropertyUpdated', expect.objectContaining({
+                organizationId: ORG_ID,
                 propertyId: 'prop-1',
                 customerId: 'cust-1',
-            });
+            }));
         });
 
         it('should throw 404 if property not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.updateProperty('missing', { name: 'x' })).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.updateProperty(ORG_ID, 'missing', { name: 'x' })).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
@@ -148,9 +153,9 @@ describe('PropertyService', () => {
         it('should delete property', async () => {
             mockRepo.delete.mockResolvedValue(undefined);
 
-            await service.deleteProperty('prop-1');
+            await service.deleteProperty(ORG_ID, 'prop-1');
 
-            expect(mockRepo.delete).toHaveBeenCalledWith('prop-1');
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'prop-1');
         });
     });
 });

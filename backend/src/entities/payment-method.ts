@@ -11,6 +11,7 @@ export const PaymentMethodEntity = new Entity(
             service: "versa",
         },
         attributes: {
+            organizationId: { type: "string", required: true },
             paymentMethodId: { type: "string", required: true },
             customerId: { type: "string", required: true },
             type: {
@@ -29,13 +30,18 @@ export const PaymentMethodEntity = new Entity(
         },
         indexes: {
             byPaymentMethodId: {
-                pk: { field: "pk", composite: ["paymentMethodId"] },
+                pk: { field: "pk", composite: ["organizationId", "paymentMethodId"] },
                 sk: { field: "sk", composite: [] },
             },
             byCustomerId: {
                 index: "gsi1",
-                pk: { field: "gsi1pk", composite: ["customerId"] },
+                pk: { field: "gsi1pk", composite: ["organizationId", "customerId"] },
                 sk: { field: "gsi1sk", composite: ["paymentMethodId"] },
+            },
+            byOrg: {
+                index: "gsi2",
+                pk: { field: "gsi2pk", composite: [] },
+                sk: { field: "gsi2sk", composite: ["organizationId", "paymentMethodId"] },
             },
         },
     },

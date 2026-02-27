@@ -150,7 +150,7 @@ describe('Property Type Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListPropertyTypes).toHaveBeenCalledWith({ limit: 10, cursor: 'some-cursor' });
+            expect(mockListPropertyTypes).toHaveBeenCalledWith('org-test-123', { limit: 10, cursor: 'some-cursor' });
         });
     });
 

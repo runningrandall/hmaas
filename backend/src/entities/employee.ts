@@ -11,6 +11,7 @@ export const EmployeeEntity = new Entity(
             service: "versa",
         },
         attributes: {
+            organizationId: { type: "string", required: true },
             employeeId: { type: "string", required: true },
             firstName: { type: "string", required: true },
             lastName: { type: "string", required: true },
@@ -24,13 +25,18 @@ export const EmployeeEntity = new Entity(
         },
         indexes: {
             byEmployeeId: {
-                pk: { field: "pk", composite: ["employeeId"] },
+                pk: { field: "pk", composite: ["organizationId", "employeeId"] },
                 sk: { field: "sk", composite: [] },
             },
             byStatus: {
                 index: "gsi1",
-                pk: { field: "gsi1pk", composite: ["status"] },
+                pk: { field: "gsi1pk", composite: ["organizationId", "status"] },
                 sk: { field: "gsi1sk", composite: ["employeeId"] },
+            },
+            byOrg: {
+                index: "gsi2",
+                pk: { field: "gsi2pk", composite: [] },
+                sk: { field: "gsi2sk", composite: ["organizationId", "employeeId"] },
             },
         },
     },
