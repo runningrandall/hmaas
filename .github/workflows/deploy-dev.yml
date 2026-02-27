@@ -311,6 +311,13 @@ jobs:
             fi
           done
 
+      - name: Clean up orphaned resources
+        run: |
+          # Delete orphaned resources from previous failed deployments (old naming convention)
+          aws sns delete-topic --topic-arn "arn:aws:sns:us-east-1:${{ vars.AWS_ACCOUNT_ID }}:dev-AlarmTopic" 2>/dev/null || true
+          aws sqs delete-queue --queue-url "https://sqs.us-east-1.amazonaws.com/${{ vars.AWS_ACCOUNT_ID }}/dev-LambdaDLQ" 2>/dev/null || true
+          aws events delete-event-bus --name "VersaEventBus-dev" 2>/dev/null || true
+
       - name: Deploy Infrastructure
         run: pnpm --filter infra run deploy --all --require-approval never
         env:
