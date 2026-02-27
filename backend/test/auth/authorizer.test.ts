@@ -35,6 +35,7 @@ describe('authorizer handler', () => {
         mockVerify.mockResolvedValue({
             sub: 'user-123',
             'cognito:groups': ['admin'],
+            'custom:organizationId': 'org-abc',
         });
         avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
 
@@ -45,10 +46,54 @@ describe('authorizer handler', () => {
         expect(result.policyDocument.Statement[0].Effect).toBe('Allow');
     });
 
+    it('should include organizationId in authorizer context', async () => {
+        mockVerify.mockResolvedValue({
+            sub: 'user-123',
+            'cognito:groups': ['admin'],
+            'custom:organizationId': 'org-abc',
+        });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
+
+        const event = makeEvent();
+        const result = await handler(event as any);
+
+        expect(result.context).toBeDefined();
+        expect(result.context!.organizationId).toBe('org-abc');
+    });
+
+    it('should include empty organizationId when not in token', async () => {
+        mockVerify.mockResolvedValue({
+            sub: 'user-123',
+            'cognito:groups': ['admin'],
+        });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
+
+        const event = makeEvent();
+        const result = await handler(event as any);
+
+        expect(result.context!.organizationId).toBe('');
+    });
+
+    it('should pass organizationId to AVP entity attributes', async () => {
+        mockVerify.mockResolvedValue({
+            sub: 'user-123',
+            'cognito:groups': ['admin'],
+            'custom:organizationId': 'org-xyz',
+        });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
+
+        const event = makeEvent();
+        await handler(event as any);
+
+        const callArgs = avpMock.call(0).args[0].input as IsAuthorizedCommandInput;
+        expect(callArgs.entities?.entityList?.[0]?.attributes?.organizationId?.string).toBe('org-xyz');
+    });
+
     it('should deny access when AVP returns DENY', async () => {
         mockVerify.mockResolvedValue({
             sub: 'user-456',
             'cognito:groups': ['user'],
+            'custom:organizationId': 'org-abc',
         });
         avpMock.on(IsAuthorizedCommand).resolves({ decision: 'DENY' });
 
@@ -63,6 +108,7 @@ describe('authorizer handler', () => {
         mockVerify.mockResolvedValue({
             sub: 'user-789',
             'cognito:groups': ['admin'],
+            'custom:organizationId': 'org-abc',
         });
         avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
 
@@ -94,6 +140,60 @@ describe('authorizer handler', () => {
 
         const callArgs = avpMock.call(0).args[0].input as IsAuthorizedCommandInput;
         expect(callArgs.action?.actionId).toBe('ReadDashboard');
+    });
+
+    it('should map organizations routes to ManageOrganizations action', async () => {
+        mockVerify.mockResolvedValue({
+            sub: 'user-123',
+            'cognito:groups': ['SuperAdmin'],
+            'custom:organizationId': '',
+        });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
+
+        const event = makeEvent({
+            methodArn: 'arn:aws:execute-api:us-east-1:123456789:apiid/stage/GET/organizations',
+        });
+
+        await handler(event as any);
+
+        const callArgs = avpMock.call(0).args[0].input as IsAuthorizedCommandInput;
+        expect(callArgs.action?.actionId).toBe('ManageOrganizations');
+    });
+
+    it('should map organizations config routes to ManageOrgConfig action', async () => {
+        mockVerify.mockResolvedValue({
+            sub: 'user-123',
+            'cognito:groups': ['SuperAdmin'],
+            'custom:organizationId': 'org-abc',
+        });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
+
+        const event = makeEvent({
+            methodArn: 'arn:aws:execute-api:us-east-1:123456789:apiid/stage/PUT/organizations/org-abc/config',
+        });
+
+        await handler(event as any);
+
+        const callArgs = avpMock.call(0).args[0].input as IsAuthorizedCommandInput;
+        expect(callArgs.action?.actionId).toBe('ManageOrgConfig');
+    });
+
+    it('should map organizations secrets routes to ManageOrgSecrets action', async () => {
+        mockVerify.mockResolvedValue({
+            sub: 'user-123',
+            'cognito:groups': ['SuperAdmin'],
+            'custom:organizationId': 'org-abc',
+        });
+        avpMock.on(IsAuthorizedCommand).resolves({ decision: 'ALLOW' });
+
+        const event = makeEvent({
+            methodArn: 'arn:aws:execute-api:us-east-1:123456789:apiid/stage/GET/organizations/org-abc/secrets',
+        });
+
+        await handler(event as any);
+
+        const callArgs = avpMock.call(0).args[0].input as IsAuthorizedCommandInput;
+        expect(callArgs.action?.actionId).toBe('ManageOrgSecrets');
     });
 
     it('should handle users with no groups', async () => {

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoDelegateSchema = z.object({
+    organizationId: z.string(),
     delegateId: z.string(),
     accountId: z.string(),
     email: z.string(),
@@ -33,15 +34,15 @@ export class DynamoDelegateRepository implements DelegateRepository {
         return parseDelegate(result.data);
     }
 
-    async get(delegateId: string): Promise<Delegate | null> {
-        const result = await DBService.entities.delegate.get({ delegateId }).go();
+    async get(organizationId: string, delegateId: string): Promise<Delegate | null> {
+        const result = await DBService.entities.delegate.get({ organizationId, delegateId }).go();
         if (!result.data) return null;
         return parseDelegate(result.data);
     }
 
-    async listByAccountId(accountId: string, options?: PaginationOptions): Promise<PaginatedResult<Delegate>> {
+    async listByAccountId(organizationId: string, accountId: string, options?: PaginationOptions): Promise<PaginatedResult<Delegate>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.delegate.query.byAccountId({ accountId }).go({
+        const result = await DBService.entities.delegate.query.byAccountId({ organizationId, accountId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -51,7 +52,7 @@ export class DynamoDelegateRepository implements DelegateRepository {
         };
     }
 
-    async delete(delegateId: string): Promise<void> {
-        await DBService.entities.delegate.delete({ delegateId }).go();
+    async delete(organizationId: string, delegateId: string): Promise<void> {
+        await DBService.entities.delegate.delete({ organizationId, delegateId }).go();
     }
 }

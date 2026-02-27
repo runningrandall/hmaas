@@ -3,6 +3,7 @@ import { PaginationOptions, PaginatedResult } from "./shared";
 export type CapabilityLevel = "beginner" | "intermediate" | "expert";
 
 export interface Capability {
+    organizationId: string;
     capabilityId: string;
     employeeId: string;
     serviceTypeId: string;
@@ -21,7 +22,7 @@ export interface CreateCapabilityRequest {
 
 export interface CapabilityRepository {
     create(capability: Capability): Promise<Capability>;
-    get(capabilityId: string): Promise<Capability | null>;
-    listByEmployeeId(employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Capability>>;
-    delete(capabilityId: string): Promise<void>;
+    get(organizationId: string, capabilityId: string): Promise<Capability | null>;
+    listByEmployeeId(organizationId: string, employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Capability>>;
+    delete(organizationId: string, capabilityId: string): Promise<void>;
 }

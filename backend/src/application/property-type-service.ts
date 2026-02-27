@@ -11,10 +11,11 @@ export class PropertyTypeService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createPropertyType(request: CreatePropertyTypeRequest): Promise<PropertyType> {
+    async createPropertyType(organizationId: string, request: CreatePropertyTypeRequest): Promise<PropertyType> {
         logger.info("Creating property type", { name: request.name });
 
         const propertyType: PropertyType = {
+            organizationId,
             propertyTypeId: randomUUID(),
             name: request.name,
             description: request.description,
@@ -27,25 +28,25 @@ export class PropertyTypeService {
         return created;
     }
 
-    async getPropertyType(propertyTypeId: string): Promise<PropertyType> {
-        const propertyType = await this.repository.get(propertyTypeId);
+    async getPropertyType(organizationId: string, propertyTypeId: string): Promise<PropertyType> {
+        const propertyType = await this.repository.get(organizationId, propertyTypeId);
         if (!propertyType) {
             throw new AppError("Property type not found", 404);
         }
         return propertyType;
     }
 
-    async listPropertyTypes(options?: PaginationOptions): Promise<PaginatedResult<PropertyType>> {
-        return this.repository.list(options);
+    async listPropertyTypes(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<PropertyType>> {
+        return this.repository.list(organizationId, options);
     }
 
-    async updatePropertyType(propertyTypeId: string, request: UpdatePropertyTypeRequest): Promise<PropertyType> {
-        await this.getPropertyType(propertyTypeId);
-        return this.repository.update(propertyTypeId, request);
+    async updatePropertyType(organizationId: string, propertyTypeId: string, request: UpdatePropertyTypeRequest): Promise<PropertyType> {
+        await this.getPropertyType(organizationId, propertyTypeId);
+        return this.repository.update(organizationId, propertyTypeId, request);
     }
 
-    async deletePropertyType(propertyTypeId: string): Promise<void> {
-        await this.repository.delete(propertyTypeId);
+    async deletePropertyType(organizationId: string, propertyTypeId: string): Promise<void> {
+        await this.repository.delete(organizationId, propertyTypeId);
         logger.info("Property type deleted", { propertyTypeId });
     }
 }

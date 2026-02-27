@@ -33,6 +33,15 @@ export const handler = async (event: EventBridgeEvent<string, Record<string, unk
         case "InvoicePaid":
             logger.info("Processing InvoicePaid event", { detail: event.detail });
             break;
+        case "OrganizationCreated":
+            logger.info("Processing OrganizationCreated event", { detail: event.detail });
+            break;
+        case "OrganizationSuspended":
+            logger.info("Processing OrganizationSuspended event", { detail: event.detail });
+            break;
+        case "OrganizationConfigUpdated":
+            logger.info("Processing OrganizationConfigUpdated event", { detail: event.detail });
+            break;
         default:
             logger.info(`Processing ${detailType} event`, { detail: event.detail });
             break;

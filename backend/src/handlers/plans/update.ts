@@ -14,6 +14,7 @@ const service = new PlanAppService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const planId = event.pathParameters?.planId;
     if (!planId) {
         throw new AppError("Missing planId", 400);
@@ -31,7 +32,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         throw parseResult.error;
     }
 
-    const result = await service.updatePlan(planId, parseResult.data);
+    const result = await service.updatePlan(organizationId, planId, parseResult.data);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

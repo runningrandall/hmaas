@@ -1,10 +1,12 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 
+export const DEFAULT_ORG_ID = 'org-test-123';
+
 /**
  * Creates a minimal APIGatewayProxyEvent for POST/CREATE handlers.
  */
 export function makeCreateEvent(body: Record<string, unknown>, pathParameters?: Record<string, string>): APIGatewayProxyEvent {
-    return {
+    const event = {
         body: JSON.stringify(body),
         headers: { 'content-type': 'application/json' },
         multiValueHeaders: {},
@@ -15,16 +17,18 @@ export function makeCreateEvent(body: Record<string, unknown>, pathParameters?: 
         queryStringParameters: null,
         multiValueQueryStringParameters: null,
         stageVariables: null,
-        requestContext: {} as any,
+        requestContext: { authorizer: { organizationId: DEFAULT_ORG_ID } } as any,
         resource: '',
-    };
+    } as APIGatewayProxyEvent;
+    (event as any).organizationId = DEFAULT_ORG_ID;
+    return event;
 }
 
 /**
  * Creates a minimal APIGatewayProxyEvent for GET handlers (by ID).
  */
 export function makeGetEvent(pathParameters: Record<string, string>): APIGatewayProxyEvent {
-    return {
+    const event = {
         body: null,
         headers: { 'content-type': 'application/json' },
         multiValueHeaders: {},
@@ -35,9 +39,11 @@ export function makeGetEvent(pathParameters: Record<string, string>): APIGateway
         queryStringParameters: null,
         multiValueQueryStringParameters: null,
         stageVariables: null,
-        requestContext: {} as any,
+        requestContext: { authorizer: { organizationId: DEFAULT_ORG_ID } } as any,
         resource: '',
-    };
+    } as APIGatewayProxyEvent;
+    (event as any).organizationId = DEFAULT_ORG_ID;
+    return event;
 }
 
 /**
@@ -47,7 +53,7 @@ export function makeListEvent(
     queryStringParameters?: Record<string, string> | null,
     pathParameters?: Record<string, string> | null,
 ): APIGatewayProxyEvent {
-    return {
+    const event = {
         body: null,
         headers: { 'content-type': 'application/json' },
         multiValueHeaders: {},
@@ -58,16 +64,18 @@ export function makeListEvent(
         queryStringParameters: queryStringParameters || null,
         multiValueQueryStringParameters: null,
         stageVariables: null,
-        requestContext: {} as any,
+        requestContext: { authorizer: { organizationId: DEFAULT_ORG_ID } } as any,
         resource: '',
-    };
+    } as APIGatewayProxyEvent;
+    (event as any).organizationId = DEFAULT_ORG_ID;
+    return event;
 }
 
 /**
  * Creates a minimal APIGatewayProxyEvent for PUT/UPDATE handlers.
  */
 export function makeUpdateEvent(pathParameters: Record<string, string>, body: Record<string, unknown>): APIGatewayProxyEvent {
-    return {
+    const event = {
         body: JSON.stringify(body),
         headers: { 'content-type': 'application/json' },
         multiValueHeaders: {},
@@ -78,16 +86,18 @@ export function makeUpdateEvent(pathParameters: Record<string, string>, body: Re
         queryStringParameters: null,
         multiValueQueryStringParameters: null,
         stageVariables: null,
-        requestContext: {} as any,
+        requestContext: { authorizer: { organizationId: DEFAULT_ORG_ID } } as any,
         resource: '',
-    };
+    } as APIGatewayProxyEvent;
+    (event as any).organizationId = DEFAULT_ORG_ID;
+    return event;
 }
 
 /**
  * Creates a minimal APIGatewayProxyEvent for DELETE handlers.
  */
 export function makeDeleteEvent(pathParameters: Record<string, string>): APIGatewayProxyEvent {
-    return {
+    const event = {
         body: null,
         headers: { 'content-type': 'application/json' },
         multiValueHeaders: {},
@@ -98,9 +108,11 @@ export function makeDeleteEvent(pathParameters: Record<string, string>): APIGate
         queryStringParameters: null,
         multiValueQueryStringParameters: null,
         stageVariables: null,
-        requestContext: {} as any,
+        requestContext: { authorizer: { organizationId: DEFAULT_ORG_ID } } as any,
         resource: '',
-    };
+    } as APIGatewayProxyEvent;
+    (event as any).organizationId = DEFAULT_ORG_ID;
+    return event;
 }
 
 /** Shared mock context for Lambda handlers */

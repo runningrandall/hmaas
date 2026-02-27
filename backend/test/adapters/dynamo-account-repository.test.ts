@@ -26,6 +26,7 @@ import { DynamoAccountRepository } from '../../src/adapters/dynamo-account-repos
 import { DBService } from '../../src/entities/service';
 
 const mockAccount = {
+    organizationId: 'org-test-123',
     accountId: 'acct-1',
     customerId: 'cust-1',
     cognitoUserId: 'cognito-123',
@@ -67,7 +68,7 @@ describe('DynamoAccountRepository', () => {
         it('should return a parsed account when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockAccount }) });
 
-            const result = await repo.get('acct-1');
+            const result = await repo.get('org-test-123', 'acct-1');
 
             expect(result).not.toBeNull();
             expect(result!.accountId).toBe('acct-1');
@@ -76,7 +77,7 @@ describe('DynamoAccountRepository', () => {
         it('should return null when account not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('acct-1');
+            const result = await repo.get('org-test-123', 'acct-1');
 
             expect(result).toBeNull();
         });
@@ -84,7 +85,7 @@ describe('DynamoAccountRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('acct-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'acct-1')).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -94,10 +95,11 @@ describe('DynamoAccountRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [mockAccount], cursor: null }),
             });
 
-            const result = await repo.getByCustomerId('cust-1');
+            const result = await repo.getByCustomerId('org-test-123', 'cust-1');
 
             expect(result).not.toBeNull();
             expect(result!.customerId).toBe('cust-1');
+            expect(mockEntity.query.byCustomerId).toHaveBeenCalledWith({ organizationId: 'org-test-123', customerId: 'cust-1' });
         });
 
         it('should return null when no accounts found for customerId', async () => {
@@ -105,7 +107,7 @@ describe('DynamoAccountRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [], cursor: null }),
             });
 
-            const result = await repo.getByCustomerId('cust-1');
+            const result = await repo.getByCustomerId('org-test-123', 'cust-1');
 
             expect(result).toBeNull();
         });
@@ -115,7 +117,7 @@ describe('DynamoAccountRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: null, cursor: null }),
             });
 
-            const result = await repo.getByCustomerId('cust-1');
+            const result = await repo.getByCustomerId('org-test-123', 'cust-1');
 
             expect(result).toBeNull();
         });
@@ -125,7 +127,7 @@ describe('DynamoAccountRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [{ badField: true }], cursor: null }),
             });
 
-            await expect(repo.getByCustomerId('cust-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.getByCustomerId('org-test-123', 'cust-1')).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -136,7 +138,7 @@ describe('DynamoAccountRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updatedAccount }) }),
             });
 
-            const result = await repo.update('acct-1', { planId: 'plan-2' });
+            const result = await repo.update('org-test-123', 'acct-1', { planId: 'plan-2' });
 
             expect(result.planId).toBe('plan-2');
         });
@@ -146,7 +148,7 @@ describe('DynamoAccountRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('acct-1', { planId: 'plan-2' })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'acct-1', { planId: 'plan-2' })).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -154,8 +156,8 @@ describe('DynamoAccountRepository', () => {
         it('should delete an account', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('acct-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ accountId: 'acct-1' });
+            await expect(repo.delete('org-test-123', 'acct-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', accountId: 'acct-1' });
         });
     });
 });

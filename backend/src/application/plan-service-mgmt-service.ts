@@ -10,10 +10,11 @@ export class PlanServiceMgmtService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createPlanService(request: CreatePlanServiceRequest): Promise<PlanService> {
+    async createPlanService(organizationId: string, request: CreatePlanServiceRequest): Promise<PlanService> {
         logger.info("Adding service to plan", { planId: request.planId, serviceTypeId: request.serviceTypeId });
 
         const planService: PlanService = {
+            organizationId,
             planId: request.planId,
             serviceTypeId: request.serviceTypeId,
             includedVisits: request.includedVisits,
@@ -23,26 +24,26 @@ export class PlanServiceMgmtService {
 
         const created = await this.repository.create(planService);
         metrics.addMetric('PlanServicesCreated', MetricUnit.Count, 1);
-        await this.eventPublisher.publish("PlanServiceAdded", { planId: request.planId, serviceTypeId: request.serviceTypeId });
+        await this.eventPublisher.publish("PlanServiceAdded", { organizationId, planId: request.planId, serviceTypeId: request.serviceTypeId });
 
         return created;
     }
 
-    async getPlanService(planId: string, serviceTypeId: string): Promise<PlanService> {
-        const planService = await this.repository.get(planId, serviceTypeId);
+    async getPlanService(organizationId: string, planId: string, serviceTypeId: string): Promise<PlanService> {
+        const planService = await this.repository.get(organizationId, planId, serviceTypeId);
         if (!planService) {
             throw new AppError("Plan service not found", 404);
         }
         return planService;
     }
 
-    async listPlanServices(planId: string, options?: PaginationOptions): Promise<PaginatedResult<PlanService>> {
-        return this.repository.listByPlanId(planId, options);
+    async listPlanServices(organizationId: string, planId: string, options?: PaginationOptions): Promise<PaginatedResult<PlanService>> {
+        return this.repository.listByPlanId(organizationId, planId, options);
     }
 
-    async deletePlanService(planId: string, serviceTypeId: string): Promise<void> {
-        await this.repository.delete(planId, serviceTypeId);
-        await this.eventPublisher.publish("PlanServiceRemoved", { planId, serviceTypeId });
+    async deletePlanService(organizationId: string, planId: string, serviceTypeId: string): Promise<void> {
+        await this.repository.delete(organizationId, planId, serviceTypeId);
+        await this.eventPublisher.publish("PlanServiceRemoved", { organizationId, planId, serviceTypeId });
         logger.info("Plan service deleted", { planId, serviceTypeId });
     }
 }

@@ -1,6 +1,7 @@
 import { PaginationOptions, PaginatedResult } from "./shared";
 
 export interface PlanService {
+    organizationId: string;
     planId: string;
     serviceTypeId: string;
     includedVisits?: number;
@@ -18,7 +19,7 @@ export interface CreatePlanServiceRequest {
 
 export interface PlanServiceRepository {
     create(planService: PlanService): Promise<PlanService>;
-    get(planId: string, serviceTypeId: string): Promise<PlanService | null>;
-    listByPlanId(planId: string, options?: PaginationOptions): Promise<PaginatedResult<PlanService>>;
-    delete(planId: string, serviceTypeId: string): Promise<void>;
+    get(organizationId: string, planId: string, serviceTypeId: string): Promise<PlanService | null>;
+    listByPlanId(organizationId: string, planId: string, options?: PaginationOptions): Promise<PaginatedResult<PlanService>>;
+    delete(organizationId: string, planId: string, serviceTypeId: string): Promise<void>;
 }

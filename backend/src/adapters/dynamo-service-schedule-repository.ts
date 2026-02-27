@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoServiceScheduleSchema = z.object({
+    organizationId: z.string(),
     serviceScheduleId: z.string(),
     serviceId: z.string(),
     servicerId: z.string(),
@@ -35,15 +36,15 @@ export class DynamoServiceScheduleRepository implements ServiceScheduleRepositor
         return parseServiceSchedule(result.data);
     }
 
-    async get(serviceScheduleId: string): Promise<ServiceSchedule | null> {
-        const result = await DBService.entities.serviceSchedule.get({ serviceScheduleId }).go();
+    async get(organizationId: string, serviceScheduleId: string): Promise<ServiceSchedule | null> {
+        const result = await DBService.entities.serviceSchedule.get({ organizationId, serviceScheduleId }).go();
         if (!result.data) return null;
         return parseServiceSchedule(result.data);
     }
 
-    async listByServicerId(servicerId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceSchedule>> {
+    async listByServicerId(organizationId: string, servicerId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceSchedule>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.serviceSchedule.query.byServicerId({ servicerId }).go({
+        const result = await DBService.entities.serviceSchedule.query.byServicerId({ organizationId, servicerId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -53,8 +54,8 @@ export class DynamoServiceScheduleRepository implements ServiceScheduleRepositor
         };
     }
 
-    async update(serviceScheduleId: string, data: UpdateServiceScheduleRequest): Promise<ServiceSchedule> {
-        const result = await DBService.entities.serviceSchedule.patch({ serviceScheduleId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, serviceScheduleId: string, data: UpdateServiceScheduleRequest): Promise<ServiceSchedule> {
+        const result = await DBService.entities.serviceSchedule.patch({ organizationId, serviceScheduleId }).set(data).go({ response: "all_new" });
         return parseServiceSchedule(result.data);
     }
 }

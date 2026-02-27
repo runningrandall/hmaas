@@ -1,55 +1,88 @@
 import { CloudFormationCustomResourceEvent, Context } from 'aws-lambda';
-import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
+import { PropertyTypeEntity } from '../entities/property-type';
+import { ServiceTypeEntity } from '../entities/service-type';
+import { CostTypeEntity } from '../entities/cost-type';
+import { OrganizationEntity } from '../entities/organization';
 
-const dynamodb = new DynamoDBClient({});
-const TABLE_NAME = process.env.TABLE_NAME!;
+const GLOBAL_ORG_ID = 'GLOBAL';
+const DEFAULT_ORG_ID = 'versa-default';
 
-const SEED_DATA = [
-    // Property Types
+interface SeedItem {
+    entity: 'organization' | 'propertyType' | 'serviceType' | 'costType';
+    data: Record<string, unknown>;
+}
+
+const SEED_ITEMS: SeedItem[] = [
+    // Default Organization
     {
-        pk: { S: '$versa#propertytypeid_residential' },
-        sk: { S: '$propertyType_1' },
-        propertyTypeId: { S: 'residential' },
-        name: { S: 'Residential' },
-        description: { S: 'Single-family residential property' },
-        createdAt: { N: String(Date.now()) },
-        __edb_e__: { S: 'propertyType' },
-        __edb_v__: { S: '1' },
+        entity: 'organization',
+        data: {
+            organizationId: DEFAULT_ORG_ID,
+            name: 'Versa Property Management',
+            slug: 'versa',
+            status: 'active',
+            ownerUserId: 'system',
+            billingEmail: 'admin@versapm.com',
+            timezone: 'America/Denver',
+        },
+    },
+    // Property Types (GLOBAL)
+    {
+        entity: 'propertyType',
+        data: { organizationId: GLOBAL_ORG_ID, propertyTypeId: 'residential', name: 'Residential', description: 'Single-family residential property' },
     },
     {
-        pk: { S: '$versa#propertytypeid_commercial' },
-        sk: { S: '$propertyType_1' },
-        propertyTypeId: { S: 'commercial' },
-        name: { S: 'Commercial' },
-        description: { S: 'Commercial business property' },
-        createdAt: { N: String(Date.now()) },
-        __edb_e__: { S: 'propertyType' },
-        __edb_v__: { S: '1' },
+        entity: 'propertyType',
+        data: { organizationId: GLOBAL_ORG_ID, propertyTypeId: 'commercial', name: 'Commercial', description: 'Commercial business property' },
     },
-    // Service Types
+    // Service Types (GLOBAL)
     ...['Lawn Care', 'Pest Control', 'Fertilizer', 'Window Cleaning', 'Sprinkler', 'Winterizing', 'Snow Removal', 'Gutter Cleaning', 'Power Washing', 'Tree Trimming'].map(name => ({
-        pk: { S: `$versa#servicetypeid_${name.toLowerCase().replace(/\s+/g, '_')}` },
-        sk: { S: '$serviceType_1' },
-        serviceTypeId: { S: name.toLowerCase().replace(/\s+/g, '_') },
-        name: { S: name },
-        description: { S: `Professional ${name.toLowerCase()} services` },
-        category: { S: name.includes('Snow') || name.includes('Winter') ? 'Seasonal' : 'Regular' },
-        createdAt: { N: String(Date.now()) },
-        __edb_e__: { S: 'serviceType' },
-        __edb_v__: { S: '1' },
+        entity: 'serviceType' as const,
+        data: {
+            organizationId: GLOBAL_ORG_ID,
+            serviceTypeId: name.toLowerCase().replace(/\s+/g, '_'),
+            name,
+            description: `Professional ${name.toLowerCase()} services`,
+            category: name.includes('Snow') || name.includes('Winter') ? 'Seasonal' : 'Regular',
+        },
     })),
-    // Cost Types
+    // Cost Types (GLOBAL)
     ...['One-Time', 'Recurring Monthly', 'Recurring Quarterly', 'Seasonal', 'Per-Visit'].map(name => ({
-        pk: { S: `$versa#costtypeid_${name.toLowerCase().replace(/[\s-]+/g, '_')}` },
-        sk: { S: '$costType_1' },
-        costTypeId: { S: name.toLowerCase().replace(/[\s-]+/g, '_') },
-        name: { S: name },
-        description: { S: `${name} billing frequency` },
-        createdAt: { N: String(Date.now()) },
-        __edb_e__: { S: 'costType' },
-        __edb_v__: { S: '1' },
+        entity: 'costType' as const,
+        data: {
+            organizationId: GLOBAL_ORG_ID,
+            costTypeId: name.toLowerCase().replace(/[\s-]+/g, '_'),
+            name,
+            description: `${name} billing frequency`,
+        },
     })),
 ];
+
+async function seedItem(item: SeedItem): Promise<void> {
+    try {
+        switch (item.entity) {
+            case 'organization':
+                await OrganizationEntity.put(item.data as any).go();
+                break;
+            case 'propertyType':
+                await PropertyTypeEntity.put(item.data as any).go();
+                break;
+            case 'serviceType':
+                await ServiceTypeEntity.put(item.data as any).go();
+                break;
+            case 'costType':
+                await CostTypeEntity.put(item.data as any).go();
+                break;
+        }
+    } catch (err: any) {
+        // ElectroDB wraps conditional check errors
+        if (err.message?.includes('conditional') || err.code === 'ConditionalCheckFailedException') {
+            console.log(`Item already exists, skipping: ${item.entity} ${JSON.stringify(item.data)}`);
+        } else {
+            throw err;
+        }
+    }
+}
 
 export const handler = async (event: CloudFormationCustomResourceEvent, context: Context) => {
     console.log('Seed handler invoked', JSON.stringify(event));
@@ -67,23 +100,13 @@ export const handler = async (event: CloudFormationCustomResourceEvent, context:
 
     try {
         if (event.RequestType === 'Create' || event.RequestType === 'Update') {
-            console.log(`Seeding ${SEED_DATA.length} items into ${TABLE_NAME}`);
+            console.log(`Seeding ${SEED_ITEMS.length} items`);
 
-            for (const item of SEED_DATA) {
-                await dynamodb.send(new PutItemCommand({
-                    TableName: TABLE_NAME,
-                    Item: item,
-                    ConditionExpression: 'attribute_not_exists(pk)',
-                })).catch((err) => {
-                    if (err.name === 'ConditionalCheckFailedException') {
-                        console.log(`Item ${item.pk.S} already exists, skipping.`);
-                    } else {
-                        throw err;
-                    }
-                });
+            for (const item of SEED_ITEMS) {
+                await seedItem(item);
             }
 
-            responseBody.Data = { SeededCount: SEED_DATA.length };
+            responseBody.Data = { SeededCount: SEED_ITEMS.length };
             console.log('Seeding complete.');
         }
 

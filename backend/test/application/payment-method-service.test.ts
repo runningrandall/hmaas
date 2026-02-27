@@ -18,6 +18,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('PaymentMethodService', () => {
     let service: PaymentMethodService;
 
@@ -36,6 +38,7 @@ describe('PaymentMethodService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 paymentMethodId: 'pm-1',
                 ...request,
                 status: 'active',
@@ -47,14 +50,15 @@ describe('PaymentMethodService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createPaymentMethod(request as any);
+            const result = await service.createPaymentMethod(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PaymentMethodAdded', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PaymentMethodAdded', expect.objectContaining({
+                organizationId: ORG_ID,
                 paymentMethodId: created.paymentMethodId,
                 customerId: request.customerId,
-            });
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('PaymentMethodsAdded', expect.any(String), 1);
         });
 
@@ -69,7 +73,7 @@ describe('PaymentMethodService', () => {
             mockRepo.create.mockImplementation(async (pm: any) => pm);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createPaymentMethod(request as any);
+            const result = await service.createPaymentMethod(ORG_ID, request as any);
 
             expect(result.status).toBe('active');
             expect(result.paymentMethodId).toEqual(expect.any(String));
@@ -79,56 +83,57 @@ describe('PaymentMethodService', () => {
 
     describe('getPaymentMethod', () => {
         it('should return payment method when found', async () => {
-            const pm = { paymentMethodId: 'pm-1', customerId: 'cust-1', type: 'credit_card', status: 'active' };
+            const pm = { organizationId: ORG_ID, paymentMethodId: 'pm-1', customerId: 'cust-1', type: 'credit_card', status: 'active' };
             mockRepo.get.mockResolvedValue(pm);
 
-            const result = await service.getPaymentMethod('pm-1');
+            const result = await service.getPaymentMethod(ORG_ID, 'pm-1');
 
             expect(result).toEqual(pm);
-            expect(mockRepo.get).toHaveBeenCalledWith('pm-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'pm-1');
         });
 
         it('should throw AppError 404 when payment method not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getPaymentMethod('missing')).rejects.toThrow(AppError);
-            await expect(service.getPaymentMethod('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getPaymentMethod(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getPaymentMethod(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listPaymentMethodsByCustomer', () => {
         it('should delegate to repo.listByCustomerId', async () => {
-            const paginated = { items: [{ paymentMethodId: 'pm-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, paymentMethodId: 'pm-1' }], count: 1 };
             mockRepo.listByCustomerId.mockResolvedValue(paginated);
 
-            const result = await service.listPaymentMethodsByCustomer('cust-1', { limit: 10 });
+            const result = await service.listPaymentMethodsByCustomer(ORG_ID, 'cust-1', { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.listByCustomerId).toHaveBeenCalledWith('cust-1', { limit: 10 });
+            expect(mockRepo.listByCustomerId).toHaveBeenCalledWith(ORG_ID, 'cust-1', { limit: 10 });
         });
     });
 
     describe('deletePaymentMethod', () => {
         it('should fetch payment method first, delete it, and publish PaymentMethodRemoved event', async () => {
-            const pm = { paymentMethodId: 'pm-1', customerId: 'cust-1', type: 'credit_card', status: 'active' };
+            const pm = { organizationId: ORG_ID, paymentMethodId: 'pm-1', customerId: 'cust-1', type: 'credit_card', status: 'active' };
             mockRepo.get.mockResolvedValue(pm);
             mockRepo.delete.mockResolvedValue(undefined);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.deletePaymentMethod('pm-1');
+            await service.deletePaymentMethod(ORG_ID, 'pm-1');
 
-            expect(mockRepo.get).toHaveBeenCalledWith('pm-1');
-            expect(mockRepo.delete).toHaveBeenCalledWith('pm-1');
-            expect(mockPublisher.publish).toHaveBeenCalledWith('PaymentMethodRemoved', {
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'pm-1');
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'pm-1');
+            expect(mockPublisher.publish).toHaveBeenCalledWith('PaymentMethodRemoved', expect.objectContaining({
+                organizationId: ORG_ID,
                 paymentMethodId: 'pm-1',
                 customerId: 'cust-1',
-            });
+            }));
         });
 
         it('should throw 404 if payment method not found before deleting', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.deletePaymentMethod('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.deletePaymentMethod(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
             expect(mockRepo.delete).not.toHaveBeenCalled();
         });
     });

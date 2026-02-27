@@ -26,6 +26,7 @@ import { DynamoInvoiceScheduleRepository } from '../../src/adapters/dynamo-invoi
 import { DBService } from '../../src/entities/service';
 
 const mockInvoiceSchedule = {
+    organizationId: 'org-test-123',
     invoiceScheduleId: 'is-1',
     customerId: 'cust-1',
     frequency: 'monthly' as const,
@@ -66,7 +67,7 @@ describe('DynamoInvoiceScheduleRepository', () => {
         it('should return a parsed invoice schedule when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockInvoiceSchedule }) });
 
-            const result = await repo.get('is-1');
+            const result = await repo.get('org-test-123', 'is-1');
 
             expect(result).not.toBeNull();
             expect(result!.invoiceScheduleId).toBe('is-1');
@@ -75,7 +76,7 @@ describe('DynamoInvoiceScheduleRepository', () => {
         it('should return null when invoice schedule not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('is-1');
+            const result = await repo.get('org-test-123', 'is-1');
 
             expect(result).toBeNull();
         });
@@ -83,7 +84,7 @@ describe('DynamoInvoiceScheduleRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('is-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'is-1')).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -93,7 +94,7 @@ describe('DynamoInvoiceScheduleRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [mockInvoiceSchedule], cursor: null }),
             });
 
-            const result = await repo.listByCustomerId('cust-1');
+            const result = await repo.listByCustomerId('org-test-123', 'cust-1');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].invoiceScheduleId).toBe('is-1');
@@ -104,9 +105,9 @@ describe('DynamoInvoiceScheduleRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockInvoiceSchedule], cursor: 'next-page' });
             mockEntity.query.byCustomerId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.listByCustomerId('cust-1', { limit: 5, cursor: 'some-cursor' });
+            const result = await repo.listByCustomerId('org-test-123', 'cust-1', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byCustomerId).toHaveBeenCalledWith({ customerId: 'cust-1' });
+            expect(mockEntity.query.byCustomerId).toHaveBeenCalledWith({ organizationId: 'org-test-123', customerId: 'cust-1' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
@@ -115,7 +116,7 @@ describe('DynamoInvoiceScheduleRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
             mockEntity.query.byCustomerId.mockReturnValue({ go: mockGo });
 
-            await repo.listByCustomerId('cust-1');
+            await repo.listByCustomerId('org-test-123', 'cust-1');
 
             expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
@@ -128,7 +129,7 @@ describe('DynamoInvoiceScheduleRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updated }) }),
             });
 
-            const result = await repo.update('is-1', { nextInvoiceDate: '2024-03-01' });
+            const result = await repo.update('org-test-123', 'is-1', { nextInvoiceDate: '2024-03-01' });
 
             expect(result.nextInvoiceDate).toBe('2024-03-01');
         });
@@ -138,7 +139,7 @@ describe('DynamoInvoiceScheduleRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('is-1', { nextInvoiceDate: '2024-03-01' })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'is-1', { nextInvoiceDate: '2024-03-01' })).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -146,8 +147,8 @@ describe('DynamoInvoiceScheduleRepository', () => {
         it('should delete an invoice schedule', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('is-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ invoiceScheduleId: 'is-1' });
+            await expect(repo.delete('org-test-123', 'is-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', invoiceScheduleId: 'is-1' });
         });
     });
 });

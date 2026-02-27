@@ -14,11 +14,12 @@ const service = new CustomerService(customerRepo, accountRepo, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const customerId = event.pathParameters?.customerId;
     if (!customerId) {
         throw new AppError("Missing customerId", 400);
     }
-    await service.deleteCustomer(customerId);
+    await service.deleteCustomer(organizationId, customerId);
     return { statusCode: 200, body: JSON.stringify({ message: "Customer deleted" }) };
 };
 

@@ -14,6 +14,7 @@ const service = new ServiceTypeService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const serviceTypeId = event.pathParameters?.serviceTypeId;
     if (!serviceTypeId) {
         throw new AppError("Missing serviceTypeId", 400);
@@ -31,7 +32,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         throw parseResult.error;
     }
 
-    const result = await service.updateServiceType(serviceTypeId, parseResult.data);
+    const result = await service.updateServiceType(organizationId, serviceTypeId, parseResult.data);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

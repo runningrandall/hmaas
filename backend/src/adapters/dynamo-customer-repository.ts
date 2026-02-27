@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoCustomerSchema = z.object({
+    organizationId: z.string(),
     customerId: z.string(),
     firstName: z.string(),
     lastName: z.string(),
@@ -34,15 +35,15 @@ export class DynamoCustomerRepository implements CustomerRepository {
         return parseCustomer(result.data);
     }
 
-    async get(customerId: string): Promise<Customer | null> {
-        const result = await DBService.entities.customer.get({ customerId }).go();
+    async get(organizationId: string, customerId: string): Promise<Customer | null> {
+        const result = await DBService.entities.customer.get({ organizationId, customerId }).go();
         if (!result.data) return null;
         return parseCustomer(result.data);
     }
 
-    async list(options?: PaginationOptions): Promise<PaginatedResult<Customer>> {
+    async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Customer>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.customer.scan.go({
+        const result = await DBService.entities.customer.query.byCustomerId({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -52,12 +53,12 @@ export class DynamoCustomerRepository implements CustomerRepository {
         };
     }
 
-    async update(customerId: string, data: UpdateCustomerRequest): Promise<Customer> {
-        const result = await DBService.entities.customer.patch({ customerId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, customerId: string, data: UpdateCustomerRequest): Promise<Customer> {
+        const result = await DBService.entities.customer.patch({ organizationId, customerId }).set(data).go({ response: "all_new" });
         return parseCustomer(result.data);
     }
 
-    async delete(customerId: string): Promise<void> {
-        await DBService.entities.customer.delete({ customerId }).go();
+    async delete(organizationId: string, customerId: string): Promise<void> {
+        await DBService.entities.customer.delete({ organizationId, customerId }).go();
     }
 }

@@ -12,7 +12,9 @@ vi.mock('../../src/entities/service', () => ({
             propertyType: {
                 create: vi.fn(),
                 get: vi.fn(),
-                scan: { go: vi.fn() },
+                query: {
+                    byPropertyTypeId: vi.fn(),
+                },
                 patch: vi.fn(),
                 delete: vi.fn(),
             },
@@ -24,6 +26,7 @@ import { DynamoPropertyTypeRepository } from '../../src/adapters/dynamo-property
 import { DBService } from '../../src/entities/service';
 
 const mockPropertyType = {
+    organizationId: 'org-test-123',
     propertyTypeId: 'pt-1',
     name: 'Residential',
     description: 'Single family home',
@@ -61,7 +64,7 @@ describe('DynamoPropertyTypeRepository', () => {
         it('should return a parsed property type when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockPropertyType }) });
 
-            const result = await repo.get('pt-1');
+            const result = await repo.get('org-test-123', 'pt-1');
 
             expect(result).not.toBeNull();
             expect(result!.propertyTypeId).toBe('pt-1');
@@ -70,7 +73,7 @@ describe('DynamoPropertyTypeRepository', () => {
         it('should return null when property type not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('pt-1');
+            const result = await repo.get('org-test-123', 'pt-1');
 
             expect(result).toBeNull();
         });
@@ -78,36 +81,41 @@ describe('DynamoPropertyTypeRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('pt-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'pt-1')).rejects.toThrow('Data integrity error');
         });
     });
 
     describe('list', () => {
         it('should return paginated list of property types', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockPropertyType], cursor: null });
+            mockEntity.query.byPropertyTypeId.mockReturnValue({
+                go: vi.fn().mockResolvedValue({ data: [mockPropertyType], cursor: null }),
+            });
 
-            const result = await repo.list();
+            const result = await repo.list('org-test-123');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].propertyTypeId).toBe('pt-1');
             expect(result.cursor).toBeNull();
         });
 
-        it('should pass limit and cursor options to scan', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockPropertyType], cursor: 'next-page' });
+        it('should pass limit and cursor options', async () => {
+            const mockGo = vi.fn().mockResolvedValue({ data: [mockPropertyType], cursor: 'next-page' });
+            mockEntity.query.byPropertyTypeId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.list({ limit: 5, cursor: 'some-cursor' });
+            const result = await repo.list('org-test-123', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
+            expect(mockEntity.query.byPropertyTypeId).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
 
         it('should use default page size when no options provided', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [], cursor: null });
+            const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
+            mockEntity.query.byPropertyTypeId.mockReturnValue({ go: mockGo });
 
-            await repo.list();
+            await repo.list('org-test-123');
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 20 });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
     });
 
@@ -118,7 +126,7 @@ describe('DynamoPropertyTypeRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updated }) }),
             });
 
-            const result = await repo.update('pt-1', { name: 'Commercial' });
+            const result = await repo.update('org-test-123', 'pt-1', { name: 'Commercial' });
 
             expect(result.name).toBe('Commercial');
         });
@@ -128,7 +136,7 @@ describe('DynamoPropertyTypeRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('pt-1', { name: 'Commercial' })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'pt-1', { name: 'Commercial' })).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -136,8 +144,8 @@ describe('DynamoPropertyTypeRepository', () => {
         it('should delete a property type', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('pt-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ propertyTypeId: 'pt-1' });
+            await expect(repo.delete('org-test-123', 'pt-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', propertyTypeId: 'pt-1' });
         });
     });
 });

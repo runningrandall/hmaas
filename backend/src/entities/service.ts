@@ -20,9 +20,11 @@ import { PayScheduleEntity } from "./pay-schedule";
 import { InvoiceEntity } from "./invoice";
 import { PaymentMethodEntity } from "./payment-method";
 import { InvoiceScheduleEntity } from "./invoice-schedule";
+import { OrganizationEntity } from "./organization";
 
 export const DBService = new Service(
     {
+        organization: OrganizationEntity,
         propertyType: PropertyTypeEntity,
         serviceType: ServiceTypeEntity,
         costType: CostTypeEntity,

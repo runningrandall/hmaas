@@ -214,6 +214,21 @@ describe('processEvent handler', () => {
         await expect(handler(event)).resolves.toBeUndefined();
     });
 
+    it('should return without error for OrganizationCreated event from versa.api', async () => {
+        const event = makeEventBridgeEvent('versa.api', 'OrganizationCreated', { organizationId: 'org-123' });
+        await expect(handler(event)).resolves.toBeUndefined();
+    });
+
+    it('should return without error for OrganizationSuspended event from versa.api', async () => {
+        const event = makeEventBridgeEvent('versa.api', 'OrganizationSuspended', { organizationId: 'org-123', previousStatus: 'active' });
+        await expect(handler(event)).resolves.toBeUndefined();
+    });
+
+    it('should return without error for OrganizationConfigUpdated event from versa.api', async () => {
+        const event = makeEventBridgeEvent('versa.api', 'OrganizationConfigUpdated', { organizationId: 'org-123' });
+        await expect(handler(event)).resolves.toBeUndefined();
+    });
+
     it('should return without error for unknown event type from versa.api', async () => {
         const event = makeEventBridgeEvent('versa.api', 'SomeOtherEvent', { data: 'value' });
         await expect(handler(event)).resolves.toBeUndefined();

@@ -14,6 +14,7 @@ const service = new PropertyTypeService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const propertyTypeId = event.pathParameters?.propertyTypeId;
     if (!propertyTypeId) {
         throw new AppError("Missing propertyTypeId", 400);
@@ -30,7 +31,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         throw parseResult.error;
     }
 
-    const result = await service.updatePropertyType(propertyTypeId, parseResult.data);
+    const result = await service.updatePropertyType(organizationId, propertyTypeId, parseResult.data);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

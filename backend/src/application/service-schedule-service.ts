@@ -11,10 +11,11 @@ export class ServiceScheduleService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createServiceSchedule(request: CreateServiceScheduleRequest): Promise<ServiceSchedule> {
+    async createServiceSchedule(organizationId: string, request: CreateServiceScheduleRequest): Promise<ServiceSchedule> {
         logger.info("Creating service schedule", { serviceId: request.serviceId, servicerId: request.servicerId });
 
         const schedule: ServiceSchedule = {
+            organizationId,
             serviceScheduleId: randomUUID(),
             serviceId: request.serviceId,
             servicerId: request.servicerId,
@@ -28,6 +29,7 @@ export class ServiceScheduleService {
         const created = await this.repository.create(schedule);
         metrics.addMetric('ServiceSchedulesCreated', MetricUnit.Count, 1);
         await this.eventPublisher.publish("ServiceScheduleCreated", {
+            organizationId,
             serviceScheduleId: created.serviceScheduleId,
             serviceId: request.serviceId,
             servicerId: request.servicerId,
@@ -36,24 +38,25 @@ export class ServiceScheduleService {
         return created;
     }
 
-    async getServiceSchedule(serviceScheduleId: string): Promise<ServiceSchedule> {
-        const schedule = await this.repository.get(serviceScheduleId);
+    async getServiceSchedule(organizationId: string, serviceScheduleId: string): Promise<ServiceSchedule> {
+        const schedule = await this.repository.get(organizationId, serviceScheduleId);
         if (!schedule) {
             throw new AppError("Service schedule not found", 404);
         }
         return schedule;
     }
 
-    async listByServicerId(servicerId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceSchedule>> {
-        return this.repository.listByServicerId(servicerId, options);
+    async listByServicerId(organizationId: string, servicerId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceSchedule>> {
+        return this.repository.listByServicerId(organizationId, servicerId, options);
     }
 
-    async updateServiceSchedule(serviceScheduleId: string, request: UpdateServiceScheduleRequest): Promise<ServiceSchedule> {
-        const existing = await this.getServiceSchedule(serviceScheduleId);
-        const updated = await this.repository.update(serviceScheduleId, request);
+    async updateServiceSchedule(organizationId: string, serviceScheduleId: string, request: UpdateServiceScheduleRequest): Promise<ServiceSchedule> {
+        const existing = await this.getServiceSchedule(organizationId, serviceScheduleId);
+        const updated = await this.repository.update(organizationId, serviceScheduleId, request);
 
         if (request.status === "completed" && existing.status !== "completed") {
             await this.eventPublisher.publish("ServiceScheduleCompleted", {
+                organizationId,
                 serviceScheduleId,
                 serviceId: existing.serviceId,
                 servicerId: existing.servicerId,

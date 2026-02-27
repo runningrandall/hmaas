@@ -3,6 +3,7 @@ import { PaginationOptions, PaginatedResult } from "./shared";
 export type ServicerStatus = "active" | "inactive";
 
 export interface Servicer {
+    organizationId: string;
     servicerId: string;
     employeeId: string;
     serviceArea?: string;
@@ -28,8 +29,8 @@ export interface UpdateServicerRequest {
 
 export interface ServicerRepository {
     create(servicer: Servicer): Promise<Servicer>;
-    get(servicerId: string): Promise<Servicer | null>;
-    getByEmployeeId(employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Servicer>>;
-    update(servicerId: string, data: UpdateServicerRequest): Promise<Servicer>;
-    delete(servicerId: string): Promise<void>;
+    get(organizationId: string, servicerId: string): Promise<Servicer | null>;
+    getByEmployeeId(organizationId: string, employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Servicer>>;
+    update(organizationId: string, servicerId: string, data: UpdateServicerRequest): Promise<Servicer>;
+    delete(organizationId: string, servicerId: string): Promise<void>;
 }

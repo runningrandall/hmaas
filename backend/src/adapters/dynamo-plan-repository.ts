@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoPlanSchema = z.object({
+    organizationId: z.string(),
     planId: z.string(),
     name: z.string(),
     description: z.string().optional().nullable(),
@@ -33,15 +34,15 @@ export class DynamoPlanRepository implements PlanRepository {
         return parsePlan(result.data);
     }
 
-    async get(planId: string): Promise<Plan | null> {
-        const result = await DBService.entities.plan.get({ planId }).go();
+    async get(organizationId: string, planId: string): Promise<Plan | null> {
+        const result = await DBService.entities.plan.get({ organizationId, planId }).go();
         if (!result.data) return null;
         return parsePlan(result.data);
     }
 
-    async list(options?: PaginationOptions): Promise<PaginatedResult<Plan>> {
+    async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Plan>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.plan.scan.go({
+        const result = await DBService.entities.plan.query.byOrgPlans({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -51,12 +52,12 @@ export class DynamoPlanRepository implements PlanRepository {
         };
     }
 
-    async update(planId: string, data: UpdatePlanRequest): Promise<Plan> {
-        const result = await DBService.entities.plan.patch({ planId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, planId: string, data: UpdatePlanRequest): Promise<Plan> {
+        const result = await DBService.entities.plan.patch({ organizationId, planId }).set(data).go({ response: "all_new" });
         return parsePlan(result.data);
     }
 
-    async delete(planId: string): Promise<void> {
-        await DBService.entities.plan.delete({ planId }).go();
+    async delete(organizationId: string, planId: string): Promise<void> {
+        await DBService.entities.plan.delete({ organizationId, planId }).go();
     }
 }

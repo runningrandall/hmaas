@@ -120,6 +120,7 @@ describe('Pay Handlers', () => {
             await handler(event, mockContext);
 
             expect(mockCreatePay).toHaveBeenCalledWith(
+                'org-test-123',
                 expect.objectContaining({ payType: 'salary', rate: 8000000, effectiveDate: '2026-06-01', employeeId: 'emp-456' }),
             );
         });
@@ -159,7 +160,7 @@ describe('Pay Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListPayByEmployee).toHaveBeenCalledWith('emp-123', { limit: 10, cursor: 'some-cursor' });
+            expect(mockListPayByEmployee).toHaveBeenCalledWith('org-test-123', 'emp-123', { limit: 10, cursor: 'some-cursor' });
         });
     });
 
@@ -238,7 +239,7 @@ describe('Pay Handlers', () => {
             const event = makeDeleteEvent({ payId: 'pay-789' });
             await handler(event, mockContext);
 
-            expect(mockDeletePay).toHaveBeenCalledWith('pay-789');
+            expect(mockDeletePay).toHaveBeenCalledWith('org-test-123', 'pay-789');
         });
     });
 });

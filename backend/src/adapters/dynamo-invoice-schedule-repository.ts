@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoInvoiceScheduleSchema = z.object({
+    organizationId: z.string(),
     invoiceScheduleId: z.string(),
     customerId: z.string(),
     frequency: z.enum(["monthly", "quarterly", "annually"]),
@@ -32,15 +33,15 @@ export class DynamoInvoiceScheduleRepository implements InvoiceScheduleRepositor
         return parseInvoiceSchedule(result.data);
     }
 
-    async get(invoiceScheduleId: string): Promise<InvoiceSchedule | null> {
-        const result = await DBService.entities.invoiceSchedule.get({ invoiceScheduleId }).go();
+    async get(organizationId: string, invoiceScheduleId: string): Promise<InvoiceSchedule | null> {
+        const result = await DBService.entities.invoiceSchedule.get({ organizationId, invoiceScheduleId }).go();
         if (!result.data) return null;
         return parseInvoiceSchedule(result.data);
     }
 
-    async listByCustomerId(customerId: string, options?: PaginationOptions): Promise<PaginatedResult<InvoiceSchedule>> {
+    async listByCustomerId(organizationId: string, customerId: string, options?: PaginationOptions): Promise<PaginatedResult<InvoiceSchedule>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.invoiceSchedule.query.byCustomerId({ customerId }).go({
+        const result = await DBService.entities.invoiceSchedule.query.byCustomerId({ organizationId, customerId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -50,12 +51,12 @@ export class DynamoInvoiceScheduleRepository implements InvoiceScheduleRepositor
         };
     }
 
-    async update(invoiceScheduleId: string, data: UpdateInvoiceScheduleRequest): Promise<InvoiceSchedule> {
-        const result = await DBService.entities.invoiceSchedule.patch({ invoiceScheduleId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, invoiceScheduleId: string, data: UpdateInvoiceScheduleRequest): Promise<InvoiceSchedule> {
+        const result = await DBService.entities.invoiceSchedule.patch({ organizationId, invoiceScheduleId }).set(data).go({ response: "all_new" });
         return parseInvoiceSchedule(result.data);
     }
 
-    async delete(invoiceScheduleId: string): Promise<void> {
-        await DBService.entities.invoiceSchedule.delete({ invoiceScheduleId }).go();
+    async delete(organizationId: string, invoiceScheduleId: string): Promise<void> {
+        await DBService.entities.invoiceSchedule.delete({ organizationId, invoiceScheduleId }).go();
     }
 }

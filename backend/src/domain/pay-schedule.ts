@@ -3,6 +3,7 @@ import { PaginationOptions, PaginatedResult } from "./shared";
 export type PayFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
 
 export interface PaySchedule {
+    organizationId: string;
     payScheduleId: string;
     name: string;
     frequency: PayFrequency;
@@ -28,8 +29,8 @@ export interface UpdatePayScheduleRequest {
 
 export interface PayScheduleRepository {
     create(paySchedule: PaySchedule): Promise<PaySchedule>;
-    get(payScheduleId: string): Promise<PaySchedule | null>;
-    list(options?: PaginationOptions): Promise<PaginatedResult<PaySchedule>>;
-    update(payScheduleId: string, data: UpdatePayScheduleRequest): Promise<PaySchedule>;
-    delete(payScheduleId: string): Promise<void>;
+    get(organizationId: string, payScheduleId: string): Promise<PaySchedule | null>;
+    list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<PaySchedule>>;
+    update(organizationId: string, payScheduleId: string, data: UpdatePayScheduleRequest): Promise<PaySchedule>;
+    delete(organizationId: string, payScheduleId: string): Promise<void>;
 }

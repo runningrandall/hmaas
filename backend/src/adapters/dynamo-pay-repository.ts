@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoPaySchema = z.object({
+    organizationId: z.string(),
     payId: z.string(),
     employeeId: z.string(),
     payScheduleId: z.string().optional().nullable(),
@@ -33,15 +34,15 @@ export class DynamoPayRepository implements PayRepository {
         return parsePay(result.data);
     }
 
-    async get(payId: string): Promise<Pay | null> {
-        const result = await DBService.entities.pay.get({ payId }).go();
+    async get(organizationId: string, payId: string): Promise<Pay | null> {
+        const result = await DBService.entities.pay.get({ organizationId, payId }).go();
         if (!result.data) return null;
         return parsePay(result.data);
     }
 
-    async listByEmployeeId(employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Pay>> {
+    async listByEmployeeId(organizationId: string, employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Pay>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.pay.query.byEmployeeId({ employeeId }).go({
+        const result = await DBService.entities.pay.query.byEmployeeId({ organizationId, employeeId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -51,12 +52,12 @@ export class DynamoPayRepository implements PayRepository {
         };
     }
 
-    async update(payId: string, data: UpdatePayRequest): Promise<Pay> {
-        const result = await DBService.entities.pay.patch({ payId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, payId: string, data: UpdatePayRequest): Promise<Pay> {
+        const result = await DBService.entities.pay.patch({ organizationId, payId }).set(data).go({ response: "all_new" });
         return parsePay(result.data);
     }
 
-    async delete(payId: string): Promise<void> {
-        await DBService.entities.pay.delete({ payId }).go();
+    async delete(organizationId: string, payId: string): Promise<void> {
+        await DBService.entities.pay.delete({ organizationId, payId }).go();
     }
 }

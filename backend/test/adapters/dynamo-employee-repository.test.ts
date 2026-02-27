@@ -12,7 +12,9 @@ vi.mock('../../src/entities/service', () => ({
             employee: {
                 create: vi.fn(),
                 get: vi.fn(),
-                scan: { go: vi.fn() },
+                query: {
+                    byEmployeeId: vi.fn(),
+                },
                 patch: vi.fn(),
                 delete: vi.fn(),
             },
@@ -24,6 +26,7 @@ import { DynamoEmployeeRepository } from '../../src/adapters/dynamo-employee-rep
 import { DBService } from '../../src/entities/service';
 
 const mockEmployee = {
+    organizationId: 'org-test-123',
     employeeId: 'emp-1',
     firstName: 'Alice',
     lastName: 'Smith',
@@ -66,7 +69,7 @@ describe('DynamoEmployeeRepository', () => {
         it('should return a parsed employee when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockEmployee }) });
 
-            const result = await repo.get('emp-1');
+            const result = await repo.get('org-test-123', 'emp-1');
 
             expect(result).not.toBeNull();
             expect(result!.employeeId).toBe('emp-1');
@@ -75,7 +78,7 @@ describe('DynamoEmployeeRepository', () => {
         it('should return null when employee not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('emp-1');
+            const result = await repo.get('org-test-123', 'emp-1');
 
             expect(result).toBeNull();
         });
@@ -83,36 +86,41 @@ describe('DynamoEmployeeRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('emp-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'emp-1')).rejects.toThrow('Data integrity error');
         });
     });
 
     describe('list', () => {
         it('should return paginated list of employees', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockEmployee], cursor: null });
+            mockEntity.query.byEmployeeId.mockReturnValue({
+                go: vi.fn().mockResolvedValue({ data: [mockEmployee], cursor: null }),
+            });
 
-            const result = await repo.list();
+            const result = await repo.list('org-test-123');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].employeeId).toBe('emp-1');
             expect(result.cursor).toBeNull();
         });
 
-        it('should pass limit and cursor options to scan', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [mockEmployee], cursor: 'next-page' });
+        it('should pass limit and cursor options', async () => {
+            const mockGo = vi.fn().mockResolvedValue({ data: [mockEmployee], cursor: 'next-page' });
+            mockEntity.query.byEmployeeId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.list({ limit: 5, cursor: 'some-cursor' });
+            const result = await repo.list('org-test-123', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
+            expect(mockEntity.query.byEmployeeId).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
 
         it('should use default page size when no options provided', async () => {
-            mockEntity.scan.go.mockResolvedValue({ data: [], cursor: null });
+            const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
+            mockEntity.query.byEmployeeId.mockReturnValue({ go: mockGo });
 
-            await repo.list();
+            await repo.list('org-test-123');
 
-            expect(mockEntity.scan.go).toHaveBeenCalledWith({ limit: 20 });
+            expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
     });
 
@@ -123,7 +131,7 @@ describe('DynamoEmployeeRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updated }) }),
             });
 
-            const result = await repo.update('emp-1', { role: 'manager' });
+            const result = await repo.update('org-test-123', 'emp-1', { role: 'manager' });
 
             expect(result.role).toBe('manager');
         });
@@ -133,7 +141,7 @@ describe('DynamoEmployeeRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('emp-1', { role: 'manager' })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'emp-1', { role: 'manager' })).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -141,8 +149,8 @@ describe('DynamoEmployeeRepository', () => {
         it('should delete an employee', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('emp-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ employeeId: 'emp-1' });
+            await expect(repo.delete('org-test-123', 'emp-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', employeeId: 'emp-1' });
         });
     });
 });

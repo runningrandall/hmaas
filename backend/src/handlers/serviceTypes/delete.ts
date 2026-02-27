@@ -12,11 +12,12 @@ const service = new ServiceTypeService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const serviceTypeId = event.pathParameters?.serviceTypeId;
     if (!serviceTypeId) {
         throw new AppError("Missing serviceTypeId", 400);
     }
-    await service.deleteServiceType(serviceTypeId);
+    await service.deleteServiceType(organizationId, serviceTypeId);
     return { statusCode: 204, body: "" };
 };
 

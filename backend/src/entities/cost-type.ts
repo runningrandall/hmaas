@@ -11,6 +11,7 @@ export const CostTypeEntity = new Entity(
             service: "versa",
         },
         attributes: {
+            organizationId: { type: "string", required: true },
             costTypeId: { type: "string", required: true },
             name: { type: "string", required: true },
             description: { type: "string" },
@@ -19,8 +20,13 @@ export const CostTypeEntity = new Entity(
         },
         indexes: {
             byCostTypeId: {
-                pk: { field: "pk", composite: ["costTypeId"] },
+                pk: { field: "pk", composite: ["organizationId", "costTypeId"] },
                 sk: { field: "sk", composite: [] },
+            },
+            byOrg: {
+                index: "gsi2",
+                pk: { field: "gsi2pk", composite: [] },
+                sk: { field: "gsi2sk", composite: ["organizationId", "costTypeId"] },
             },
         },
     },

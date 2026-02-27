@@ -11,6 +11,7 @@ export const InvoiceEntity = new Entity(
             service: "versa",
         },
         attributes: {
+            organizationId: { type: "string", required: true },
             invoiceId: { type: "string", required: true },
             customerId: { type: "string", required: true },
             invoiceNumber: { type: "string", required: true },
@@ -42,13 +43,18 @@ export const InvoiceEntity = new Entity(
         },
         indexes: {
             byInvoiceId: {
-                pk: { field: "pk", composite: ["invoiceId"] },
+                pk: { field: "pk", composite: ["organizationId", "invoiceId"] },
                 sk: { field: "sk", composite: [] },
             },
             byCustomerId: {
                 index: "gsi1",
-                pk: { field: "gsi1pk", composite: ["customerId"] },
+                pk: { field: "gsi1pk", composite: ["organizationId", "customerId"] },
                 sk: { field: "gsi1sk", composite: ["invoiceDate"] },
+            },
+            byOrg: {
+                index: "gsi2",
+                pk: { field: "gsi2pk", composite: [] },
+                sk: { field: "gsi2sk", composite: ["organizationId", "invoiceId"] },
             },
         },
     },

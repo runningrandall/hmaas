@@ -18,6 +18,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('DelegateService', () => {
     let service: DelegateService;
 
@@ -36,6 +38,7 @@ describe('DelegateService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 delegateId: 'del-1',
                 ...request,
                 status: 'active',
@@ -47,14 +50,15 @@ describe('DelegateService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createDelegate(request as any);
+            const result = await service.createDelegate(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('DelegateAdded', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('DelegateAdded', expect.objectContaining({
+                organizationId: ORG_ID,
                 delegateId: created.delegateId,
                 accountId: request.accountId,
-            });
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('DelegatesCreated', expect.any(String), 1);
         });
 
@@ -69,7 +73,7 @@ describe('DelegateService', () => {
             mockRepo.create.mockImplementation(async (d: any) => d);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createDelegate(request as any);
+            const result = await service.createDelegate(ORG_ID, request as any);
 
             expect(result.status).toBe('active');
             expect(result.delegateId).toEqual(expect.any(String));
@@ -79,56 +83,57 @@ describe('DelegateService', () => {
 
     describe('getDelegate', () => {
         it('should return delegate when found', async () => {
-            const delegate = { delegateId: 'del-1', accountId: 'acct-1', status: 'active' };
+            const delegate = { organizationId: ORG_ID, delegateId: 'del-1', accountId: 'acct-1', status: 'active' };
             mockRepo.get.mockResolvedValue(delegate);
 
-            const result = await service.getDelegate('del-1');
+            const result = await service.getDelegate(ORG_ID, 'del-1');
 
             expect(result).toEqual(delegate);
-            expect(mockRepo.get).toHaveBeenCalledWith('del-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'del-1');
         });
 
         it('should throw AppError 404 when delegate not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getDelegate('missing')).rejects.toThrow(AppError);
-            await expect(service.getDelegate('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getDelegate(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getDelegate(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listDelegatesByAccount', () => {
         it('should delegate to repo.listByAccountId', async () => {
-            const paginated = { items: [{ delegateId: 'del-1', accountId: 'acct-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, delegateId: 'del-1', accountId: 'acct-1' }], count: 1 };
             mockRepo.listByAccountId.mockResolvedValue(paginated);
 
-            const result = await service.listDelegatesByAccount('acct-1', { limit: 10 });
+            const result = await service.listDelegatesByAccount(ORG_ID, 'acct-1', { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.listByAccountId).toHaveBeenCalledWith('acct-1', { limit: 10 });
+            expect(mockRepo.listByAccountId).toHaveBeenCalledWith(ORG_ID, 'acct-1', { limit: 10 });
         });
     });
 
     describe('deleteDelegate', () => {
         it('should fetch delegate first to get accountId, delete it, and publish DelegateRemoved event', async () => {
-            const delegate = { delegateId: 'del-1', accountId: 'acct-1', status: 'active' };
+            const delegate = { organizationId: ORG_ID, delegateId: 'del-1', accountId: 'acct-1', status: 'active' };
             mockRepo.get.mockResolvedValue(delegate);
             mockRepo.delete.mockResolvedValue(undefined);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.deleteDelegate('del-1');
+            await service.deleteDelegate(ORG_ID, 'del-1');
 
-            expect(mockRepo.get).toHaveBeenCalledWith('del-1');
-            expect(mockRepo.delete).toHaveBeenCalledWith('del-1');
-            expect(mockPublisher.publish).toHaveBeenCalledWith('DelegateRemoved', {
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'del-1');
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'del-1');
+            expect(mockPublisher.publish).toHaveBeenCalledWith('DelegateRemoved', expect.objectContaining({
+                organizationId: ORG_ID,
                 delegateId: 'del-1',
                 accountId: 'acct-1',
-            });
+            }));
         });
 
         it('should throw 404 if delegate not found before deleting', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.deleteDelegate('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.deleteDelegate(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
             expect(mockRepo.delete).not.toHaveBeenCalled();
         });
     });

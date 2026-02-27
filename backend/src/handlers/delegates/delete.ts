@@ -12,11 +12,12 @@ const service = new DelegateService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const delegateId = event.pathParameters?.delegateId;
     if (!delegateId) {
         throw new AppError("Missing delegateId", 400);
     }
-    await service.deleteDelegate(delegateId);
+    await service.deleteDelegate(organizationId, delegateId);
     return { statusCode: 200, body: JSON.stringify({ message: "Delegate deleted" }) };
 };
 

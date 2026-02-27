@@ -17,6 +17,8 @@ const mockRepo = {
     delete: vi.fn(),
 };
 
+const ORG_ID = 'org-test-123';
+
 describe('PayService', () => {
     let service: PayService;
 
@@ -36,6 +38,7 @@ describe('PayService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 payId: 'pay-1',
                 ...request,
                 createdAt: '2024-01-01T00:00:00.000Z',
@@ -45,7 +48,7 @@ describe('PayService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createPay(request as any);
+            const result = await service.createPay(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
@@ -63,7 +66,7 @@ describe('PayService', () => {
 
             mockRepo.create.mockImplementation(async (p: any) => p);
 
-            const result = await service.createPay(request as any);
+            const result = await service.createPay(ORG_ID, request as any);
 
             expect(result.payId).toEqual(expect.any(String));
             expect(result.createdAt).toEqual(expect.any(String));
@@ -72,43 +75,43 @@ describe('PayService', () => {
 
     describe('getPay', () => {
         it('should return pay record when found', async () => {
-            const pay = { payId: 'pay-1', employeeId: 'emp-1', payType: 'hourly', rate: 2000 };
+            const pay = { organizationId: ORG_ID, payId: 'pay-1', employeeId: 'emp-1', payType: 'hourly', rate: 2000 };
             mockRepo.get.mockResolvedValue(pay);
 
-            const result = await service.getPay('pay-1');
+            const result = await service.getPay(ORG_ID, 'pay-1');
 
             expect(result).toEqual(pay);
-            expect(mockRepo.get).toHaveBeenCalledWith('pay-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'pay-1');
         });
 
         it('should throw AppError 404 when pay record not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getPay('missing')).rejects.toThrow(AppError);
-            await expect(service.getPay('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getPay(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getPay(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listPayByEmployee', () => {
         it('should delegate to repo.listByEmployeeId', async () => {
-            const paginated = { items: [{ payId: 'pay-1', employeeId: 'emp-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, payId: 'pay-1', employeeId: 'emp-1' }], count: 1 };
             mockRepo.listByEmployeeId.mockResolvedValue(paginated);
 
-            const result = await service.listPayByEmployee('emp-1', { limit: 10 });
+            const result = await service.listPayByEmployee(ORG_ID, 'emp-1', { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.listByEmployeeId).toHaveBeenCalledWith('emp-1', { limit: 10 });
+            expect(mockRepo.listByEmployeeId).toHaveBeenCalledWith(ORG_ID, 'emp-1', { limit: 10 });
         });
     });
 
     describe('updatePay', () => {
         it('should update pay record and return updated without publishing event', async () => {
-            const existing = { payId: 'pay-1', employeeId: 'emp-1', rate: 2000 };
-            const updated = { payId: 'pay-1', employeeId: 'emp-1', rate: 2500 };
+            const existing = { organizationId: ORG_ID, payId: 'pay-1', employeeId: 'emp-1', rate: 2000 };
+            const updated = { organizationId: ORG_ID, payId: 'pay-1', employeeId: 'emp-1', rate: 2500 };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
 
-            const result = await service.updatePay('pay-1', { rate: 2500 } as any);
+            const result = await service.updatePay(ORG_ID, 'pay-1', { rate: 2500 } as any);
 
             expect(result).toEqual(updated);
         });
@@ -116,7 +119,7 @@ describe('PayService', () => {
         it('should throw 404 if pay record not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.updatePay('missing', { rate: 3000 } as any)).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.updatePay(ORG_ID, 'missing', { rate: 3000 } as any)).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
@@ -124,9 +127,9 @@ describe('PayService', () => {
         it('should delete pay record without publishing event', async () => {
             mockRepo.delete.mockResolvedValue(undefined);
 
-            await service.deletePay('pay-1');
+            await service.deletePay(ORG_ID, 'pay-1');
 
-            expect(mockRepo.delete).toHaveBeenCalledWith('pay-1');
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'pay-1');
         });
     });
 });

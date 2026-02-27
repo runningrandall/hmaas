@@ -3,6 +3,7 @@ import { PaginationOptions, PaginatedResult } from "./shared";
 export type EmployeeStatus = "active" | "inactive" | "terminated";
 
 export interface Employee {
+    organizationId: string;
     employeeId: string;
     firstName: string;
     lastName: string;
@@ -36,8 +37,8 @@ export interface UpdateEmployeeRequest {
 
 export interface EmployeeRepository {
     create(employee: Employee): Promise<Employee>;
-    get(employeeId: string): Promise<Employee | null>;
-    list(options?: PaginationOptions): Promise<PaginatedResult<Employee>>;
-    update(employeeId: string, data: UpdateEmployeeRequest): Promise<Employee>;
-    delete(employeeId: string): Promise<void>;
+    get(organizationId: string, employeeId: string): Promise<Employee | null>;
+    list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Employee>>;
+    update(organizationId: string, employeeId: string, data: UpdateEmployeeRequest): Promise<Employee>;
+    delete(organizationId: string, employeeId: string): Promise<void>;
 }

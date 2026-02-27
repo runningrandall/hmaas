@@ -12,13 +12,14 @@ const service = new CostService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const serviceId = event.pathParameters?.serviceId;
     if (!serviceId) {
         throw new AppError("Missing serviceId", 400);
     }
     const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : undefined;
     const cursor = event.queryStringParameters?.cursor || undefined;
-    const result = await service.listCostsByService(serviceId, { limit, cursor });
+    const result = await service.listCostsByService(organizationId, serviceId, { limit, cursor });
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

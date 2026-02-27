@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoCostSchema = z.object({
+    organizationId: z.string(),
     costId: z.string(),
     serviceId: z.string(),
     costTypeId: z.string(),
@@ -33,15 +34,15 @@ export class DynamoCostRepository implements CostRepository {
         return parseCost(result.data);
     }
 
-    async get(costId: string): Promise<Cost | null> {
-        const result = await DBService.entities.cost.get({ costId }).go();
+    async get(organizationId: string, costId: string): Promise<Cost | null> {
+        const result = await DBService.entities.cost.get({ organizationId, costId }).go();
         if (!result.data) return null;
         return parseCost(result.data);
     }
 
-    async listByServiceId(serviceId: string, options?: PaginationOptions): Promise<PaginatedResult<Cost>> {
+    async listByServiceId(organizationId: string, serviceId: string, options?: PaginationOptions): Promise<PaginatedResult<Cost>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.cost.query.byServiceId({ serviceId }).go({
+        const result = await DBService.entities.cost.query.byServiceId({ organizationId, serviceId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -51,7 +52,7 @@ export class DynamoCostRepository implements CostRepository {
         };
     }
 
-    async delete(costId: string): Promise<void> {
-        await DBService.entities.cost.delete({ costId }).go();
+    async delete(organizationId: string, costId: string): Promise<void> {
+        await DBService.entities.cost.delete({ organizationId, costId }).go();
     }
 }

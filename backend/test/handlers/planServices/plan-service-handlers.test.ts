@@ -108,7 +108,7 @@ describe('Plan Service Handlers', () => {
             expect(result.statusCode).toBe(200);
             const body = JSON.parse(result.body);
             expect(body.items).toHaveLength(1);
-            expect(mockListPlanServices).toHaveBeenCalledWith('plan-123', { limit: undefined, cursor: undefined });
+            expect(mockListPlanServices).toHaveBeenCalledWith('org-test-123', 'plan-123', { limit: undefined, cursor: undefined });
         });
 
         it('should return 400 when planId path param is missing', async () => {
@@ -129,7 +129,7 @@ describe('Plan Service Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListPlanServices).toHaveBeenCalledWith('plan-123', { limit: 5, cursor: 'some-cursor' });
+            expect(mockListPlanServices).toHaveBeenCalledWith('org-test-123', 'plan-123', { limit: 5, cursor: 'some-cursor' });
         });
     });
 

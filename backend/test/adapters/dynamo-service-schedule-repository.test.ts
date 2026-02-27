@@ -25,6 +25,7 @@ import { DynamoServiceScheduleRepository } from '../../src/adapters/dynamo-servi
 import { DBService } from '../../src/entities/service';
 
 const mockSchedule = {
+    organizationId: 'org-test-123',
     serviceScheduleId: 'ss-1',
     serviceId: 'svc-1',
     servicerId: 'sr-1',
@@ -67,7 +68,7 @@ describe('DynamoServiceScheduleRepository', () => {
         it('should return a parsed schedule when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockSchedule }) });
 
-            const result = await repo.get('ss-1');
+            const result = await repo.get('org-test-123', 'ss-1');
 
             expect(result).not.toBeNull();
             expect(result!.serviceScheduleId).toBe('ss-1');
@@ -76,7 +77,7 @@ describe('DynamoServiceScheduleRepository', () => {
         it('should return null when schedule not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('ss-1');
+            const result = await repo.get('org-test-123', 'ss-1');
 
             expect(result).toBeNull();
         });
@@ -84,7 +85,7 @@ describe('DynamoServiceScheduleRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('ss-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'ss-1')).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -94,7 +95,7 @@ describe('DynamoServiceScheduleRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [mockSchedule], cursor: null }),
             });
 
-            const result = await repo.listByServicerId('sr-1');
+            const result = await repo.listByServicerId('org-test-123', 'sr-1');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].serviceScheduleId).toBe('ss-1');
@@ -105,9 +106,9 @@ describe('DynamoServiceScheduleRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockSchedule], cursor: 'next-page' });
             mockEntity.query.byServicerId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.listByServicerId('sr-1', { limit: 5, cursor: 'some-cursor' });
+            const result = await repo.listByServicerId('org-test-123', 'sr-1', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byServicerId).toHaveBeenCalledWith({ servicerId: 'sr-1' });
+            expect(mockEntity.query.byServicerId).toHaveBeenCalledWith({ organizationId: 'org-test-123', servicerId: 'sr-1' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
@@ -116,7 +117,7 @@ describe('DynamoServiceScheduleRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
             mockEntity.query.byServicerId.mockReturnValue({ go: mockGo });
 
-            await repo.listByServicerId('sr-1');
+            await repo.listByServicerId('org-test-123', 'sr-1');
 
             expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
@@ -129,7 +130,7 @@ describe('DynamoServiceScheduleRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updated }) }),
             });
 
-            const result = await repo.update('ss-1', { status: 'completed' });
+            const result = await repo.update('org-test-123', 'ss-1', { status: 'completed' });
 
             expect(result.status).toBe('completed');
         });
@@ -139,7 +140,7 @@ describe('DynamoServiceScheduleRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('ss-1', { status: 'completed' })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'ss-1', { status: 'completed' })).rejects.toThrow('Data integrity error');
         });
     });
 });

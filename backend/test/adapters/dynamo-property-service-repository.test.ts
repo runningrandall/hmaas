@@ -26,6 +26,7 @@ import { DynamoPropertyServiceRepository } from '../../src/adapters/dynamo-prope
 import { DBService } from '../../src/entities/service';
 
 const mockPropertyService = {
+    organizationId: 'org-test-123',
     serviceId: 'svc-1',
     propertyId: 'prop-1',
     serviceTypeId: 'st-1',
@@ -68,7 +69,7 @@ describe('DynamoPropertyServiceRepository', () => {
         it('should return a parsed property service when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockPropertyService }) });
 
-            const result = await repo.get('svc-1');
+            const result = await repo.get('org-test-123', 'svc-1');
 
             expect(result).not.toBeNull();
             expect(result!.serviceId).toBe('svc-1');
@@ -77,7 +78,7 @@ describe('DynamoPropertyServiceRepository', () => {
         it('should return null when property service not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('svc-1');
+            const result = await repo.get('org-test-123', 'svc-1');
 
             expect(result).toBeNull();
         });
@@ -85,7 +86,7 @@ describe('DynamoPropertyServiceRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('svc-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'svc-1')).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -95,7 +96,7 @@ describe('DynamoPropertyServiceRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [mockPropertyService], cursor: null }),
             });
 
-            const result = await repo.listByPropertyId('prop-1');
+            const result = await repo.listByPropertyId('org-test-123', 'prop-1');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].serviceId).toBe('svc-1');
@@ -106,9 +107,9 @@ describe('DynamoPropertyServiceRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockPropertyService], cursor: 'next-page' });
             mockEntity.query.byPropertyId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.listByPropertyId('prop-1', { limit: 5, cursor: 'some-cursor' });
+            const result = await repo.listByPropertyId('org-test-123', 'prop-1', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byPropertyId).toHaveBeenCalledWith({ propertyId: 'prop-1' });
+            expect(mockEntity.query.byPropertyId).toHaveBeenCalledWith({ organizationId: 'org-test-123', propertyId: 'prop-1' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
@@ -117,7 +118,7 @@ describe('DynamoPropertyServiceRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
             mockEntity.query.byPropertyId.mockReturnValue({ go: mockGo });
 
-            await repo.listByPropertyId('prop-1');
+            await repo.listByPropertyId('org-test-123', 'prop-1');
 
             expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
@@ -130,7 +131,7 @@ describe('DynamoPropertyServiceRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updated }) }),
             });
 
-            const result = await repo.update('svc-1', { status: 'inactive' });
+            const result = await repo.update('org-test-123', 'svc-1', { status: 'inactive' });
 
             expect(result.status).toBe('inactive');
         });
@@ -140,7 +141,7 @@ describe('DynamoPropertyServiceRepository', () => {
                 set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
             });
 
-            await expect(repo.update('svc-1', { status: 'inactive' })).rejects.toThrow('Data integrity error');
+            await expect(repo.update('org-test-123', 'svc-1', { status: 'inactive' })).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -148,8 +149,8 @@ describe('DynamoPropertyServiceRepository', () => {
         it('should delete a property service', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('svc-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ serviceId: 'svc-1' });
+            await expect(repo.delete('org-test-123', 'svc-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', serviceId: 'svc-1' });
         });
     });
 });

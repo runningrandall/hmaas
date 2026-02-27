@@ -31,7 +31,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
         queryStringParameters: null,
         multiValueQueryStringParameters: null,
         stageVariables: null,
-        requestContext: { requestId: 'test-request-id' } as any,
+        requestContext: { requestId: 'test-request-id', authorizer: { organizationId: 'org-test-123' } } as any,
         resource: '',
         ...overrides,
     };
@@ -133,7 +133,7 @@ describe('commonMiddleware', () => {
         const wrapped = commonMiddleware(handler);
 
         const event = makeEvent({
-            requestContext: { requestId: 'req-abc-999' } as any,
+            requestContext: { requestId: 'req-abc-999', authorizer: { organizationId: 'org-test-123' } } as any,
         });
         const result = await wrapped(event, mockContext);
 

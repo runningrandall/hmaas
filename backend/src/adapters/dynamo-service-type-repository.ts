@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoServiceTypeSchema = z.object({
+    organizationId: z.string(),
     serviceTypeId: z.string(),
     name: z.string(),
     description: z.string().optional().nullable(),
@@ -31,15 +32,15 @@ export class DynamoServiceTypeRepository implements ServiceTypeRepository {
         return parseServiceType(result.data);
     }
 
-    async get(serviceTypeId: string): Promise<ServiceType | null> {
-        const result = await DBService.entities.serviceType.get({ serviceTypeId }).go();
+    async get(organizationId: string, serviceTypeId: string): Promise<ServiceType | null> {
+        const result = await DBService.entities.serviceType.get({ organizationId, serviceTypeId }).go();
         if (!result.data) return null;
         return parseServiceType(result.data);
     }
 
-    async list(options?: PaginationOptions): Promise<PaginatedResult<ServiceType>> {
+    async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceType>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.serviceType.scan.go({
+        const result = await DBService.entities.serviceType.query.byServiceTypeId({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -49,12 +50,12 @@ export class DynamoServiceTypeRepository implements ServiceTypeRepository {
         };
     }
 
-    async update(serviceTypeId: string, data: UpdateServiceTypeRequest): Promise<ServiceType> {
-        const result = await DBService.entities.serviceType.patch({ serviceTypeId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, serviceTypeId: string, data: UpdateServiceTypeRequest): Promise<ServiceType> {
+        const result = await DBService.entities.serviceType.patch({ organizationId, serviceTypeId }).set(data).go({ response: "all_new" });
         return parseServiceType(result.data);
     }
 
-    async delete(serviceTypeId: string): Promise<void> {
-        await DBService.entities.serviceType.delete({ serviceTypeId }).go();
+    async delete(organizationId: string, serviceTypeId: string): Promise<void> {
+        await DBService.entities.serviceType.delete({ organizationId, serviceTypeId }).go();
     }
 }

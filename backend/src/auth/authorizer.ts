@@ -41,6 +41,11 @@ function mapPathToAction(httpMethod: string, resourcePath: string): string {
     if (resourcePath.startsWith('pay-schedules') || resourcePath.startsWith('pay')) {
         return isRead ? 'ReadDashboard' : 'ManageEmployees';
     }
+    if (resourcePath.startsWith('organizations')) {
+        if (resourcePath.includes('/config')) return isRead ? 'ManageOrgConfig' : 'ManageOrgConfig';
+        if (resourcePath.includes('/secrets')) return isRead ? 'ManageOrgSecrets' : 'ManageOrgSecrets';
+        return isRead ? 'ManageOrganizations' : 'ManageOrganizations';
+    }
 
     return isRead ? 'ReadDashboard' : 'ManageUsers';
 }
@@ -53,6 +58,7 @@ export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<Au
         const payload = await verifier.verify(token);
         const userId = payload.sub;
         const groups = (payload["cognito:groups"] || []) as string[];
+        const organizationId = (payload as Record<string, unknown>)['custom:organizationId'] as string || '';
 
         const arnParts = event.methodArn.split('/');
         const httpMethod = arnParts[2];
@@ -81,6 +87,9 @@ export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<Au
                         attributes: {
                             groups: {
                                 set: groups.map(g => ({ string: g }))
+                            },
+                            organizationId: {
+                                string: organizationId
                             }
                         }
                     }
@@ -93,7 +102,7 @@ export const handler = async (event: APIGatewayTokenAuthorizerEvent): Promise<Au
 
         const isAllowed = avpResponse.decision === 'ALLOW';
 
-        return generatePolicy(userId, isAllowed ? 'Allow' : 'Deny', event.methodArn, { userId, groups: groups.join(',') });
+        return generatePolicy(userId, isAllowed ? 'Allow' : 'Deny', event.methodArn, { userId, groups: groups.join(','), organizationId });
 
     } catch (err) {
         console.error("Auth Failed:", err);

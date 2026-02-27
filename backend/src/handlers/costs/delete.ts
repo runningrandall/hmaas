@@ -12,11 +12,12 @@ const service = new CostService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const costId = event.pathParameters?.costId;
     if (!costId) {
         throw new AppError("Missing costId", 400);
     }
-    await service.deleteCost(costId);
+    await service.deleteCost(organizationId, costId);
     return { statusCode: 204, body: "" };
 };
 

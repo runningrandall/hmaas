@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Versa - a premium property management company for home and commercial property (future commercial). We offer all your property management needs (lawn, window cleaning, pest control, fertilizer, sprinkler, winterizing, etc.) in one single bundle that saves you money and time.
+Versa - a **multi-tenant** property management platform for home and commercial property. Multiple property management companies (organizations) operate independently on the platform. We offer all your property management needs (lawn, window cleaning, pest control, fertilizer, sprinkler, winterizing, etc.) in one single bundle that saves you money and time.
 
 ## Monorepo Structure
 
@@ -69,63 +69,88 @@ entities/          → ElectroDB entity definitions (DynamoDB schema)
 lib/               → Shared utilities (middleware, error handling, observability, Zod schemas)
 ```
 
+## Multi-Tenancy
+
+All data is scoped by `organizationId`. The `Organization` entity is the top-level tenant boundary.
+
+- **organizationId** is the first composite in every entity's PK → DynamoDB partitions data by org → strong tenant isolation
+- All list operations use `query` (not `scan`) with `organizationId` as the partition prefix
+- GSI1 also includes `organizationId` as the first composite in pk for parent lookups within an org
+- GSI2 enables cross-org queries for super admin: `gsi2pk: []` (service prefix), `gsi2sk: [organizationId, entityId]`
+- Lookup entities (PropertyType, ServiceType, CostType) use `organizationId = "GLOBAL"` for platform defaults
+- Auth: `organizationId` is injected into Cognito access tokens via Pre Token Generation Lambda trigger
+- Middleware: `orgContextMiddleware` extracts `organizationId` from authorizer context and attaches to request; org management routes use `superAdminMiddleware` (no org scoping)
+- Secrets: Org-sensitive config (Stripe keys, etc.) stored in AWS Secrets Manager at `versa/org/{organizationId}/secrets`
+
 ## Entity Model
 
-### Lookup Entities (reference data)
-| Entity | Key Attributes | PK/SK Pattern |
-|---|---|---|
-| **PropertyType** | propertyTypeId, name, description | `PROPERTY_TYPE#<id>` / `PROPERTY_TYPE#<id>` |
-| **ServiceType** | serviceTypeId, name, description, category | `SERVICE_TYPE#<id>` / `SERVICE_TYPE#<id>` |
-| **CostType** | costTypeId, name, description | `COST_TYPE#<id>` / `COST_TYPE#<id>` |
+### Organization (tenant boundary)
+| Entity | Key Attributes | PK Composite | GSI1 | GSI2 |
+|---|---|---|---|---|
+| **Organization** | organizationId, name, slug, status, ownerUserId, billingEmail, phone, address, city, state, zip, timezone, config | `[organizationId]` | `[slug]` / `[organizationId]` | `[status]` / `[organizationId]` |
+
+### Lookup Entities (reference data, organizationId = "GLOBAL")
+| Entity | Key Attributes | PK Composite | GSI2 |
+|---|---|---|---|
+| **PropertyType** | propertyTypeId, name, description | `[orgId, propertyTypeId]` | `[]` / `[orgId, propertyTypeId]` |
+| **ServiceType** | serviceTypeId, name, description, category | `[orgId, serviceTypeId]` | `[]` / `[orgId, serviceTypeId]` |
+| **CostType** | costTypeId, name, description | `[orgId, costTypeId]` | `[]` / `[orgId, costTypeId]` |
 
 ### Core Entities
-| Entity | Key Attributes | PK/SK Pattern | GSI1 |
-|---|---|---|---|
-| **Customer** | customerId, firstName, lastName, email, phone, status, notes | `CUSTOMER#<id>` / `CUSTOMER#<id>` | `CUSTOMER_STATUS#<status>` / `CUSTOMER#<id>` |
-| **Account** | accountId, customerId, cognitoUserId, planId, status, billingEmail | `ACCOUNT#<id>` / `ACCOUNT#<id>` | `CUSTOMER#<customerId>` / `ACCOUNT#<id>` |
-| **Delegate** | delegateId, accountId, email, name, permissions[], status | `DELEGATE#<id>` / `DELEGATE#<id>` | `ACCOUNT#<accountId>` / `DELEGATE#<id>` |
-| **Property** | propertyId, customerId, propertyTypeId, name, address, city, state, zip, lat, lng, lotSize, notes, status | `PROPERTY#<id>` / `PROPERTY#<id>` | `CUSTOMER#<customerId>` / `PROPERTY#<id>` |
+| Entity | Key Attributes | PK Composite | GSI1 PK/SK | GSI2 SK |
+|---|---|---|---|---|
+| **Customer** | customerId, firstName, lastName, email, phone, status, notes | `[orgId, customerId]` | `[orgId, status]` / `[customerId]` | `[orgId, customerId]` |
+| **Account** | accountId, customerId, cognitoUserId, planId, status, billingEmail | `[orgId, accountId]` | `[orgId, customerId]` / `[accountId]` | `[orgId, accountId]` |
+| **Delegate** | delegateId, accountId, email, name, permissions[], status | `[orgId, delegateId]` | `[orgId, accountId]` / `[delegateId]` | `[orgId, delegateId]` |
+| **Property** | propertyId, customerId, propertyTypeId, name, address, city, state, zip, lat, lng, lotSize, notes, status | `[orgId, propertyId]` | `[orgId, customerId]` / `[propertyId]` | `[orgId, propertyId]` |
 
 ### Plan & Service Entities
-| Entity | Key Attributes | PK/SK Pattern | GSI1 |
-|---|---|---|---|
-| **Plan** | planId, name, description, monthlyPrice, annualPrice, status | `PLAN#<id>` / `PLAN#<id>` | — |
-| **PlanService** | planId, serviceTypeId, includedVisits, frequency | `PLAN#<planId>` / `PLAN_SERVICE#<serviceTypeId>` | — |
-| **PropertyService** | serviceId, propertyId, serviceTypeId, planId, status, startDate, endDate, frequency | `PROPERTY_SERVICE#<id>` / `PROPERTY_SERVICE#<id>` | `PROPERTY#<propertyId>` / `PROPERTY_SERVICE#<id>` |
-| **Cost** | costId, serviceId, costTypeId, amount, description, effectiveDate | `COST#<id>` / `COST#<id>` | `PROPERTY_SERVICE#<serviceId>` / `COST#<id>` |
+| Entity | Key Attributes | PK Composite | GSI1 PK/SK | GSI2 SK |
+|---|---|---|---|---|
+| **Plan** | planId, name, description, monthlyPrice, annualPrice, status | `[orgId, planId]` | `[orgId]` / `[planId]` | `[orgId, planId]` |
+| **PlanService** | planId, serviceTypeId, includedVisits, frequency | `[orgId, planId]` / SK: `[serviceTypeId]` | — | `[orgId, planId]` |
+| **PropertyService** | serviceId, propertyId, serviceTypeId, planId, status, startDate, endDate, frequency | `[orgId, serviceId]` | `[orgId, propertyId]` / `[serviceId]` | `[orgId, serviceId]` |
+| **Cost** | costId, serviceId, costTypeId, amount, description, effectiveDate | `[orgId, costId]` | `[orgId, serviceId]` / `[costId]` | `[orgId, costId]` |
 
 ### Employee & Scheduling Entities
-| Entity | Key Attributes | PK/SK Pattern | GSI1 |
-|---|---|---|---|
-| **Employee** | employeeId, firstName, lastName, email, phone, role, status, hireDate | `EMPLOYEE#<id>` / `EMPLOYEE#<id>` | `EMPLOYEE_STATUS#<status>` / `EMPLOYEE#<id>` |
-| **Servicer** | servicerId, employeeId, serviceArea, maxDailyJobs, rating, status | `SERVICER#<id>` / `SERVICER#<id>` | `EMPLOYEE#<employeeId>` / `SERVICER#<id>` |
-| **Capability** | capabilityId, employeeId, serviceTypeId, level, certificationDate | `CAPABILITY#<id>` / `CAPABILITY#<id>` | `EMPLOYEE#<employeeId>` / `CAPABILITY#<id>` |
-| **ServiceSchedule** | serviceScheduleId, serviceId, servicerId, scheduledDate, scheduledTime, estimatedDuration, status, completedAt | `SERVICE_SCHEDULE#<id>` / `SERVICE_SCHEDULE#<id>` | `SERVICER#<servicerId>` / `SERVICE_SCHEDULE#<scheduledDate>` |
+| Entity | Key Attributes | PK Composite | GSI1 PK/SK | GSI2 SK |
+|---|---|---|---|---|
+| **Employee** | employeeId, firstName, lastName, email, phone, role, status, hireDate | `[orgId, employeeId]` | `[orgId, status]` / `[employeeId]` | `[orgId, employeeId]` |
+| **Servicer** | servicerId, employeeId, serviceArea, maxDailyJobs, rating, status | `[orgId, servicerId]` | `[orgId, employeeId]` / `[servicerId]` | `[orgId, servicerId]` |
+| **Capability** | capabilityId, employeeId, serviceTypeId, level, certificationDate | `[orgId, capabilityId]` | `[orgId, employeeId]` / `[capabilityId]` | `[orgId, capabilityId]` |
+| **ServiceSchedule** | serviceScheduleId, serviceId, servicerId, scheduledDate, scheduledTime, estimatedDuration, status, completedAt | `[orgId, serviceScheduleId]` | `[orgId, servicerId]` / `[scheduledDate]` | `[orgId, serviceScheduleId]` |
 
 ### Billing Entities
-| Entity | Key Attributes | PK/SK Pattern | GSI1 |
-|---|---|---|---|
-| **Invoice** | invoiceId, customerId, invoiceNumber, invoiceDate, dueDate, subtotal, tax, total, status, lineItems[], paidAt | `INVOICE#<id>` / `INVOICE#<id>` | `CUSTOMER#<customerId>` / `INVOICE#<invoiceDate>` |
-| **PaymentMethod** | paymentMethodId, customerId, type, last4, isDefault, status | `PAYMENT_METHOD#<id>` / `PAYMENT_METHOD#<id>` | `CUSTOMER#<customerId>` / `PAYMENT_METHOD#<id>` |
-| **InvoiceSchedule** | invoiceScheduleId, customerId, frequency, nextInvoiceDate, dayOfMonth | `INVOICE_SCHEDULE#<id>` / `INVOICE_SCHEDULE#<id>` | `CUSTOMER#<customerId>` / `INVOICE_SCHEDULE#<id>` |
+| Entity | Key Attributes | PK Composite | GSI1 PK/SK | GSI2 SK |
+|---|---|---|---|---|
+| **Invoice** | invoiceId, customerId, invoiceNumber, invoiceDate, dueDate, subtotal, tax, total, status, lineItems[], paidAt | `[orgId, invoiceId]` | `[orgId, customerId]` / `[invoiceDate]` | `[orgId, invoiceId]` |
+| **PaymentMethod** | paymentMethodId, customerId, type, last4, isDefault, status | `[orgId, paymentMethodId]` | `[orgId, customerId]` / `[paymentMethodId]` | `[orgId, paymentMethodId]` |
+| **InvoiceSchedule** | invoiceScheduleId, customerId, frequency, nextInvoiceDate, dayOfMonth | `[orgId, invoiceScheduleId]` | `[orgId, customerId]` / `[invoiceScheduleId]` | `[orgId, invoiceScheduleId]` |
 
 ### Payroll Entities
-| Entity | Key Attributes | PK/SK Pattern | GSI1 |
-|---|---|---|---|
-| **Pay** | payId, employeeId, payScheduleId, payType, rate, effectiveDate | `PAY#<id>` / `PAY#<id>` | `EMPLOYEE#<employeeId>` / `PAY#<id>` |
-| **PaySchedule** | payScheduleId, name, frequency, dayOfWeek, dayOfMonth | `PAY_SCHEDULE#<id>` / `PAY_SCHEDULE#<id>` | — |
+| Entity | Key Attributes | PK Composite | GSI1 PK/SK | GSI2 SK |
+|---|---|---|---|---|
+| **Pay** | payId, employeeId, payScheduleId, payType, rate, effectiveDate | `[orgId, payId]` | `[orgId, employeeId]` / `[payId]` | `[orgId, payId]` |
+| **PaySchedule** | payScheduleId, name, frequency, dayOfWeek, dayOfMonth | `[orgId, payScheduleId]` | `[orgId]` / `[payScheduleId]` | `[orgId, payScheduleId]` |
 
 ## DynamoDB Single Table Design
 
 - Single table: `VersaTable-{stageName}` with `pk`/`sk` + 2 GSIs
-- **GSI1**: `gsi1pk`/`gsi1sk` — cross-entity lookups (e.g., properties by customer)
-- **GSI2**: `gsi2pk`/`gsi2sk` — reserved for future access patterns
+- **PK**: Always starts with `[organizationId, ...]` — data partitioned by tenant
+- **GSI1**: `gsi1pk`/`gsi1sk` — cross-entity lookups within an org (e.g., `[orgId, customerId]` → properties)
+- **GSI2**: `gsi2pk`/`gsi2sk` — cross-org queries for super admin (pk = service prefix, sk = `[orgId, entityId]`)
 - All entities use ElectroDB with `service: 'versa'`
 - All monetary values stored in cents (integers)
 - Location is embedded in Property (not a separate entity)
 - Identity = Cognito (Account stores cognitoUserId)
+- All list operations use `query` (not `scan`) with `organizationId` as the partition prefix
 
 ## API Endpoints
+
+### Organizations (SuperAdmin only)
+- `POST/GET /organizations`, `GET/PUT/DELETE /organizations/{id}`
+- `GET/PUT /organizations/{id}/config`
+- `GET /organizations/{id}/secrets`, `PUT /organizations/{id}/secrets/{key}`
 
 ### Lookup Entities
 - `POST/GET /property-types`, `GET/PUT/DELETE /property-types/{id}`
@@ -164,6 +189,9 @@ lib/               → Shared utilities (middleware, error handling, observabili
 
 ## EventBridge Events (source: `versa.api`)
 
+All events include `organizationId` in the detail payload.
+
+- `OrganizationCreated`, `OrganizationSuspended`, `OrganizationConfigUpdated`
 - `CustomerCreated`, `CustomerStatusChanged`
 - `DelegateAdded`, `DelegateRemoved`
 - `PropertyCreated`, `PropertyUpdated`
@@ -173,8 +201,8 @@ lib/               → Shared utilities (middleware, error handling, observabili
 
 ## CDK Stacks (infra/)
 
-- **AuthStack**: Cognito User Pool (5 groups: Admin, Manager, User, Servicer, Customer), Verified Permissions policy store
-- **InfraStack**: API Gateway + WAF, DynamoDB (+ 2 GSIs), Lambda functions, EventBridge, S3, CloudWatch
+- **AuthStack**: Cognito User Pool (6 groups: SuperAdmin, Admin, Manager, User, Servicer, Customer), Verified Permissions policy store (Cedar), Pre Token Generation Lambda trigger (injects `organizationId` into access tokens), `custom:organizationId` user attribute
+- **InfraStack**: API Gateway + WAF, DynamoDB (+ 2 GSIs), Lambda functions (including Organization CRUD + config + secrets), EventBridge, S3, CloudWatch, Secrets Manager permissions for `versa/org/*`
 - **FrontendStack**: S3 + CloudFront
 
 ## Key Business Logic

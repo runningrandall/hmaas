@@ -3,6 +3,7 @@ import { PaginationOptions, PaginatedResult } from "./shared";
 export type PropertyStatus = "active" | "inactive";
 
 export interface Property {
+    organizationId: string;
     propertyId: string;
     customerId: string;
     propertyTypeId: string;
@@ -50,8 +51,8 @@ export interface UpdatePropertyRequest {
 
 export interface PropertyRepository {
     create(property: Property): Promise<Property>;
-    get(propertyId: string): Promise<Property | null>;
-    listByCustomerId(customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Property>>;
-    update(propertyId: string, data: UpdatePropertyRequest): Promise<Property>;
-    delete(propertyId: string): Promise<void>;
+    get(organizationId: string, propertyId: string): Promise<Property | null>;
+    listByCustomerId(organizationId: string, customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Property>>;
+    update(organizationId: string, propertyId: string, data: UpdatePropertyRequest): Promise<Property>;
+    delete(organizationId: string, propertyId: string): Promise<void>;
 }

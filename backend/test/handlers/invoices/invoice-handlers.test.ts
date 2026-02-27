@@ -145,7 +145,7 @@ describe('Invoice Handlers', () => {
             expect(result.statusCode).toBe(200);
             const body = JSON.parse(result.body);
             expect(body.items).toHaveLength(1);
-            expect(mockListInvoicesByCustomer).toHaveBeenCalledWith('cust-123', { limit: undefined, cursor: undefined });
+            expect(mockListInvoicesByCustomer).toHaveBeenCalledWith('org-test-123', 'cust-123', { limit: undefined, cursor: undefined });
         });
 
         it('should return 200 with pagination params passed to service', async () => {
@@ -156,7 +156,7 @@ describe('Invoice Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListInvoicesByCustomer).toHaveBeenCalledWith('cust-123', { limit: 10, cursor: 'some-cursor' });
+            expect(mockListInvoicesByCustomer).toHaveBeenCalledWith('org-test-123', 'cust-123', { limit: 10, cursor: 'some-cursor' });
         });
 
         it('should return 400 when customerId query param is missing', async () => {

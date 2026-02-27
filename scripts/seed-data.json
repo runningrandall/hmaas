@@ -1,56 +1,59 @@
 {
-    "s-and-l-utils": [
+    "versa-table": [
         {
             "PutRequest": {
                 "Item": {
-                    "pk": {
-                        "S": "item_1"
-                    },
-                    "sk": {
-                        "S": "item_1"
-                    },
-                    "itemId": {
-                        "S": "item_1"
-                    },
-                    "name": {
-                        "S": "Seeded Item 1"
-                    },
-                    "description": {
-                        "S": "This is a seeded item."
-                    },
-                    "createdAt": {
-                        "N": "1700000000000"
-                    },
-                    "updatedAt": {
-                        "N": "1700000000000"
-                    }
+                    "pk": { "S": "$versa#organizationid_versa-default" },
+                    "sk": { "S": "$organization_1" },
+                    "gsi1pk": { "S": "$versa#slug_versa" },
+                    "gsi1sk": { "S": "$organization_1#organizationid_versa-default" },
+                    "gsi2pk": { "S": "$versa#status_active" },
+                    "gsi2sk": { "S": "$organization_1#organizationid_versa-default" },
+                    "organizationId": { "S": "versa-default" },
+                    "name": { "S": "Versa Property Management" },
+                    "slug": { "S": "versa" },
+                    "status": { "S": "active" },
+                    "ownerUserId": { "S": "system" },
+                    "billingEmail": { "S": "admin@versapm.com" },
+                    "timezone": { "S": "America/Denver" },
+                    "createdAt": { "N": "1700000000000" },
+                    "updatedAt": { "N": "1700000000000" },
+                    "__edb_e__": { "S": "organization" },
+                    "__edb_v__": { "S": "1" }
                 }
             }
         },
         {
             "PutRequest": {
                 "Item": {
-                    "pk": {
-                        "S": "item_2"
-                    },
-                    "sk": {
-                        "S": "item_2"
-                    },
-                    "itemId": {
-                        "S": "item_2"
-                    },
-                    "name": {
-                        "S": "Seeded Item 2"
-                    },
-                    "description": {
-                        "S": "Another seeded item."
-                    },
-                    "createdAt": {
-                        "N": "1700000000000"
-                    },
-                    "updatedAt": {
-                        "N": "1700000000000"
-                    }
+                    "pk": { "S": "$versa#organizationid_global#propertytypeid_residential" },
+                    "sk": { "S": "$propertyType_1" },
+                    "gsi2pk": { "S": "$versa" },
+                    "gsi2sk": { "S": "$propertyType_1#organizationid_global#propertytypeid_residential" },
+                    "organizationId": { "S": "GLOBAL" },
+                    "propertyTypeId": { "S": "residential" },
+                    "name": { "S": "Residential" },
+                    "description": { "S": "Single-family residential property" },
+                    "createdAt": { "N": "1700000000000" },
+                    "__edb_e__": { "S": "propertyType" },
+                    "__edb_v__": { "S": "1" }
+                }
+            }
+        },
+        {
+            "PutRequest": {
+                "Item": {
+                    "pk": { "S": "$versa#organizationid_global#propertytypeid_commercial" },
+                    "sk": { "S": "$propertyType_1" },
+                    "gsi2pk": { "S": "$versa" },
+                    "gsi2sk": { "S": "$propertyType_1#organizationid_global#propertytypeid_commercial" },
+                    "organizationId": { "S": "GLOBAL" },
+                    "propertyTypeId": { "S": "commercial" },
+                    "name": { "S": "Commercial" },
+                    "description": { "S": "Commercial business property" },
+                    "createdAt": { "N": "1700000000000" },
+                    "__edb_e__": { "S": "propertyType" },
+                    "__edb_v__": { "S": "1" }
                 }
             }
         }

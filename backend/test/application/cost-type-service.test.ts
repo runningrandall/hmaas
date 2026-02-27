@@ -19,6 +19,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('CostTypeService', () => {
     let service: CostTypeService;
 
@@ -35,6 +37,7 @@ describe('CostTypeService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 costTypeId: 'ct-1',
                 ...request,
                 createdAt: '2024-01-01T00:00:00.000Z',
@@ -44,7 +47,7 @@ describe('CostTypeService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createCostType(request);
+            const result = await service.createCostType(ORG_ID, request);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
@@ -60,7 +63,7 @@ describe('CostTypeService', () => {
 
             mockRepo.create.mockImplementation(async (ct: any) => ct);
 
-            const result = await service.createCostType(request);
+            const result = await service.createCostType(ORG_ID, request);
 
             expect(result.costTypeId).toEqual(expect.any(String));
             expect(result.createdAt).toEqual(expect.any(String));
@@ -69,43 +72,43 @@ describe('CostTypeService', () => {
 
     describe('getCostType', () => {
         it('should return cost type when found', async () => {
-            const costType = { costTypeId: 'ct-1', name: 'Labor', description: 'Employee labor costs' };
+            const costType = { organizationId: ORG_ID, costTypeId: 'ct-1', name: 'Labor', description: 'Employee labor costs' };
             mockRepo.get.mockResolvedValue(costType);
 
-            const result = await service.getCostType('ct-1');
+            const result = await service.getCostType(ORG_ID, 'ct-1');
 
             expect(result).toEqual(costType);
-            expect(mockRepo.get).toHaveBeenCalledWith('ct-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'ct-1');
         });
 
         it('should throw AppError 404 when cost type not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getCostType('missing')).rejects.toThrow(AppError);
-            await expect(service.getCostType('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getCostType(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getCostType(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listCostTypes', () => {
         it('should delegate to repo.list', async () => {
-            const paginated = { items: [{ costTypeId: 'ct-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, costTypeId: 'ct-1' }], count: 1 };
             mockRepo.list.mockResolvedValue(paginated);
 
-            const result = await service.listCostTypes({ limit: 10 });
+            const result = await service.listCostTypes(ORG_ID, { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.list).toHaveBeenCalledWith({ limit: 10 });
+            expect(mockRepo.list).toHaveBeenCalledWith(ORG_ID, { limit: 10 });
         });
     });
 
     describe('updateCostType', () => {
         it('should update cost type and return updated without publishing event', async () => {
-            const existing = { costTypeId: 'ct-1', name: 'Labor', description: 'Employee labor costs' };
-            const updated = { costTypeId: 'ct-1', name: 'Labor Updated', description: 'Updated description' };
+            const existing = { organizationId: ORG_ID, costTypeId: 'ct-1', name: 'Labor', description: 'Employee labor costs' };
+            const updated = { organizationId: ORG_ID, costTypeId: 'ct-1', name: 'Labor Updated', description: 'Updated description' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
 
-            const result = await service.updateCostType('ct-1', { name: 'Labor Updated', description: 'Updated description' });
+            const result = await service.updateCostType(ORG_ID, 'ct-1', { name: 'Labor Updated', description: 'Updated description' });
 
             expect(result).toEqual(updated);
             expect(mockPublisher.publish).not.toHaveBeenCalled();
@@ -114,7 +117,7 @@ describe('CostTypeService', () => {
         it('should throw 404 if cost type not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.updateCostType('missing', { name: 'x' })).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.updateCostType(ORG_ID, 'missing', { name: 'x' })).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
@@ -122,9 +125,9 @@ describe('CostTypeService', () => {
         it('should delete cost type without publishing event', async () => {
             mockRepo.delete.mockResolvedValue(undefined);
 
-            await service.deleteCostType('ct-1');
+            await service.deleteCostType(ORG_ID, 'ct-1');
 
-            expect(mockRepo.delete).toHaveBeenCalledWith('ct-1');
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'ct-1');
             expect(mockPublisher.publish).not.toHaveBeenCalled();
         });
     });

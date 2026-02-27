@@ -1,6 +1,7 @@
 import { PaginationOptions, PaginatedResult } from "./shared";
 
 export interface PropertyType {
+    organizationId: string;
     propertyTypeId: string;
     name: string;
     description?: string;
@@ -20,8 +21,8 @@ export interface UpdatePropertyTypeRequest {
 
 export interface PropertyTypeRepository {
     create(propertyType: PropertyType): Promise<PropertyType>;
-    get(propertyTypeId: string): Promise<PropertyType | null>;
-    list(options?: PaginationOptions): Promise<PaginatedResult<PropertyType>>;
-    update(propertyTypeId: string, data: UpdatePropertyTypeRequest): Promise<PropertyType>;
-    delete(propertyTypeId: string): Promise<void>;
+    get(organizationId: string, propertyTypeId: string): Promise<PropertyType | null>;
+    list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<PropertyType>>;
+    update(organizationId: string, propertyTypeId: string, data: UpdatePropertyTypeRequest): Promise<PropertyType>;
+    delete(organizationId: string, propertyTypeId: string): Promise<void>;
 }

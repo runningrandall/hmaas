@@ -12,13 +12,14 @@ const service = new ServiceScheduleService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const servicerId = event.pathParameters?.servicerId;
     if (!servicerId) {
         throw new AppError("Missing servicerId", 400);
     }
     const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : undefined;
     const cursor = event.queryStringParameters?.cursor || undefined;
-    const result = await service.listByServicerId(servicerId, { limit, cursor });
+    const result = await service.listByServicerId(organizationId, servicerId, { limit, cursor });
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

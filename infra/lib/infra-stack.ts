@@ -291,12 +291,39 @@ export class InfraStack extends cdk.Stack {
       { id: 'deletePaySchedule', entry: 'paySchedules/delete.ts' },
     ];
 
+    const organizationLambdas: LambdaDefinition[] = [
+      { id: 'createOrganization', entry: 'organizations/create.ts' },
+      { id: 'getOrganization', entry: 'organizations/get.ts' },
+      { id: 'listOrganizations', entry: 'organizations/list.ts' },
+      { id: 'updateOrganization', entry: 'organizations/update.ts' },
+      { id: 'deleteOrganization', entry: 'organizations/delete.ts' },
+      { id: 'getOrgConfig', entry: 'organizations/getConfig.ts' },
+      { id: 'updateOrgConfig', entry: 'organizations/updateConfig.ts' },
+      { id: 'getOrgSecrets', entry: 'organizations/getSecrets.ts' },
+      { id: 'setOrgSecret', entry: 'organizations/setSecret.ts' },
+    ];
+
+    const secretsManagerPolicy = new iam.PolicyStatement({
+      actions: [
+        'secretsmanager:GetSecretValue',
+        'secretsmanager:PutSecretValue',
+        'secretsmanager:CreateSecret',
+        'secretsmanager:DeleteSecret',
+      ],
+      resources: [`arn:aws:secretsmanager:${this.region}:${this.account}:secret:versa/org/*`],
+    });
+
     const lookup = new LambdaStack(this, 'LookupLambdas', { ...commonNestedProps, lambdas: lookupLambdas });
     const customer = new LambdaStack(this, 'CustomerLambdas', { ...commonNestedProps, lambdas: customerLambdas });
     const property = new LambdaStack(this, 'PropertyLambdas', { ...commonNestedProps, lambdas: propertyLambdas });
     const plan = new LambdaStack(this, 'PlanLambdas', { ...commonNestedProps, lambdas: planLambdas });
     const workforce = new LambdaStack(this, 'WorkforceLambdas', { ...commonNestedProps, lambdas: workforceLambdas });
     const billing = new LambdaStack(this, 'BillingLambdas', { ...commonNestedProps, lambdas: billingLambdas });
+    const organization = new LambdaStack(this, 'OrganizationLambdas', {
+      ...commonNestedProps,
+      lambdas: organizationLambdas,
+      additionalPolicies: [secretsManagerPolicy],
+    });
 
     // ─── 9. API Gateway Routes ───
     const opts = { authorizer };
@@ -486,6 +513,26 @@ export class InfraStack extends cdk.Stack {
     payScheduleRes.addMethod('GET', li(billing.functions.getPaySchedule), opts);
     payScheduleRes.addMethod('PUT', li(billing.functions.updatePaySchedule), opts);
     payScheduleRes.addMethod('DELETE', li(billing.functions.deletePaySchedule), opts);
+
+    // Organizations
+    const organizations = api.root.addResource('organizations');
+    organizations.addMethod('GET', li(organization.functions.listOrganizations), opts);
+    organizations.addMethod('POST', li(organization.functions.createOrganization), opts);
+    const organizationRes = organizations.addResource('{organizationId}');
+    organizationRes.addMethod('GET', li(organization.functions.getOrganization), opts);
+    organizationRes.addMethod('PUT', li(organization.functions.updateOrganization), opts);
+    organizationRes.addMethod('DELETE', li(organization.functions.deleteOrganization), opts);
+
+    // Organization Config
+    const orgConfig = organizationRes.addResource('config');
+    orgConfig.addMethod('GET', li(organization.functions.getOrgConfig), opts);
+    orgConfig.addMethod('PUT', li(organization.functions.updateOrgConfig), opts);
+
+    // Organization Secrets
+    const orgSecrets = organizationRes.addResource('secrets');
+    orgSecrets.addMethod('GET', li(organization.functions.getOrgSecrets), opts);
+    const orgSecretKey = orgSecrets.addResource('{key}');
+    orgSecretKey.addMethod('PUT', li(organization.functions.setOrgSecret), opts);
 
     // ─── 10. API Gateway Usage Plan ───
     const usagePlan = api.addUsagePlan('UsagePlan', {

@@ -116,7 +116,7 @@ describe('Cost Handlers', () => {
             expect(result.statusCode).toBe(200);
             const body = JSON.parse(result.body);
             expect(body.items).toHaveLength(1);
-            expect(mockListCostsByService).toHaveBeenCalledWith('svc-456', { limit: undefined, cursor: undefined });
+            expect(mockListCostsByService).toHaveBeenCalledWith('org-test-123', 'svc-456', { limit: undefined, cursor: undefined });
         });
 
         it('should return 400 when serviceId is missing', async () => {
@@ -137,7 +137,7 @@ describe('Cost Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListCostsByService).toHaveBeenCalledWith('svc-456', { limit: 10, cursor: 'some-cursor' });
+            expect(mockListCostsByService).toHaveBeenCalledWith('org-test-123', 'svc-456', { limit: 10, cursor: 'some-cursor' });
         });
     });
 

@@ -94,6 +94,7 @@ describe('Pay Schedule Handlers', () => {
             await handler(event, mockContext);
 
             expect(mockCreatePaySchedule).toHaveBeenCalledWith(
+                'org-test-123',
                 expect.objectContaining({ name: 'Monthly 15th', frequency: 'monthly', dayOfMonth: 15 }),
             );
         });
@@ -133,7 +134,7 @@ describe('Pay Schedule Handlers', () => {
             const event = makeGetEvent({ payScheduleId: 'ps-456' });
             await handler(event, mockContext);
 
-            expect(mockGetPaySchedule).toHaveBeenCalledWith('ps-456');
+            expect(mockGetPaySchedule).toHaveBeenCalledWith('org-test-123', 'ps-456');
         });
     });
 
@@ -164,7 +165,7 @@ describe('Pay Schedule Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListPaySchedules).toHaveBeenCalledWith({ limit: 10, cursor: 'some-cursor' });
+            expect(mockListPaySchedules).toHaveBeenCalledWith('org-test-123', { limit: 10, cursor: 'some-cursor' });
         });
     });
 
@@ -243,7 +244,7 @@ describe('Pay Schedule Handlers', () => {
             const event = makeDeleteEvent({ payScheduleId: 'ps-789' });
             await handler(event, mockContext);
 
-            expect(mockDeletePaySchedule).toHaveBeenCalledWith('ps-789');
+            expect(mockDeletePaySchedule).toHaveBeenCalledWith('org-test-123', 'ps-789');
         });
     });
 });

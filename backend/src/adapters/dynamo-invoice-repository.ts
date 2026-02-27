@@ -12,6 +12,7 @@ const DynamoLineItemSchema = z.object({
 });
 
 const DynamoInvoiceSchema = z.object({
+    organizationId: z.string(),
     invoiceId: z.string(),
     customerId: z.string(),
     invoiceNumber: z.string(),
@@ -45,15 +46,15 @@ export class DynamoInvoiceRepository implements InvoiceRepository {
         return parseInvoice(result.data);
     }
 
-    async get(invoiceId: string): Promise<Invoice | null> {
-        const result = await DBService.entities.invoice.get({ invoiceId }).go();
+    async get(organizationId: string, invoiceId: string): Promise<Invoice | null> {
+        const result = await DBService.entities.invoice.get({ organizationId, invoiceId }).go();
         if (!result.data) return null;
         return parseInvoice(result.data);
     }
 
-    async listByCustomerId(customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Invoice>> {
+    async listByCustomerId(organizationId: string, customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Invoice>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.invoice.query.byCustomerId({ customerId }).go({
+        const result = await DBService.entities.invoice.query.byCustomerId({ organizationId, customerId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -63,8 +64,8 @@ export class DynamoInvoiceRepository implements InvoiceRepository {
         };
     }
 
-    async update(invoiceId: string, data: UpdateInvoiceRequest): Promise<Invoice> {
-        const result = await DBService.entities.invoice.patch({ invoiceId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, invoiceId: string, data: UpdateInvoiceRequest): Promise<Invoice> {
+        const result = await DBService.entities.invoice.patch({ organizationId, invoiceId }).set(data).go({ response: "all_new" });
         return parseInvoice(result.data);
     }
 }

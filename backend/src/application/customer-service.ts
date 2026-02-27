@@ -14,13 +14,14 @@ export class CustomerService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createCustomer(request: CreateCustomerRequest): Promise<{ customer: Customer; account: Account }> {
+    async createCustomer(organizationId: string, request: CreateCustomerRequest): Promise<{ customer: Customer; account: Account }> {
         logger.info("Creating customer", { email: request.email });
 
         const customerId = randomUUID();
         const accountId = randomUUID();
 
         const customer: Customer = {
+            organizationId,
             customerId,
             firstName: request.firstName,
             lastName: request.lastName,
@@ -32,6 +33,7 @@ export class CustomerService {
         };
 
         const account: Account = {
+            organizationId,
             accountId,
             customerId,
             status: "active",
@@ -43,29 +45,30 @@ export class CustomerService {
         const createdAccount = await this.accountRepository.create(account);
 
         metrics.addMetric('CustomersCreated', MetricUnit.Count, 1);
-        await this.eventPublisher.publish("CustomerCreated", { customerId, accountId });
+        await this.eventPublisher.publish("CustomerCreated", { organizationId, customerId, accountId });
 
         return { customer: createdCustomer, account: createdAccount };
     }
 
-    async getCustomer(customerId: string): Promise<Customer> {
-        const customer = await this.customerRepository.get(customerId);
+    async getCustomer(organizationId: string, customerId: string): Promise<Customer> {
+        const customer = await this.customerRepository.get(organizationId, customerId);
         if (!customer) {
             throw new AppError("Customer not found", 404);
         }
         return customer;
     }
 
-    async listCustomers(options?: PaginationOptions): Promise<PaginatedResult<Customer>> {
-        return this.customerRepository.list(options);
+    async listCustomers(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Customer>> {
+        return this.customerRepository.list(organizationId, options);
     }
 
-    async updateCustomer(customerId: string, request: UpdateCustomerRequest): Promise<Customer> {
-        const existing = await this.getCustomer(customerId);
-        const updated = await this.customerRepository.update(customerId, request);
+    async updateCustomer(organizationId: string, customerId: string, request: UpdateCustomerRequest): Promise<Customer> {
+        const existing = await this.getCustomer(organizationId, customerId);
+        const updated = await this.customerRepository.update(organizationId, customerId, request);
 
         if (request.status && request.status !== existing.status) {
             await this.eventPublisher.publish("CustomerStatusChanged", {
+                organizationId,
                 customerId,
                 previousStatus: existing.status,
                 newStatus: request.status,
@@ -75,14 +78,14 @@ export class CustomerService {
         return updated;
     }
 
-    async deleteCustomer(customerId: string): Promise<void> {
-        await this.customerRepository.delete(customerId);
+    async deleteCustomer(organizationId: string, customerId: string): Promise<void> {
+        await this.customerRepository.delete(organizationId, customerId);
         logger.info("Customer deleted", { customerId });
     }
 
-    async getCustomerAccount(customerId: string): Promise<Account> {
-        await this.getCustomer(customerId);
-        const account = await this.accountRepository.getByCustomerId(customerId);
+    async getCustomerAccount(organizationId: string, customerId: string): Promise<Account> {
+        await this.getCustomer(organizationId, customerId);
+        const account = await this.accountRepository.getByCustomerId(organizationId, customerId);
         if (!account) {
             throw new AppError("Account not found for customer", 404);
         }

@@ -11,10 +11,11 @@ export class CostTypeService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createCostType(request: CreateCostTypeRequest): Promise<CostType> {
+    async createCostType(organizationId: string, request: CreateCostTypeRequest): Promise<CostType> {
         logger.info("Creating cost type", { name: request.name });
 
         const costType: CostType = {
+            organizationId,
             costTypeId: randomUUID(),
             name: request.name,
             description: request.description,
@@ -26,25 +27,25 @@ export class CostTypeService {
         return created;
     }
 
-    async getCostType(costTypeId: string): Promise<CostType> {
-        const costType = await this.repository.get(costTypeId);
+    async getCostType(organizationId: string, costTypeId: string): Promise<CostType> {
+        const costType = await this.repository.get(organizationId, costTypeId);
         if (!costType) {
             throw new AppError("Cost type not found", 404);
         }
         return costType;
     }
 
-    async listCostTypes(options?: PaginationOptions): Promise<PaginatedResult<CostType>> {
-        return this.repository.list(options);
+    async listCostTypes(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<CostType>> {
+        return this.repository.list(organizationId, options);
     }
 
-    async updateCostType(costTypeId: string, request: UpdateCostTypeRequest): Promise<CostType> {
-        await this.getCostType(costTypeId);
-        return this.repository.update(costTypeId, request);
+    async updateCostType(organizationId: string, costTypeId: string, request: UpdateCostTypeRequest): Promise<CostType> {
+        await this.getCostType(organizationId, costTypeId);
+        return this.repository.update(organizationId, costTypeId, request);
     }
 
-    async deleteCostType(costTypeId: string): Promise<void> {
-        await this.repository.delete(costTypeId);
+    async deleteCostType(organizationId: string, costTypeId: string): Promise<void> {
+        await this.repository.delete(organizationId, costTypeId);
         logger.info("Cost type deleted", { costTypeId });
     }
 }

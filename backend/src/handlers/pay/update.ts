@@ -12,6 +12,7 @@ const service = new PayService(repository);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
+    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
     const payId = event.pathParameters?.payId;
     if (!payId) {
         throw new AppError("Missing payId", 400);
@@ -28,7 +29,7 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         throw parseResult.error;
     }
 
-    const result = await service.updatePay(payId, parseResult.data);
+    const result = await service.updatePay(organizationId, payId, parseResult.data);
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

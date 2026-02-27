@@ -136,7 +136,7 @@ describe('Service Schedule Handlers', () => {
             expect(result.statusCode).toBe(200);
             const body = JSON.parse(result.body);
             expect(body.items).toHaveLength(1);
-            expect(mockListByServicerId).toHaveBeenCalledWith('servicer-001', { limit: undefined, cursor: undefined });
+            expect(mockListByServicerId).toHaveBeenCalledWith('org-test-123', 'servicer-001', { limit: undefined, cursor: undefined });
         });
 
         it('should return 200 with pagination params passed to service', async () => {
@@ -147,7 +147,7 @@ describe('Service Schedule Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListByServicerId).toHaveBeenCalledWith('servicer-001', { limit: 10, cursor: 'some-cursor' });
+            expect(mockListByServicerId).toHaveBeenCalledWith('org-test-123', 'servicer-001', { limit: 10, cursor: 'some-cursor' });
         });
 
         it('should return 400 when servicerId is missing', async () => {

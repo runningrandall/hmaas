@@ -18,6 +18,8 @@ const mockRepo = {
 
 const mockPublisher = { publish: vi.fn() };
 
+const ORG_ID = 'org-test-123';
+
 describe('CostService', () => {
     let service: CostService;
 
@@ -37,6 +39,7 @@ describe('CostService', () => {
             };
 
             const created = {
+                organizationId: ORG_ID,
                 costId: 'cost-1',
                 ...request,
                 createdAt: '2024-01-01T00:00:00.000Z',
@@ -47,15 +50,16 @@ describe('CostService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createCost(request as any);
+            const result = await service.createCost(ORG_ID, request as any);
 
             expect(result).toEqual(created);
             expect(mockRepo.create).toHaveBeenCalledOnce();
-            expect(mockPublisher.publish).toHaveBeenCalledWith('CostAdded', {
+            expect(mockPublisher.publish).toHaveBeenCalledWith('CostAdded', expect.objectContaining({
+                organizationId: ORG_ID,
                 costId: created.costId,
                 serviceId: request.serviceId,
                 amount: request.amount,
-            });
+            }));
             expect(metrics.addMetric).toHaveBeenCalledWith('CostsCreated', expect.any(String), 1);
         });
 
@@ -71,7 +75,7 @@ describe('CostService', () => {
             mockRepo.create.mockImplementation(async (c: any) => c);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.createCost(request as any);
+            const result = await service.createCost(ORG_ID, request as any);
 
             expect(result.costId).toEqual(expect.any(String));
             expect(result.createdAt).toEqual(expect.any(String));
@@ -80,56 +84,57 @@ describe('CostService', () => {
 
     describe('getCost', () => {
         it('should return cost when found', async () => {
-            const cost = { costId: 'cost-1', serviceId: 'svc-1', amount: 5000 };
+            const cost = { organizationId: ORG_ID, costId: 'cost-1', serviceId: 'svc-1', amount: 5000 };
             mockRepo.get.mockResolvedValue(cost);
 
-            const result = await service.getCost('cost-1');
+            const result = await service.getCost(ORG_ID, 'cost-1');
 
             expect(result).toEqual(cost);
-            expect(mockRepo.get).toHaveBeenCalledWith('cost-1');
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'cost-1');
         });
 
         it('should throw AppError 404 when cost not found', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.getCost('missing')).rejects.toThrow(AppError);
-            await expect(service.getCost('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.getCost(ORG_ID, 'missing')).rejects.toThrow(AppError);
+            await expect(service.getCost(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
         });
     });
 
     describe('listCostsByService', () => {
         it('should delegate to repo.listByServiceId', async () => {
-            const paginated = { items: [{ costId: 'cost-1', serviceId: 'svc-1' }], count: 1 };
+            const paginated = { items: [{ organizationId: ORG_ID, costId: 'cost-1', serviceId: 'svc-1' }], count: 1 };
             mockRepo.listByServiceId.mockResolvedValue(paginated);
 
-            const result = await service.listCostsByService('svc-1', { limit: 10 });
+            const result = await service.listCostsByService(ORG_ID, 'svc-1', { limit: 10 });
 
             expect(result).toEqual(paginated);
-            expect(mockRepo.listByServiceId).toHaveBeenCalledWith('svc-1', { limit: 10 });
+            expect(mockRepo.listByServiceId).toHaveBeenCalledWith(ORG_ID, 'svc-1', { limit: 10 });
         });
     });
 
     describe('deleteCost', () => {
         it('should fetch cost first to get serviceId, delete it, and publish CostRemoved event', async () => {
-            const cost = { costId: 'cost-1', serviceId: 'svc-1', amount: 5000 };
+            const cost = { organizationId: ORG_ID, costId: 'cost-1', serviceId: 'svc-1', amount: 5000 };
             mockRepo.get.mockResolvedValue(cost);
             mockRepo.delete.mockResolvedValue(undefined);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.deleteCost('cost-1');
+            await service.deleteCost(ORG_ID, 'cost-1');
 
-            expect(mockRepo.get).toHaveBeenCalledWith('cost-1');
-            expect(mockRepo.delete).toHaveBeenCalledWith('cost-1');
-            expect(mockPublisher.publish).toHaveBeenCalledWith('CostRemoved', {
+            expect(mockRepo.get).toHaveBeenCalledWith(ORG_ID, 'cost-1');
+            expect(mockRepo.delete).toHaveBeenCalledWith(ORG_ID, 'cost-1');
+            expect(mockPublisher.publish).toHaveBeenCalledWith('CostRemoved', expect.objectContaining({
+                organizationId: ORG_ID,
                 costId: 'cost-1',
                 serviceId: 'svc-1',
-            });
+            }));
         });
 
         it('should throw 404 if cost not found before deleting', async () => {
             mockRepo.get.mockResolvedValue(null);
 
-            await expect(service.deleteCost('missing')).rejects.toMatchObject({ statusCode: 404 });
+            await expect(service.deleteCost(ORG_ID, 'missing')).rejects.toMatchObject({ statusCode: 404 });
             expect(mockRepo.delete).not.toHaveBeenCalled();
         });
     });

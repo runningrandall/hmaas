@@ -118,7 +118,7 @@ describe('Capability Handlers', () => {
             expect(result.statusCode).toBe(200);
             const body = JSON.parse(result.body);
             expect(body.items).toHaveLength(1);
-            expect(mockListCapabilitiesByEmployee).toHaveBeenCalledWith('emp-123', { limit: undefined, cursor: undefined });
+            expect(mockListCapabilitiesByEmployee).toHaveBeenCalledWith('org-test-123', 'emp-123', { limit: undefined, cursor: undefined });
         });
 
         it('should return 200 with pagination params passed to service', async () => {
@@ -129,7 +129,7 @@ describe('Capability Handlers', () => {
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(200);
-            expect(mockListCapabilitiesByEmployee).toHaveBeenCalledWith('emp-123', { limit: 5, cursor: 'some-cursor' });
+            expect(mockListCapabilitiesByEmployee).toHaveBeenCalledWith('org-test-123', 'emp-123', { limit: 5, cursor: 'some-cursor' });
         });
 
         it('should return 400 when employeeId is missing', async () => {

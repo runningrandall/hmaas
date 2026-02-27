@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoPaymentMethodSchema = z.object({
+    organizationId: z.string(),
     paymentMethodId: z.string(),
     customerId: z.string(),
     type: z.enum(["credit_card", "debit_card", "bank_account", "ach"]),
@@ -33,15 +34,15 @@ export class DynamoPaymentMethodRepository implements PaymentMethodRepository {
         return parsePaymentMethod(result.data);
     }
 
-    async get(paymentMethodId: string): Promise<PaymentMethod | null> {
-        const result = await DBService.entities.paymentMethod.get({ paymentMethodId }).go();
+    async get(organizationId: string, paymentMethodId: string): Promise<PaymentMethod | null> {
+        const result = await DBService.entities.paymentMethod.get({ organizationId, paymentMethodId }).go();
         if (!result.data) return null;
         return parsePaymentMethod(result.data);
     }
 
-    async listByCustomerId(customerId: string, options?: PaginationOptions): Promise<PaginatedResult<PaymentMethod>> {
+    async listByCustomerId(organizationId: string, customerId: string, options?: PaginationOptions): Promise<PaginatedResult<PaymentMethod>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.paymentMethod.query.byCustomerId({ customerId }).go({
+        const result = await DBService.entities.paymentMethod.query.byCustomerId({ organizationId, customerId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -51,7 +52,7 @@ export class DynamoPaymentMethodRepository implements PaymentMethodRepository {
         };
     }
 
-    async delete(paymentMethodId: string): Promise<void> {
-        await DBService.entities.paymentMethod.delete({ paymentMethodId }).go();
+    async delete(organizationId: string, paymentMethodId: string): Promise<void> {
+        await DBService.entities.paymentMethod.delete({ organizationId, paymentMethodId }).go();
     }
 }

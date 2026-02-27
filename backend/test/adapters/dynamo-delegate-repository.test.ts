@@ -25,6 +25,7 @@ import { DynamoDelegateRepository } from '../../src/adapters/dynamo-delegate-rep
 import { DBService } from '../../src/entities/service';
 
 const mockDelegate = {
+    organizationId: 'org-test-123',
     delegateId: 'del-1',
     accountId: 'acct-1',
     email: 'delegate@example.com',
@@ -65,7 +66,7 @@ describe('DynamoDelegateRepository', () => {
         it('should return a parsed delegate when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockDelegate }) });
 
-            const result = await repo.get('del-1');
+            const result = await repo.get('org-test-123', 'del-1');
 
             expect(result).not.toBeNull();
             expect(result!.delegateId).toBe('del-1');
@@ -74,7 +75,7 @@ describe('DynamoDelegateRepository', () => {
         it('should return null when delegate not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('del-1');
+            const result = await repo.get('org-test-123', 'del-1');
 
             expect(result).toBeNull();
         });
@@ -82,7 +83,7 @@ describe('DynamoDelegateRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('del-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'del-1')).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -92,7 +93,7 @@ describe('DynamoDelegateRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [mockDelegate], cursor: null }),
             });
 
-            const result = await repo.listByAccountId('acct-1');
+            const result = await repo.listByAccountId('org-test-123', 'acct-1');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].delegateId).toBe('del-1');
@@ -103,9 +104,9 @@ describe('DynamoDelegateRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockDelegate], cursor: 'next-page' });
             mockEntity.query.byAccountId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.listByAccountId('acct-1', { limit: 5, cursor: 'some-cursor' });
+            const result = await repo.listByAccountId('org-test-123', 'acct-1', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byAccountId).toHaveBeenCalledWith({ accountId: 'acct-1' });
+            expect(mockEntity.query.byAccountId).toHaveBeenCalledWith({ organizationId: 'org-test-123', accountId: 'acct-1' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
@@ -114,7 +115,7 @@ describe('DynamoDelegateRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
             mockEntity.query.byAccountId.mockReturnValue({ go: mockGo });
 
-            await repo.listByAccountId('acct-1');
+            await repo.listByAccountId('org-test-123', 'acct-1');
 
             expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
@@ -124,8 +125,8 @@ describe('DynamoDelegateRepository', () => {
         it('should delete a delegate', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('del-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ delegateId: 'del-1' });
+            await expect(repo.delete('org-test-123', 'del-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', delegateId: 'del-1' });
         });
     });
 });

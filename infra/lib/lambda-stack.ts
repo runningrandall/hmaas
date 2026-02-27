@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as events from 'aws-cdk-lib/aws-events';
@@ -18,6 +19,7 @@ interface LambdaStackProps {
   dlq: sqs.Queue;
   stageName: string;
   lambdas: LambdaDefinition[];
+  additionalPolicies?: iam.PolicyStatement[];
 }
 
 export class LambdaStack extends cdk.NestedStack {
@@ -47,6 +49,9 @@ export class LambdaStack extends cdk.NestedStack {
       });
       props.table.grantReadWriteData(fn);
       props.eventBus.grantPutEventsTo(fn);
+      if (props.additionalPolicies) {
+        props.additionalPolicies.forEach(policy => fn.addToRolePolicy(policy));
+      }
       this.functions[def.id] = fn;
     }
   }

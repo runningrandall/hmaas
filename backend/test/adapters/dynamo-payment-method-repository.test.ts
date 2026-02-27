@@ -25,6 +25,7 @@ import { DynamoPaymentMethodRepository } from '../../src/adapters/dynamo-payment
 import { DBService } from '../../src/entities/service';
 
 const mockPaymentMethod = {
+    organizationId: 'org-test-123',
     paymentMethodId: 'pm-1',
     customerId: 'cust-1',
     type: 'credit_card' as const,
@@ -66,7 +67,7 @@ describe('DynamoPaymentMethodRepository', () => {
         it('should return a parsed payment method when found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockPaymentMethod }) });
 
-            const result = await repo.get('pm-1');
+            const result = await repo.get('org-test-123', 'pm-1');
 
             expect(result).not.toBeNull();
             expect(result!.paymentMethodId).toBe('pm-1');
@@ -75,7 +76,7 @@ describe('DynamoPaymentMethodRepository', () => {
         it('should return null when payment method not found', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
 
-            const result = await repo.get('pm-1');
+            const result = await repo.get('org-test-123', 'pm-1');
 
             expect(result).toBeNull();
         });
@@ -83,7 +84,7 @@ describe('DynamoPaymentMethodRepository', () => {
         it('should throw Data integrity error when get returns invalid data', async () => {
             mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
 
-            await expect(repo.get('pm-1')).rejects.toThrow('Data integrity error');
+            await expect(repo.get('org-test-123', 'pm-1')).rejects.toThrow('Data integrity error');
         });
     });
 
@@ -93,7 +94,7 @@ describe('DynamoPaymentMethodRepository', () => {
                 go: vi.fn().mockResolvedValue({ data: [mockPaymentMethod], cursor: null }),
             });
 
-            const result = await repo.listByCustomerId('cust-1');
+            const result = await repo.listByCustomerId('org-test-123', 'cust-1');
 
             expect(result.items).toHaveLength(1);
             expect(result.items[0].paymentMethodId).toBe('pm-1');
@@ -104,9 +105,9 @@ describe('DynamoPaymentMethodRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockPaymentMethod], cursor: 'next-page' });
             mockEntity.query.byCustomerId.mockReturnValue({ go: mockGo });
 
-            const result = await repo.listByCustomerId('cust-1', { limit: 5, cursor: 'some-cursor' });
+            const result = await repo.listByCustomerId('org-test-123', 'cust-1', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byCustomerId).toHaveBeenCalledWith({ customerId: 'cust-1' });
+            expect(mockEntity.query.byCustomerId).toHaveBeenCalledWith({ organizationId: 'org-test-123', customerId: 'cust-1' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
@@ -115,7 +116,7 @@ describe('DynamoPaymentMethodRepository', () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
             mockEntity.query.byCustomerId.mockReturnValue({ go: mockGo });
 
-            await repo.listByCustomerId('cust-1');
+            await repo.listByCustomerId('org-test-123', 'cust-1');
 
             expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
         });
@@ -125,8 +126,8 @@ describe('DynamoPaymentMethodRepository', () => {
         it('should delete a payment method', async () => {
             mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
 
-            await expect(repo.delete('pm-1')).resolves.toBeUndefined();
-            expect(mockEntity.delete).toHaveBeenCalledWith({ paymentMethodId: 'pm-1' });
+            await expect(repo.delete('org-test-123', 'pm-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', paymentMethodId: 'pm-1' });
         });
     });
 });

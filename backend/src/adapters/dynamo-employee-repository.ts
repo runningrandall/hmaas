@@ -5,6 +5,7 @@ import { z } from "zod";
 import { logger } from "../lib/observability";
 
 const DynamoEmployeeSchema = z.object({
+    organizationId: z.string(),
     employeeId: z.string(),
     firstName: z.string(),
     lastName: z.string(),
@@ -35,15 +36,15 @@ export class DynamoEmployeeRepository implements EmployeeRepository {
         return parseEmployee(result.data);
     }
 
-    async get(employeeId: string): Promise<Employee | null> {
-        const result = await DBService.entities.employee.get({ employeeId }).go();
+    async get(organizationId: string, employeeId: string): Promise<Employee | null> {
+        const result = await DBService.entities.employee.get({ organizationId, employeeId }).go();
         if (!result.data) return null;
         return parseEmployee(result.data);
     }
 
-    async list(options?: PaginationOptions): Promise<PaginatedResult<Employee>> {
+    async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Employee>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.employee.scan.go({
+        const result = await DBService.entities.employee.query.byEmployeeId({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
@@ -53,12 +54,12 @@ export class DynamoEmployeeRepository implements EmployeeRepository {
         };
     }
 
-    async update(employeeId: string, data: UpdateEmployeeRequest): Promise<Employee> {
-        const result = await DBService.entities.employee.patch({ employeeId }).set(data).go({ response: "all_new" });
+    async update(organizationId: string, employeeId: string, data: UpdateEmployeeRequest): Promise<Employee> {
+        const result = await DBService.entities.employee.patch({ organizationId, employeeId }).set(data).go({ response: "all_new" });
         return parseEmployee(result.data);
     }
 
-    async delete(employeeId: string): Promise<void> {
-        await DBService.entities.employee.delete({ employeeId }).go();
+    async delete(organizationId: string, employeeId: string): Promise<void> {
+        await DBService.entities.employee.delete({ organizationId, employeeId }).go();
     }
 }

@@ -11,10 +11,11 @@ export class PropertyService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createProperty(request: CreatePropertyRequest): Promise<Property> {
+    async createProperty(organizationId: string, request: CreatePropertyRequest): Promise<Property> {
         logger.info("Creating property", { customerId: request.customerId, name: request.name });
 
         const property: Property = {
+            organizationId,
             propertyId: randomUUID(),
             customerId: request.customerId,
             propertyTypeId: request.propertyTypeId,
@@ -33,28 +34,29 @@ export class PropertyService {
 
         const created = await this.repository.create(property);
         metrics.addMetric('PropertiesCreated', MetricUnit.Count, 1);
-        await this.eventPublisher.publish("PropertyCreated", { propertyId: created.propertyId, customerId: request.customerId });
+        await this.eventPublisher.publish("PropertyCreated", { organizationId, propertyId: created.propertyId, customerId: request.customerId });
 
         return created;
     }
 
-    async getProperty(propertyId: string): Promise<Property> {
-        const property = await this.repository.get(propertyId);
+    async getProperty(organizationId: string, propertyId: string): Promise<Property> {
+        const property = await this.repository.get(organizationId, propertyId);
         if (!property) {
             throw new AppError("Property not found", 404);
         }
         return property;
     }
 
-    async listPropertiesByCustomer(customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Property>> {
-        return this.repository.listByCustomerId(customerId, options);
+    async listPropertiesByCustomer(organizationId: string, customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Property>> {
+        return this.repository.listByCustomerId(organizationId, customerId, options);
     }
 
-    async updateProperty(propertyId: string, request: UpdatePropertyRequest): Promise<Property> {
-        const existing = await this.getProperty(propertyId);
-        const updated = await this.repository.update(propertyId, request);
+    async updateProperty(organizationId: string, propertyId: string, request: UpdatePropertyRequest): Promise<Property> {
+        const existing = await this.getProperty(organizationId, propertyId);
+        const updated = await this.repository.update(organizationId, propertyId, request);
 
         await this.eventPublisher.publish("PropertyUpdated", {
+            organizationId,
             propertyId,
             customerId: existing.customerId,
         });
@@ -62,8 +64,8 @@ export class PropertyService {
         return updated;
     }
 
-    async deleteProperty(propertyId: string): Promise<void> {
-        await this.repository.delete(propertyId);
+    async deleteProperty(organizationId: string, propertyId: string): Promise<void> {
+        await this.repository.delete(organizationId, propertyId);
         logger.info("Property deleted", { propertyId });
     }
 }
