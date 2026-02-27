@@ -300,12 +300,12 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Clean up ROLLBACK_COMPLETE stacks
+      - name: Clean up failed stacks
         run: |
           for STACK in VersaAuthStack-dev VersaInfraStack-dev VersaFrontendStack-dev; do
             STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "NOT_FOUND")
-            if [ "$STATUS" = "ROLLBACK_COMPLETE" ]; then
-              echo "Deleting $STACK (stuck in ROLLBACK_COMPLETE)..."
+            if [[ "$STATUS" == "ROLLBACK_COMPLETE" || "$STATUS" == "DELETE_FAILED" ]]; then
+              echo "Deleting $STACK (status: $STATUS)..."
               aws cloudformation delete-stack --stack-name "$STACK"
               aws cloudformation wait stack-delete-complete --stack-name "$STACK"
             fi

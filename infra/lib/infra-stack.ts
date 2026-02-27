@@ -72,7 +72,6 @@ export class InfraStack extends cdk.Stack {
 
     // ─── 2. SNS Alarm Topic ───
     const alarmTopic = new sns.Topic(this, 'AlarmTopic', {
-      topicName: `${props.stageName}-AlarmTopic`,
       displayName: `${props.stageName} Service Alarms`,
     });
 
@@ -83,7 +82,6 @@ export class InfraStack extends cdk.Stack {
 
     // ─── 3. Dead Letter Queues ───
     const lambdaDLQ = new sqs.Queue(this, 'LambdaDLQ', {
-      queueName: `${props.stageName}-LambdaDLQ`,
       retentionPeriod: cdk.Duration.days(14),
       encryption: sqs.QueueEncryption.SQS_MANAGED,
     });
@@ -143,9 +141,7 @@ export class InfraStack extends cdk.Stack {
     });
 
     // ─── 6. EventBridge ───
-    const eventBus = new events.EventBus(this, 'VersaEventBus', {
-      eventBusName: `VersaEventBus-${props.stageName}`,
-    });
+    const eventBus = new events.EventBus(this, 'VersaEventBus');
 
     // Process Event Lambda (in parent stack)
     const processEventLambda = new nodejs.NodejsFunction(this, 'processEventLambda', {
