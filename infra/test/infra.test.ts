@@ -3,9 +3,12 @@ import * as cdk from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import { InfraStack } from '../lib/infra-stack';
 import { AuthStack } from '../lib/auth-stack';
+import { FrontendStack } from '../lib/frontend-stack';
 
 test('Infra Stack Created', () => {
-    const app = new cdk.App();
+    const app = new cdk.App({
+        context: { 'aws:cdk:bundling-stacks': [] },
+    });
     const authStack = new AuthStack(app, 'AuthStack', {
         stageName: 'test',
     });
@@ -25,7 +28,7 @@ test('Infra Stack Created', () => {
     // Verify API Gateway
     template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
     template.hasResourceProperties('AWS::ApiGateway::RestApi', {
-        Name: 'Versa Service test',
+        Name: 'Versa-Api-test',
     });
 
     // Verify nested stacks are created
@@ -33,7 +36,9 @@ test('Infra Stack Created', () => {
 });
 
 test('Auth Stack Created', () => {
-    const app = new cdk.App();
+    const app = new cdk.App({
+        context: { 'aws:cdk:bundling-stacks': [] },
+    });
     const authStack = new AuthStack(app, 'AuthStack', {
         stageName: 'test',
     });
@@ -48,4 +53,23 @@ test('Auth Stack Created', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
         ClientName: 'frontend-client',
     });
+});
+
+test('Frontend Stack Created', () => {
+    const app = new cdk.App({
+        context: { 'aws:cdk:bundling-stacks': [] },
+    });
+    const frontendStack = new FrontendStack(app, 'FrontendStack', {
+        stageName: 'test',
+    });
+    const template = Template.fromStack(frontendStack);
+
+    // Verify single S3 bucket
+    template.resourceCountIs('AWS::S3::Bucket', 1);
+    template.hasResourceProperties('AWS::S3::Bucket', {
+        BucketName: 'versa-frontend-test',
+    });
+
+    // Verify single CloudFront distribution
+    template.resourceCountIs('AWS::CloudFront::Distribution', 1);
 });

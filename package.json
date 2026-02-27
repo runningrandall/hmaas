@@ -1,6 +1,7 @@
 {
-    "name": "s_l_utilities",
-    "version": "1.0.0",
+    "name": "Versa",
+    "description": "Versa Property Services",
+    "version": "1.1.0",
     "private": true,
     "lint-staged": {
         "frontend/**/*.{ts,tsx}": [
@@ -24,7 +25,8 @@
         "commit": "cz",
         "test:integration": "node scripts/integration-test.js",
         "release:dry": "npx semantic-release --dry-run",
-        "dev:local": "bash scripts/dev-local.sh"
+        "dev:local": "bash scripts/dev-local.sh",
+        "dev:all": "bash scripts/dev-local.sh"
     },
     "devDependencies": {
         "@aws-sdk/client-dynamodb": "^3.987.0",
