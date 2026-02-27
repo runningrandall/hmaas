@@ -47,7 +47,7 @@ cdk.Tags.of(app).add('ManagedBy', 'CDK');
 // For simplicity, let's name it without stage name so it persists across stages?
 // OR we just deploy it every time.
 
-const frontendStack = new FrontendStack(app, `${appName}FrontendStack`, {
+const frontendStack = new FrontendStack(app, `${appName}FrontendStack-${stageName}`, {
   env
 });
 
