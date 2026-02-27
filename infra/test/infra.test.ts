@@ -5,7 +5,9 @@ import { InfraStack } from '../lib/infra-stack';
 import { AuthStack } from '../lib/auth-stack';
 
 test('Infra Stack Created', () => {
-    const app = new cdk.App();
+    const app = new cdk.App({
+        context: { 'aws:cdk:bundling-stacks': [] },
+    });
     const authStack = new AuthStack(app, 'AuthStack', {
         stageName: 'test',
     });
@@ -33,7 +35,9 @@ test('Infra Stack Created', () => {
 });
 
 test('Auth Stack Created', () => {
-    const app = new cdk.App();
+    const app = new cdk.App({
+        context: { 'aws:cdk:bundling-stacks': [] },
+    });
     const authStack = new AuthStack(app, 'AuthStack', {
         stageName: 'test',
     });
