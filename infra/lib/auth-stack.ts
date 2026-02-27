@@ -170,7 +170,7 @@ export class AuthStack extends cdk.Stack {
             definition: {
                 static: {
                     description: "Manager can manage most resources",
-                    statement: `permit(principal, action, resource) when { principal.groups.contains("Manager") && [Action::"ReadDashboard", Action::"ManageUsers", Action::"ManageCustomers", Action::"ManageProperties", Action::"ManagePlans", Action::"ManageSchedules", Action::"ManageInvoices", Action::"ManageLookups"].contains(action) };`
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("Manager") && [Versa::Action::"ReadDashboard", Versa::Action::"ManageUsers", Versa::Action::"ManageCustomers", Versa::Action::"ManageProperties", Versa::Action::"ManagePlans", Versa::Action::"ManageSchedules", Versa::Action::"ManageInvoices", Versa::Action::"ManageLookups"].contains(action) };`
                 }
             }
         });
@@ -181,7 +181,7 @@ export class AuthStack extends cdk.Stack {
             definition: {
                 static: {
                     description: "User can read profile",
-                    statement: `permit(principal, action, resource) when { principal.groups.contains("User") && action == Action::"ReadProfile" };`
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("User") && action == Versa::Action::"ReadProfile" };`
                 }
             }
         });
@@ -192,7 +192,7 @@ export class AuthStack extends cdk.Stack {
             definition: {
                 static: {
                     description: "Servicer can view schedules and own data",
-                    statement: `permit(principal, action, resource) when { principal.groups.contains("Servicer") && [Action::"ViewSchedules", Action::"ViewOwnData", Action::"ReadProfile"].contains(action) };`
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("Servicer") && [Versa::Action::"ViewSchedules", Versa::Action::"ViewOwnData", Versa::Action::"ReadProfile"].contains(action) };`
                 }
             }
         });
@@ -203,7 +203,7 @@ export class AuthStack extends cdk.Stack {
             definition: {
                 static: {
                     description: "Customer can view own data",
-                    statement: `permit(principal, action, resource) when { principal.groups.contains("Customer") && [Action::"ViewOwnData", Action::"ReadProfile"].contains(action) };`
+                    statement: `permit(principal, action, resource) when { principal.groups.contains("Customer") && [Versa::Action::"ViewOwnData", Versa::Action::"ReadProfile"].contains(action) };`
                 }
             }
         });
