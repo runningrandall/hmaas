@@ -1,11 +1,28 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import AdminLayout from '../../../app/admin/layout';
 
-// Mock dependencies if needed
 vi.mock('next/navigation', () => ({
     useRouter: () => ({
         push: vi.fn(),
+    }),
+}));
+
+vi.mock('@aws-amplify/ui-react', () => ({
+    useAuthenticator: () => ({
+        authStatus: 'authenticated',
+    }),
+}));
+
+vi.mock('aws-amplify/auth', () => ({
+    fetchAuthSession: vi.fn().mockResolvedValue({
+        tokens: {
+            accessToken: {
+                payload: {
+                    'cognito:groups': ['Admin'],
+                },
+            },
+        },
     }),
 }));
 
@@ -17,19 +34,18 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 describe('AdminLayout', () => {
-    it('should render sidebar as collapsed by default', () => {
+    it('should render sidebar as collapsed by default', async () => {
         render(
             <AdminLayout>
                 <div>Child Content</div>
             </AdminLayout>
         );
 
-        // Sidebar uses data-state="collapsed" when closed
-        // We look for the sidebar div that has this attribute
-        const sidebar = document.querySelector('div[data-state="collapsed"]');
-        expect(sidebar).toBeInTheDocument();
+        await waitFor(() => {
+            const sidebar = document.querySelector('div[data-state="collapsed"]');
+            expect(sidebar).toBeInTheDocument();
+        });
 
-        // Also verify content is rendered
         expect(screen.getByText('Child Content')).toBeInTheDocument();
     });
 });

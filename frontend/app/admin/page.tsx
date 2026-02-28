@@ -1,10 +1,7 @@
 'use client';
 
-import { useAuthenticator } from '@aws-amplify/ui-react';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { customersApi, Customer } from '../../lib/api';
-import { fetchAuthSession } from 'aws-amplify/auth';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,9 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Trash2, Plus, Loader2, Users, Building2, Wrench, DollarSign } from "lucide-react"
 
 export default function AdminDashboard() {
-    const { authStatus } = useAuthenticator((context) => [context.authStatus]);
-    const router = useRouter();
-    const [isAuthorized, setIsAuthorized] = useState(false);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [newFirstName, setNewFirstName] = useState('');
     const [newLastName, setNewLastName] = useState('');
@@ -24,22 +18,8 @@ export default function AdminDashboard() {
     const [creating, setCreating] = useState(false);
 
     useEffect(() => {
-        if (authStatus === 'unauthenticated') {
-            router.push('/login');
-        } else if (authStatus === 'authenticated') {
-            fetchAuthSession().then(session => {
-                const payload = session.tokens?.accessToken?.payload;
-                const userGroups = (payload?.['cognito:groups'] || []) as string[];
-
-                if (userGroups.includes('Admin') || userGroups.includes('Manager')) {
-                    setIsAuthorized(true);
-                    loadCustomers();
-                } else {
-                    router.push('/profile');
-                }
-            });
-        }
-    }, [authStatus, router]);
+        loadCustomers();
+    }, []);
 
     const loadCustomers = async () => {
         setLoading(true);
@@ -88,15 +68,6 @@ export default function AdminDashboard() {
             setError('Failed to delete customer');
         }
     };
-
-    if (authStatus !== 'authenticated' || !isAuthorized) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Checking authorization...</span>
-            </div>
-        );
-    }
 
     return (
         <div className="space-y-6">
