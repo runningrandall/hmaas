@@ -1,17 +1,20 @@
 "use client"
 
-import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings } from "lucide-react"
+import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings, X } from "lucide-react"
 import Link from "next/link"
 
+import { Button } from "@/components/ui/button"
 import {
     Sidebar,
     SidebarContent,
     SidebarGroup,
     SidebarGroupContent,
     SidebarGroupLabel,
+    SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar"
 
 const managementItems = [
@@ -33,8 +36,17 @@ const systemItems = [
 ]
 
 export function AppSidebar() {
+    const { toggleSidebar } = useSidebar()
+
     return (
         <Sidebar>
+            <SidebarHeader className="flex flex-row items-center justify-between px-4 py-2">
+                <span className="text-lg font-semibold">Versa Admin</span>
+                <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+                    <X className="h-5 w-5" />
+                    <span className="sr-only">Close sidebar</span>
+                </Button>
+            </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupLabel>Management</SidebarGroupLabel>
