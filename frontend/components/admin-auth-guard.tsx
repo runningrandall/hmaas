@@ -2,9 +2,11 @@
 
 import { Loader2 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { AdminAuthProvider } from '@/contexts/admin-auth-context';
+import { isSuperAdmin, getHighestRole } from '@/lib/auth';
 
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
-    const { isAuthorized, isLoading } = useAdminAuth();
+    const { isAuthorized, isLoading, userGroups } = useAdminAuth();
 
     if (isLoading || !isAuthorized) {
         return (
@@ -15,5 +17,13 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
-    return <>{children}</>;
+    return (
+        <AdminAuthProvider
+            userGroups={userGroups}
+            isSuperAdmin={isSuperAdmin(userGroups)}
+            highestRole={getHighestRole(userGroups)}
+        >
+            {children}
+        </AdminAuthProvider>
+    );
 }

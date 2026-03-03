@@ -1,7 +1,8 @@
 "use client"
 
-import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings, X } from "lucide-react"
+import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings, Globe, X } from "lucide-react"
 import Link from "next/link"
+import { useMemo } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -16,6 +17,7 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar"
+import { useAdminAuthContext } from "@/contexts/admin-auth-context"
 
 const managementItems = [
     { title: "Dashboard", url: "/admin", icon: Home },
@@ -31,12 +33,19 @@ const operationsItems = [
     { title: "Invoices", url: "/admin/invoices", icon: DollarSign },
 ]
 
-const systemItems = [
-    { title: "Settings", url: "/admin/settings", icon: Settings },
-]
-
 export function AppSidebar() {
     const { toggleSidebar } = useSidebar()
+    const { isSuperAdmin } = useAdminAuthContext()
+
+    const systemItems = useMemo(() => {
+        const items = [
+            { title: "Settings", url: "/admin/settings", icon: Settings },
+        ]
+        if (isSuperAdmin) {
+            items.unshift({ title: "Organizations", url: "/admin/organizations", icon: Globe })
+        }
+        return items
+    }, [isSuperAdmin])
 
     return (
         <Sidebar>
