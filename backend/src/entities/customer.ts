@@ -27,9 +27,9 @@ export const CustomerEntity = new Entity(
                 pk: { field: "pk", composite: ["organizationId", "customerId"] },
                 sk: { field: "sk", composite: [] },
             },
-            byStatus: {
+            byOrgCustomers: {
                 index: "gsi1",
-                pk: { field: "gsi1pk", composite: ["organizationId", "status"] },
+                pk: { field: "gsi1pk", composite: ["organizationId"] },
                 sk: { field: "gsi1sk", composite: ["customerId"] },
             },
             byOrg: {

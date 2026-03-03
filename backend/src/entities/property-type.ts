@@ -23,6 +23,11 @@ export const PropertyTypeEntity = new Entity(
                 pk: { field: "pk", composite: ["organizationId", "propertyTypeId"] },
                 sk: { field: "sk", composite: [] },
             },
+            byOrgPropertyTypes: {
+                index: "gsi1",
+                pk: { field: "gsi1pk", composite: ["organizationId"] },
+                sk: { field: "gsi1sk", composite: ["propertyTypeId"] },
+            },
             byOrg: {
                 index: "gsi2",
                 pk: { field: "gsi2pk", composite: [] },

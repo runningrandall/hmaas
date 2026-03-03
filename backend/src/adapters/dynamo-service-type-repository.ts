@@ -40,7 +40,7 @@ export class DynamoServiceTypeRepository implements ServiceTypeRepository {
 
     async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceType>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.serviceType.query.byServiceTypeId({ organizationId }).go({
+        const result = await DBService.entities.serviceType.query.byOrgServiceTypes({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });

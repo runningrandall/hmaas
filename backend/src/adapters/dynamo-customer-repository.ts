@@ -43,7 +43,7 @@ export class DynamoCustomerRepository implements CustomerRepository {
 
     async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Customer>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.customer.query.byCustomerId({ organizationId }).go({
+        const result = await DBService.entities.customer.query.byOrgCustomers({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
