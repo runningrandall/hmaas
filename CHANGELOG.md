@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/runningrandall/hmaas/compare/v1.1.0...v1.2.0) (2026-03-04)
+
+
+### Features
+
+* generalize categories to flexible entity tagging system ([#6](https://github.com/runningrandall/hmaas/issues/6)) ([eb2e70c](https://github.com/runningrandall/hmaas/commit/eb2e70c0f4129de99fd8c5c1a0204c2fa5c4c165))
+
 # [1.1.0](https://github.com/runningrandall/hmaas/compare/v1.0.0...v1.1.0) (2026-02-27)
 
 
