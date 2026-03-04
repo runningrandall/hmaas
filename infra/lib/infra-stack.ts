@@ -204,6 +204,17 @@ export class InfraStack extends cdk.Stack {
       { id: 'listServiceTypes', entry: 'serviceTypes/list.ts' },
       { id: 'updateServiceType', entry: 'serviceTypes/update.ts' },
       { id: 'deleteServiceType', entry: 'serviceTypes/delete.ts' },
+      { id: 'listPublicServiceTypes', entry: 'serviceTypes/listPublic.ts' },
+      { id: 'createCategory', entry: 'categories/create.ts' },
+      { id: 'getCategory', entry: 'categories/get.ts' },
+      { id: 'listCategories', entry: 'categories/list.ts' },
+      { id: 'updateCategory', entry: 'categories/update.ts' },
+      { id: 'deleteCategory', entry: 'categories/delete.ts' },
+      { id: 'listPublicCategories', entry: 'categories/listPublic.ts' },
+      { id: 'listPublicPropertyTypes', entry: 'propertyTypes/listPublic.ts' },
+      { id: 'createServiceTypeCategory', entry: 'serviceTypeCategories/create.ts' },
+      { id: 'listServiceTypeCategories', entry: 'serviceTypeCategories/list.ts' },
+      { id: 'deleteServiceTypeCategory', entry: 'serviceTypeCategories/delete.ts' },
       { id: 'createCostType', entry: 'costTypes/create.ts' },
       { id: 'getCostType', entry: 'costTypes/get.ts' },
       { id: 'listCostTypes', entry: 'costTypes/list.ts' },
@@ -245,9 +256,13 @@ export class InfraStack extends cdk.Stack {
       { id: 'listPlans', entry: 'plans/list.ts' },
       { id: 'updatePlan', entry: 'plans/update.ts' },
       { id: 'deletePlan', entry: 'plans/delete.ts' },
+      { id: 'listPublicPlans', entry: 'plans/listPublic.ts' },
       { id: 'createPlanService', entry: 'planServices/create.ts' },
       { id: 'listPlanServices', entry: 'planServices/list.ts' },
       { id: 'deletePlanService', entry: 'planServices/delete.ts' },
+      { id: 'createPlanCategory', entry: 'planCategories/create.ts' },
+      { id: 'listPlanCategories', entry: 'planCategories/list.ts' },
+      { id: 'deletePlanCategory', entry: 'planCategories/delete.ts' },
     ];
 
     const workforceLambdas: LambdaDefinition[] = [
@@ -301,6 +316,7 @@ export class InfraStack extends cdk.Stack {
       { id: 'updateOrgConfig', entry: 'organizations/updateConfig.ts' },
       { id: 'getOrgSecrets', entry: 'organizations/getSecrets.ts' },
       { id: 'setOrgSecret', entry: 'organizations/setSecret.ts' },
+      { id: 'listAdminUsers', entry: 'organizations/listAdminUsers.ts' },
     ];
 
     const secretsManagerPolicy = new iam.PolicyStatement({
@@ -319,10 +335,16 @@ export class InfraStack extends cdk.Stack {
     const plan = new LambdaStack(this, 'PlanLambdas', { ...commonNestedProps, lambdas: planLambdas });
     const workforce = new LambdaStack(this, 'WorkforceLambdas', { ...commonNestedProps, lambdas: workforceLambdas });
     const billing = new LambdaStack(this, 'BillingLambdas', { ...commonNestedProps, lambdas: billingLambdas });
+    const cognitoListUsersPolicy = new iam.PolicyStatement({
+      actions: ['cognito-idp:ListUsersInGroup'],
+      resources: [props.auth.userPool.userPoolArn],
+    });
+
     const organization = new LambdaStack(this, 'OrganizationLambdas', {
       ...commonNestedProps,
       lambdas: organizationLambdas,
-      additionalPolicies: [secretsManagerPolicy],
+      additionalPolicies: [secretsManagerPolicy, cognitoListUsersPolicy],
+      additionalEnvironment: { USER_POOL_ID: props.auth.userPool.userPoolId },
     });
 
     // ─── 9. API Gateway Routes ───
@@ -346,6 +368,33 @@ export class InfraStack extends cdk.Stack {
     serviceTypeRes.addMethod('GET', li(lookup.functions.getServiceType), opts);
     serviceTypeRes.addMethod('PUT', li(lookup.functions.updateServiceType), opts);
     serviceTypeRes.addMethod('DELETE', li(lookup.functions.deleteServiceType), opts);
+
+    // Service Type Categories (nested under service types)
+    const serviceTypeCategories = serviceTypeRes.addResource('categories');
+    serviceTypeCategories.addMethod('GET', li(lookup.functions.listServiceTypeCategories), opts);
+    serviceTypeCategories.addMethod('POST', li(lookup.functions.createServiceTypeCategory), opts);
+    const serviceTypeCategoryRes = serviceTypeCategories.addResource('{categoryId}');
+    serviceTypeCategoryRes.addMethod('DELETE', li(lookup.functions.deleteServiceTypeCategory), opts);
+
+    // Categories
+    const categories = api.root.addResource('categories');
+    categories.addMethod('GET', li(lookup.functions.listCategories), opts);
+    categories.addMethod('POST', li(lookup.functions.createCategory), opts);
+    const categoryRes = categories.addResource('{categoryId}');
+    categoryRes.addMethod('GET', li(lookup.functions.getCategory), opts);
+    categoryRes.addMethod('PUT', li(lookup.functions.updateCategory), opts);
+    categoryRes.addMethod('DELETE', li(lookup.functions.deleteCategory), opts);
+
+    // Public (unauthenticated) routes
+    const publicRes = api.root.addResource('public');
+    const publicServiceTypes = publicRes.addResource('service-types');
+    publicServiceTypes.addMethod('GET', li(lookup.functions.listPublicServiceTypes));
+    const publicPropertyTypes = publicRes.addResource('property-types');
+    publicPropertyTypes.addMethod('GET', li(lookup.functions.listPublicPropertyTypes));
+    const publicCategories = publicRes.addResource('categories');
+    publicCategories.addMethod('GET', li(lookup.functions.listPublicCategories));
+    const publicPlans = publicRes.addResource('plans');
+    publicPlans.addMethod('GET', li(plan.functions.listPublicPlans));
 
     // Cost Types
     const costTypes = api.root.addResource('cost-types');
@@ -409,6 +458,13 @@ export class InfraStack extends cdk.Stack {
     planRes.addMethod('GET', li(plan.functions.getPlan), opts);
     planRes.addMethod('PUT', li(plan.functions.updatePlan), opts);
     planRes.addMethod('DELETE', li(plan.functions.deletePlan), opts);
+
+    // Plan Categories
+    const planCategories = planRes.addResource('categories');
+    planCategories.addMethod('GET', li(plan.functions.listPlanCategories), opts);
+    planCategories.addMethod('POST', li(plan.functions.createPlanCategory), opts);
+    const planCategoryRes = planCategories.addResource('{categoryId}');
+    planCategoryRes.addMethod('DELETE', li(plan.functions.deletePlanCategory), opts);
 
     // Plan Services
     const planServices = planRes.addResource('services');
@@ -522,6 +578,10 @@ export class InfraStack extends cdk.Stack {
     organizationRes.addMethod('GET', li(organization.functions.getOrganization), opts);
     organizationRes.addMethod('PUT', li(organization.functions.updateOrganization), opts);
     organizationRes.addMethod('DELETE', li(organization.functions.deleteOrganization), opts);
+
+    // Admin Users
+    const adminUsers = api.root.addResource('admin-users');
+    adminUsers.addMethod('GET', li(organization.functions.listAdminUsers), opts);
 
     // Organization Config
     const orgConfig = organizationRes.addResource('config');

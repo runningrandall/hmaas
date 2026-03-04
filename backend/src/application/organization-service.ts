@@ -6,7 +6,7 @@ import {
     OrganizationSecretsManager,
     OrganizationConfig,
 } from "../domain/organization";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { ActorContext, EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
@@ -21,7 +21,7 @@ export class OrganizationService {
         private eventPublisher: EventPublisher
     ) {}
 
-    async createOrganization(request: CreateOrganizationRequest): Promise<Organization> {
+    async createOrganization(request: CreateOrganizationRequest, actor?: ActorContext): Promise<Organization> {
         logger.info("Creating organization", { name: request.name, slug: request.slug });
 
         const existing = await this.organizationRepository.getBySlug(request.slug);
@@ -35,6 +35,7 @@ export class OrganizationService {
             organizationId,
             name: request.name,
             slug: request.slug,
+            description: request.description,
             status: "active",
             ownerUserId: request.ownerUserId,
             billingEmail: request.billingEmail,
@@ -50,7 +51,7 @@ export class OrganizationService {
         const created = await this.organizationRepository.create(organization);
 
         metrics.addMetric("OrganizationsCreated", MetricUnit.Count, 1);
-        await this.eventPublisher.publish("OrganizationCreated", { organizationId });
+        await this.eventPublisher.publish("OrganizationCreated", { organizationId, actor });
 
         return created;
     }
@@ -75,7 +76,7 @@ export class OrganizationService {
         return this.organizationRepository.list(options);
     }
 
-    async updateOrganization(organizationId: string, request: UpdateOrganizationRequest): Promise<Organization> {
+    async updateOrganization(organizationId: string, request: UpdateOrganizationRequest, actor?: ActorContext): Promise<Organization> {
         const existing = await this.getOrganization(organizationId);
 
         if (request.slug && request.slug !== existing.slug) {
@@ -86,6 +87,8 @@ export class OrganizationService {
         }
 
         const updated = await this.organizationRepository.update(organizationId, request);
+
+        await this.eventPublisher.publish("OrganizationUpdated", { organizationId, actor });
 
         if (request.status && request.status !== existing.status) {
             if (request.status === "suspended") {
@@ -99,8 +102,9 @@ export class OrganizationService {
         return updated;
     }
 
-    async deleteOrganization(organizationId: string): Promise<void> {
+    async deleteOrganization(organizationId: string, actor?: ActorContext): Promise<void> {
         await this.organizationRepository.delete(organizationId);
+        await this.eventPublisher.publish("OrganizationDeleted", { organizationId, actor });
         logger.info("Organization deleted", { organizationId });
     }
 
@@ -109,11 +113,11 @@ export class OrganizationService {
         return organization.config || {};
     }
 
-    async updateConfig(organizationId: string, config: OrganizationConfig): Promise<Organization> {
+    async updateConfig(organizationId: string, config: OrganizationConfig, actor?: ActorContext): Promise<Organization> {
         await this.getOrganization(organizationId);
         const updated = await this.organizationRepository.updateConfig(organizationId, config);
 
-        await this.eventPublisher.publish("OrganizationConfigUpdated", { organizationId });
+        await this.eventPublisher.publish("OrganizationConfigUpdated", { organizationId, actor });
 
         return updated;
     }

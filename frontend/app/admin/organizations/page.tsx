@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Globe, Plus, Loader2, Trash2, Pencil } from 'lucide-react';
-import { organizationsApi, Organization, CreateOrganizationData } from '@/lib/api/organizations';
+import { organizationsApi, Organization, CreateOrganizationData, CognitoUser } from '@/lib/api/organizations';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -34,6 +35,8 @@ export default function OrganizationsPage() {
     const [error, setError] = useState('');
     const [creating, setCreating] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [adminUsers, setAdminUsers] = useState<CognitoUser[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
     const [form, setForm] = useState<CreateOrganizationData>({
         name: '',
         slug: '',
@@ -49,6 +52,12 @@ export default function OrganizationsPage() {
         loadOrganizations();
     }, [isSuperAdmin, router]);
 
+    useEffect(() => {
+        if (dialogOpen) {
+            loadAdminUsers();
+        }
+    }, [dialogOpen]);
+
     const loadOrganizations = async () => {
         setLoading(true);
         try {
@@ -59,6 +68,18 @@ export default function OrganizationsPage() {
             setError('Failed to load organizations.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadAdminUsers = async () => {
+        setLoadingUsers(true);
+        try {
+            const users = await organizationsApi.listAdminUsers();
+            setAdminUsers(users);
+        } catch {
+            setAdminUsers([]);
+        } finally {
+            setLoadingUsers(false);
         }
     };
 
@@ -136,14 +157,37 @@ export default function OrganizationsPage() {
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="ownerUserId">Owner User ID</Label>
-                                    <Input
-                                        id="ownerUserId"
-                                        value={form.ownerUserId}
-                                        onChange={(e) => setForm({ ...form, ownerUserId: e.target.value })}
-                                        placeholder="cognito-user-id"
-                                        required
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        value={form.description || ''}
+                                        onChange={(e) => setForm({ ...form, description: e.target.value })}
+                                        placeholder="Brief description of the organization"
+                                        rows={2}
                                     />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="ownerUserId">Owner</Label>
+                                    {loadingUsers ? (
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground h-9">
+                                            <Loader2 className="h-4 w-4 animate-spin" /> Loading users...
+                                        </div>
+                                    ) : (
+                                        <select
+                                            id="ownerUserId"
+                                            value={form.ownerUserId}
+                                            onChange={(e) => setForm({ ...form, ownerUserId: e.target.value })}
+                                            required
+                                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <option value="">Select an owner...</option>
+                                            {adminUsers.map((user) => (
+                                                <option key={user.userId} value={user.userId}>
+                                                    {user.email || user.userId}{user.name ? ` (${user.name})` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="billingEmail">Billing Email</Label>
@@ -154,6 +198,15 @@ export default function OrganizationsPage() {
                                         onChange={(e) => setForm({ ...form, billingEmail: e.target.value })}
                                         placeholder="billing@acme.com"
                                         required
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="address">Address</Label>
+                                    <Input
+                                        id="address"
+                                        value={form.address || ''}
+                                        onChange={(e) => setForm({ ...form, address: e.target.value })}
+                                        placeholder="123 Main St"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -230,13 +283,14 @@ export default function OrganizationsPage() {
                                     <TableHead>Slug</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Billing Email</TableHead>
+                                    <TableHead>Created</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {organizations.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                             No organizations found. Create one to get started.
                                         </TableCell>
                                     </TableRow>
@@ -251,6 +305,9 @@ export default function OrganizationsPage() {
                                                 </span>
                                             </TableCell>
                                             <TableCell>{org.billingEmail}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {org.createdAt ? new Date(org.createdAt).toLocaleDateString() : '-'}
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-1">
                                                     <Button

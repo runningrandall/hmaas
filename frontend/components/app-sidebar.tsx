@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings, Globe, X } from "lucide-react"
+import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings, Globe, X, Tag } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
 
@@ -24,6 +24,7 @@ const managementItems = [
     { title: "Customers", url: "/admin/customers", icon: Users },
     { title: "Properties", url: "/admin/properties", icon: Building2 },
     { title: "Services", url: "/admin/services", icon: Wrench },
+    { title: "Categories", url: "/admin/categories", icon: Tag },
     { title: "Plans", url: "/admin/plans", icon: FileText },
 ]
 

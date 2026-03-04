@@ -65,5 +65,5 @@ npx dotenv -e .env -- npx concurrently \
   --prefix-colors "yellow,blue,magenta" \
   --kill-others \
   "pnpm --filter backend run build --watch" \
-  "node scripts/local-api-server.js" \
+  "node scripts/local-api-server.js --watch" \
   "pnpm dev"

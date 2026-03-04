@@ -41,3 +41,16 @@ export const superAdminMiddleware = (handler: (event: APIGatewayProxyEvent, cont
         .use(logMetrics(metrics, { captureColdStartMetric: true }))
         .use(errorHandlerMiddleware());
 };
+
+/**
+ * Middleware chain for public (unauthenticated) routes.
+ * No org context injection or auth required.
+ */
+export const publicMiddleware = (handler: (event: APIGatewayProxyEvent, context: any) => Promise<APIGatewayProxyResult>) => {
+    return middy(handler)
+        .use(httpHeaderNormalizer())
+        .use(jsonBodyParser())
+        .use(cors())
+        .use(logMetrics(metrics, { captureColdStartMetric: true }))
+        .use(errorHandlerMiddleware());
+};

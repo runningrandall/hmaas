@@ -12,6 +12,10 @@ export interface OrganizationContext {
     organizationId: string;
 }
 
+export interface ActorContext {
+    userId: string;
+}
+
 export interface EventPublisher {
     publish(eventName: string, payload: unknown): Promise<void>;
 }

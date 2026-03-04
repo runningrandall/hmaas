@@ -15,6 +15,7 @@ export const OrganizationEntity = new Entity(
             name: { type: "string", required: true },
             slug: { type: "string", required: true },
             status: { type: ["active", "inactive", "suspended"] as const, required: true, default: "active" },
+            description: { type: "string" },
             ownerUserId: { type: "string", required: true },
             billingEmail: { type: "string", required: true },
             phone: { type: "string" },

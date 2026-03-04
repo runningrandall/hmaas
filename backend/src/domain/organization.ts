@@ -14,6 +14,7 @@ export interface Organization {
     organizationId: string;
     name: string;
     slug: string;
+    description?: string;
     status: OrganizationStatus;
     ownerUserId: string;
     billingEmail: string;
@@ -32,6 +33,7 @@ export interface Organization {
 export interface CreateOrganizationRequest {
     name: string;
     slug: string;
+    description?: string;
     ownerUserId: string;
     billingEmail: string;
     phone?: string;
@@ -45,6 +47,7 @@ export interface CreateOrganizationRequest {
 export interface UpdateOrganizationRequest {
     name?: string;
     slug?: string;
+    description?: string;
     status?: OrganizationStatus;
     ownerUserId?: string;
     billingEmail?: string;
@@ -65,6 +68,17 @@ export interface OrganizationRepository {
     update(organizationId: string, data: UpdateOrganizationRequest): Promise<Organization>;
     updateConfig(organizationId: string, config: OrganizationConfig): Promise<Organization>;
     delete(organizationId: string): Promise<void>;
+}
+
+export interface CognitoUser {
+    userId: string;
+    email?: string;
+    name?: string;
+    groups: string[];
+}
+
+export interface CognitoUserProvider {
+    listAdminUsers(): Promise<CognitoUser[]>;
 }
 
 export interface OrganizationSecretsManager {

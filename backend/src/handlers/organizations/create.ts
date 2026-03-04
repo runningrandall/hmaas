@@ -26,7 +26,8 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
         metrics.addMetric('ValidationErrors', MetricUnit.Count, 1);
         throw parseResult.error;
     }
-    const result = await service.createOrganization(parseResult.data);
+    const userId = (event.requestContext?.authorizer as any)?.userId || '';
+    const result = await service.createOrganization(parseResult.data, { userId });
     return { statusCode: 201, body: JSON.stringify(result) };
 };
 

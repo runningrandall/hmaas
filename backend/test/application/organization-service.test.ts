@@ -59,12 +59,13 @@ describe('OrganizationService', () => {
 
             const { metrics } = await import('../../src/lib/observability');
 
-            const result = await service.createOrganization(request);
+            const result = await service.createOrganization(request, { userId: 'actor-1' });
 
             expect(result).toEqual(createdOrg);
             expect(mockOrgRepo.create).toHaveBeenCalledOnce();
             expect(mockPublisher.publish).toHaveBeenCalledWith('OrganizationCreated', expect.objectContaining({
                 organizationId: expect.any(String),
+                actor: { userId: 'actor-1' },
             }));
             expect(metrics.addMetric).toHaveBeenCalledWith('OrganizationsCreated', expect.any(String), 1);
         });
@@ -79,6 +80,19 @@ describe('OrganizationService', () => {
             expect(result.status).toBe('active');
             expect(result.createdAt).toEqual(expect.any(String));
             expect(result.organizationId).toEqual(expect.any(String));
+        });
+
+        it('should include description in created organization', async () => {
+            mockOrgRepo.getBySlug.mockResolvedValue(null);
+            mockOrgRepo.create.mockImplementation(async (o: any) => o);
+            mockPublisher.publish.mockResolvedValue(undefined);
+
+            const result = await service.createOrganization({
+                ...request,
+                description: 'Test description',
+            });
+
+            expect(result.description).toBe('Test description');
         });
 
         it('should throw 409 if slug already exists', async () => {
@@ -139,17 +153,21 @@ describe('OrganizationService', () => {
     });
 
     describe('updateOrganization', () => {
-        it('should update organization successfully', async () => {
+        it('should update organization successfully and publish OrganizationUpdated event', async () => {
             const existing = { organizationId: 'org-1', status: 'active', slug: 'test-org' };
             const updated = { organizationId: 'org-1', status: 'active', name: 'Updated' };
             mockOrgRepo.get.mockResolvedValue(existing);
             mockOrgRepo.update.mockResolvedValue(updated);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.updateOrganization('org-1', { name: 'Updated' });
+            const result = await service.updateOrganization('org-1', { name: 'Updated' }, { userId: 'actor-1' });
 
             expect(result).toEqual(updated);
             expect(mockOrgRepo.update).toHaveBeenCalledWith('org-1', { name: 'Updated' });
+            expect(mockPublisher.publish).toHaveBeenCalledWith('OrganizationUpdated', {
+                organizationId: 'org-1',
+                actor: { userId: 'actor-1' },
+            });
         });
 
         it('should publish OrganizationSuspended when status changes to suspended', async () => {
@@ -161,13 +179,16 @@ describe('OrganizationService', () => {
 
             await service.updateOrganization('org-1', { status: 'suspended' });
 
+            expect(mockPublisher.publish).toHaveBeenCalledWith('OrganizationUpdated', expect.objectContaining({
+                organizationId: 'org-1',
+            }));
             expect(mockPublisher.publish).toHaveBeenCalledWith('OrganizationSuspended', {
                 organizationId: 'org-1',
                 previousStatus: 'active',
             });
         });
 
-        it('should NOT publish event when status does not change', async () => {
+        it('should NOT publish OrganizationSuspended when status does not change', async () => {
             const existing = { organizationId: 'org-1', status: 'active', slug: 'test-org' };
             const updated = { organizationId: 'org-1', status: 'active', name: 'Updated' };
             mockOrgRepo.get.mockResolvedValue(existing);
@@ -176,7 +197,10 @@ describe('OrganizationService', () => {
 
             await service.updateOrganization('org-1', { name: 'Updated', status: 'active' });
 
-            expect(mockPublisher.publish).not.toHaveBeenCalled();
+            expect(mockPublisher.publish).toHaveBeenCalledWith('OrganizationUpdated', expect.objectContaining({
+                organizationId: 'org-1',
+            }));
+            expect(mockPublisher.publish).not.toHaveBeenCalledWith('OrganizationSuspended', expect.anything());
         });
 
         it('should throw 409 if new slug already exists', async () => {
@@ -206,12 +230,17 @@ describe('OrganizationService', () => {
     });
 
     describe('deleteOrganization', () => {
-        it('should delete organization', async () => {
+        it('should delete organization and publish OrganizationDeleted event', async () => {
             mockOrgRepo.delete.mockResolvedValue(undefined);
+            mockPublisher.publish.mockResolvedValue(undefined);
 
-            await service.deleteOrganization('org-1');
+            await service.deleteOrganization('org-1', { userId: 'actor-1' });
 
             expect(mockOrgRepo.delete).toHaveBeenCalledWith('org-1');
+            expect(mockPublisher.publish).toHaveBeenCalledWith('OrganizationDeleted', {
+                organizationId: 'org-1',
+                actor: { userId: 'actor-1' },
+            });
         });
     });
 
@@ -242,17 +271,20 @@ describe('OrganizationService', () => {
     });
 
     describe('updateConfig', () => {
-        it('should update config and publish event', async () => {
+        it('should update config and publish event with actor', async () => {
             const org = { organizationId: 'org-1', config: {} };
             const updatedOrg = { organizationId: 'org-1', config: { brandColor: '#000000' } };
             mockOrgRepo.get.mockResolvedValue(org);
             mockOrgRepo.updateConfig.mockResolvedValue(updatedOrg);
             mockPublisher.publish.mockResolvedValue(undefined);
 
-            const result = await service.updateConfig('org-1', { brandColor: '#000000' });
+            const result = await service.updateConfig('org-1', { brandColor: '#000000' }, { userId: 'actor-1' });
 
             expect(result.config).toEqual({ brandColor: '#000000' });
-            expect(mockPublisher.publish).toHaveBeenCalledWith('OrganizationConfigUpdated', { organizationId: 'org-1' });
+            expect(mockPublisher.publish).toHaveBeenCalledWith('OrganizationConfigUpdated', {
+                organizationId: 'org-1',
+                actor: { userId: 'actor-1' },
+            });
         });
 
         it('should throw 404 if organization not found', async () => {
