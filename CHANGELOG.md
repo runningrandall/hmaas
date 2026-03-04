@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/runningrandall/hmaas/compare/v1.2.0...v1.3.0) (2026-03-04)
+
+
+### Features
+
+* enrich admin entities and add PlanServices UI ([e539733](https://github.com/runningrandall/hmaas/commit/e539733dd5aabad101002b7d544dbc94ebb1532b))
+
 # [1.2.0](https://github.com/runningrandall/hmaas/compare/v1.1.0...v1.2.0) (2026-03-04)
 
 
