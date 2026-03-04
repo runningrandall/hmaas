@@ -39,7 +39,7 @@ export class DynamoPropertyTypeRepository implements PropertyTypeRepository {
 
     async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<PropertyType>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.propertyType.query.byPropertyTypeId({ organizationId }).go({
+        const result = await DBService.entities.propertyType.query.byOrgPropertyTypes({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });

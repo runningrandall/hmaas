@@ -39,7 +39,7 @@ export class DynamoCostTypeRepository implements CostTypeRepository {
 
     async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<CostType>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.costType.query.byCostTypeId({ organizationId }).go({
+        const result = await DBService.entities.costType.query.byOrgCostTypes({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });

@@ -44,7 +44,7 @@ export class DynamoEmployeeRepository implements EmployeeRepository {
 
     async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Employee>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.employee.query.byEmployeeId({ organizationId }).go({
+        const result = await DBService.entities.employee.query.byOrgEmployees({ organizationId }).go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });

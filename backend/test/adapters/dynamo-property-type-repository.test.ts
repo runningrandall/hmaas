@@ -13,7 +13,7 @@ vi.mock('../../src/entities/service', () => ({
                 create: vi.fn(),
                 get: vi.fn(),
                 query: {
-                    byPropertyTypeId: vi.fn(),
+                    byOrgPropertyTypes: vi.fn(),
                 },
                 patch: vi.fn(),
                 delete: vi.fn(),
@@ -87,7 +87,7 @@ describe('DynamoPropertyTypeRepository', () => {
 
     describe('list', () => {
         it('should return paginated list of property types', async () => {
-            mockEntity.query.byPropertyTypeId.mockReturnValue({
+            mockEntity.query.byOrgPropertyTypes.mockReturnValue({
                 go: vi.fn().mockResolvedValue({ data: [mockPropertyType], cursor: null }),
             });
 
@@ -100,18 +100,18 @@ describe('DynamoPropertyTypeRepository', () => {
 
         it('should pass limit and cursor options', async () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockPropertyType], cursor: 'next-page' });
-            mockEntity.query.byPropertyTypeId.mockReturnValue({ go: mockGo });
+            mockEntity.query.byOrgPropertyTypes.mockReturnValue({ go: mockGo });
 
             const result = await repo.list('org-test-123', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byPropertyTypeId).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
+            expect(mockEntity.query.byOrgPropertyTypes).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
 
         it('should use default page size when no options provided', async () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
-            mockEntity.query.byPropertyTypeId.mockReturnValue({ go: mockGo });
+            mockEntity.query.byOrgPropertyTypes.mockReturnValue({ go: mockGo });
 
             await repo.list('org-test-123');
 

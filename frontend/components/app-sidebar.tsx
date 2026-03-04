@@ -1,17 +1,23 @@
 "use client"
 
-import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings } from "lucide-react"
+import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings, Globe, X } from "lucide-react"
+import Link from "next/link"
+import { useMemo } from "react"
 
+import { Button } from "@/components/ui/button"
 import {
     Sidebar,
     SidebarContent,
     SidebarGroup,
     SidebarGroupContent,
     SidebarGroupLabel,
+    SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar"
+import { useAdminAuthContext } from "@/contexts/admin-auth-context"
 
 const managementItems = [
     { title: "Dashboard", url: "/admin", icon: Home },
@@ -27,13 +33,29 @@ const operationsItems = [
     { title: "Invoices", url: "/admin/invoices", icon: DollarSign },
 ]
 
-const systemItems = [
-    { title: "Settings", url: "/admin/settings", icon: Settings },
-]
-
 export function AppSidebar() {
+    const { toggleSidebar } = useSidebar()
+    const { isSuperAdmin } = useAdminAuthContext()
+
+    const systemItems = useMemo(() => {
+        const items = [
+            { title: "Settings", url: "/admin/settings", icon: Settings },
+        ]
+        if (isSuperAdmin) {
+            items.unshift({ title: "Organizations", url: "/admin/organizations", icon: Globe })
+        }
+        return items
+    }, [isSuperAdmin])
+
     return (
         <Sidebar>
+            <SidebarHeader className="flex flex-row items-center justify-between px-4 py-2">
+                <span className="text-lg font-semibold">Versa Admin</span>
+                <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+                    <X className="h-5 w-5" />
+                    <span className="sr-only">Close sidebar</span>
+                </Button>
+            </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupLabel>Management</SidebarGroupLabel>
@@ -42,10 +64,10 @@ export function AppSidebar() {
                             {managementItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild>
-                                        <a href={item.url}>
+                                        <Link href={item.url}>
                                             <item.icon />
                                             <span>{item.title}</span>
-                                        </a>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}
@@ -59,10 +81,10 @@ export function AppSidebar() {
                             {operationsItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild>
-                                        <a href={item.url}>
+                                        <Link href={item.url}>
                                             <item.icon />
                                             <span>{item.title}</span>
-                                        </a>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}
@@ -76,10 +98,10 @@ export function AppSidebar() {
                             {systemItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild>
-                                        <a href={item.url}>
+                                        <Link href={item.url}>
                                             <item.icon />
                                             <span>{item.title}</span>
-                                        </a>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}

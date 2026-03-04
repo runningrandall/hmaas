@@ -23,6 +23,11 @@ export const CostTypeEntity = new Entity(
                 pk: { field: "pk", composite: ["organizationId", "costTypeId"] },
                 sk: { field: "sk", composite: [] },
             },
+            byOrgCostTypes: {
+                index: "gsi1",
+                pk: { field: "gsi1pk", composite: ["organizationId"] },
+                sk: { field: "gsi1sk", composite: ["costTypeId"] },
+            },
             byOrg: {
                 index: "gsi2",
                 pk: { field: "gsi2pk", composite: [] },

@@ -24,6 +24,11 @@ export const ServiceTypeEntity = new Entity(
                 pk: { field: "pk", composite: ["organizationId", "serviceTypeId"] },
                 sk: { field: "sk", composite: [] },
             },
+            byOrgServiceTypes: {
+                index: "gsi1",
+                pk: { field: "gsi1pk", composite: ["organizationId"] },
+                sk: { field: "gsi1sk", composite: ["serviceTypeId"] },
+            },
             byOrg: {
                 index: "gsi2",
                 pk: { field: "gsi2pk", composite: [] },

@@ -13,7 +13,7 @@ vi.mock('../../src/entities/service', () => ({
                 create: vi.fn(),
                 get: vi.fn(),
                 query: {
-                    byCostTypeId: vi.fn(),
+                    byOrgCostTypes: vi.fn(),
                 },
                 patch: vi.fn(),
                 delete: vi.fn(),
@@ -87,7 +87,7 @@ describe('DynamoCostTypeRepository', () => {
 
     describe('list', () => {
         it('should return paginated list of cost types', async () => {
-            mockEntity.query.byCostTypeId.mockReturnValue({
+            mockEntity.query.byOrgCostTypes.mockReturnValue({
                 go: vi.fn().mockResolvedValue({ data: [mockCostType], cursor: null }),
             });
 
@@ -100,18 +100,18 @@ describe('DynamoCostTypeRepository', () => {
 
         it('should pass limit and cursor options', async () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockCostType], cursor: 'next-page' });
-            mockEntity.query.byCostTypeId.mockReturnValue({ go: mockGo });
+            mockEntity.query.byOrgCostTypes.mockReturnValue({ go: mockGo });
 
             const result = await repo.list('org-test-123', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byCostTypeId).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
+            expect(mockEntity.query.byOrgCostTypes).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
 
         it('should use default page size when no options provided', async () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
-            mockEntity.query.byCostTypeId.mockReturnValue({ go: mockGo });
+            mockEntity.query.byOrgCostTypes.mockReturnValue({ go: mockGo });
 
             await repo.list('org-test-123');
 

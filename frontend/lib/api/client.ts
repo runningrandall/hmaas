@@ -1,6 +1,6 @@
 import { fetchAuthSession } from 'aws-amplify/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
 async function getHeaders(): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
@@ -22,14 +22,14 @@ async function getHeaders(): Promise<Record<string, string>> {
 
 export async function apiGet<T>(path: string): Promise<T> {
     const headers = await getHeaders();
-    const res = await fetch(`${API_URL}${path}`, { headers, cache: 'no-store' });
+    const res = await fetch(`${API_URL}/${path}`, { headers, cache: 'no-store' });
     if (!res.ok) throw new Error(`Failed to fetch ${path}`);
     return res.json();
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     const headers = await getHeaders();
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetch(`${API_URL}/${path}`, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
@@ -40,7 +40,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 
 export async function apiPut<T>(path: string, body: unknown): Promise<T> {
     const headers = await getHeaders();
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetch(`${API_URL}/${path}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify(body),
@@ -51,7 +51,7 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
 
 export async function apiDelete(path: string): Promise<void> {
     const headers = await getHeaders();
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetch(`${API_URL}/${path}`, {
         method: 'DELETE',
         headers,
     });

@@ -1,24 +1,18 @@
 'use client';
 
-import { useAuthenticator } from '@aws-amplify/ui-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense, useCallback } from 'react';
-import { fetchAuthSession } from 'aws-amplify/auth';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft, MapPin, Calendar, Clock, User, Mail, Phone, AlertTriangle } from "lucide-react";
 
 import { getReport, Report } from "@/lib/api";
 
-// ... existing imports ...
-
 function ReportDetailsContent() {
     const searchParams = useSearchParams();
     const id = searchParams.get('id');
 
-    const { authStatus } = useAuthenticator((context) => [context.authStatus]);
     const router = useRouter();
-    const [isAuthorized, setIsAuthorized] = useState(false);
     const [report, setReport] = useState<Report | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -42,39 +36,16 @@ function ReportDetailsContent() {
     }, []);
 
     useEffect(() => {
-        if (!id) return;
-
-        if (authStatus === 'unauthenticated') {
-            router.push('/login');
-        } else if (authStatus === 'authenticated') {
-            fetchAuthSession().then(session => {
-                const payload = session.tokens?.accessToken?.payload;
-                const userGroups = (payload?.['cognito:groups'] || []) as string[];
-
-                if (userGroups.includes('Admin') || userGroups.includes('Manager')) {
-                    setIsAuthorized(true);
-                    fetchReport(id);
-                } else {
-                    router.push('/profile'); // Not authorized
-                }
-            });
+        if (id) {
+            fetchReport(id);
         }
-    }, [authStatus, router, id, fetchReport]);
+    }, [id, fetchReport]);
 
     if (!id) {
         return (
             <div className="flex items-center justify-center p-8 text-muted-foreground">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <span className="ml-2">Loading...</span>
-            </div>
-        );
-    }
-
-    if (authStatus !== 'authenticated' || !isAuthorized) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Checking authorization...</span>
             </div>
         );
     }
