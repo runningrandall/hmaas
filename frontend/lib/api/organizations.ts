@@ -10,10 +10,18 @@ export interface OrganizationConfig {
     logoUrl?: string;
 }
 
+export interface CognitoUser {
+    userId: string;
+    email?: string;
+    name?: string;
+    groups: string[];
+}
+
 export interface Organization {
     organizationId: string;
     name: string;
     slug: string;
+    description?: string;
     status: OrganizationStatus;
     ownerUserId: string;
     billingEmail: string;
@@ -31,6 +39,7 @@ export interface Organization {
 export interface CreateOrganizationData {
     name: string;
     slug: string;
+    description?: string;
     ownerUserId: string;
     billingEmail: string;
     phone?: string;
@@ -44,6 +53,7 @@ export interface CreateOrganizationData {
 export interface UpdateOrganizationData {
     name?: string;
     slug?: string;
+    description?: string;
     status?: OrganizationStatus;
     ownerUserId?: string;
     billingEmail?: string;
@@ -66,6 +76,7 @@ export const organizationsApi = {
     create: (data: CreateOrganizationData) => apiPost<Organization>('organizations', data),
     update: (id: string, data: UpdateOrganizationData) => apiPut<Organization>(`organizations/${id}`, data),
     delete: (id: string) => apiDelete(`organizations/${id}`),
+    listAdminUsers: () => apiGet<CognitoUser[]>('admin-users'),
     getConfig: (id: string) => apiGet<OrganizationConfig>(`organizations/${id}/config`),
     updateConfig: (id: string, config: Partial<OrganizationConfig>) =>
         apiPut<OrganizationConfig>(`organizations/${id}/config`, config),

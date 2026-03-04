@@ -21,6 +21,8 @@ import { InvoiceEntity } from "./invoice";
 import { PaymentMethodEntity } from "./payment-method";
 import { InvoiceScheduleEntity } from "./invoice-schedule";
 import { OrganizationEntity } from "./organization";
+import { CategoryEntity } from "./category";
+import { EntityCategoryEntity } from "./entity-category";
 
 export const DBService = new Service(
     {
@@ -28,6 +30,8 @@ export const DBService = new Service(
         propertyType: PropertyTypeEntity,
         serviceType: ServiceTypeEntity,
         costType: CostTypeEntity,
+        category: CategoryEntity,
+        entityCategory: EntityCategoryEntity,
         customer: CustomerEntity,
         account: AccountEntity,
         delegate: DelegateEntity,

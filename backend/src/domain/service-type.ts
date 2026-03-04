@@ -5,7 +5,6 @@ export interface ServiceType {
     serviceTypeId: string;
     name: string;
     description?: string;
-    category?: string;
     createdAt: string;
     updatedAt?: string;
 }
@@ -13,13 +12,11 @@ export interface ServiceType {
 export interface CreateServiceTypeRequest {
     name: string;
     description?: string;
-    category?: string;
 }
 
 export interface UpdateServiceTypeRequest {
     name?: string;
     description?: string;
-    category?: string;
 }
 
 export interface ServiceTypeRepository {

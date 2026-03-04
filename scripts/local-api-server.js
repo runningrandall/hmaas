@@ -34,6 +34,18 @@ const cors = require('@fastify/cors');
 
 const PORT = parseInt(process.env.API_PORT || '3001', 10);
 const BACKEND_DIST = path.resolve(__dirname, '..', 'backend', 'dist');
+const HOT_RELOAD = process.argv.includes('--watch') || process.env.HOT_RELOAD === 'true';
+
+/**
+ * Clear require cache for all modules under backend/dist so changes from tsc --watch are picked up.
+ */
+function clearBackendCache() {
+  for (const key of Object.keys(require.cache)) {
+    if (key.startsWith(BACKEND_DIST)) {
+      delete require.cache[key];
+    }
+  }
+}
 
 // ── Route definitions ──────────────────────────────────────────────────────
 // Maps API Gateway paths ({param} style) to handler module paths (relative to backend/dist/handlers/)
@@ -50,6 +62,9 @@ const ROUTES = [
   ['GET',    '/organizations/{organizationId}/secrets',          'organizations/getSecrets'],
   ['PUT',    '/organizations/{organizationId}/secrets/{key}',    'organizations/setSecret'],
 
+  // Admin Users
+  ['GET',    '/admin-users',                                     'organizations/listAdminUsers'],
+
   // Property Types
   ['GET',    '/property-types',                                  'propertyTypes/list'],
   ['POST',   '/property-types',                                  'propertyTypes/create'],
@@ -63,6 +78,24 @@ const ROUTES = [
   ['GET',    '/service-types/{serviceTypeId}',                   'serviceTypes/get'],
   ['PUT',    '/service-types/{serviceTypeId}',                   'serviceTypes/update'],
   ['DELETE', '/service-types/{serviceTypeId}',                   'serviceTypes/delete'],
+
+  // Public (unauthenticated)
+  ['GET',    '/public/service-types',                              'serviceTypes/listPublic'],
+  ['GET',    '/public/property-types',                             'propertyTypes/listPublic'],
+  ['GET',    '/public/categories',                                 'categories/listPublic'],
+  ['GET',    '/public/plans',                                      'plans/listPublic'],
+
+  // Categories
+  ['GET',    '/categories',                                        'categories/list'],
+  ['POST',   '/categories',                                        'categories/create'],
+  ['GET',    '/categories/{categoryId}',                           'categories/get'],
+  ['PUT',    '/categories/{categoryId}',                           'categories/update'],
+  ['DELETE', '/categories/{categoryId}',                           'categories/delete'],
+
+  // Service Type Categories
+  ['GET',    '/service-types/{serviceTypeId}/categories',          'serviceTypeCategories/list'],
+  ['POST',   '/service-types/{serviceTypeId}/categories',          'serviceTypeCategories/create'],
+  ['DELETE', '/service-types/{serviceTypeId}/categories/{categoryId}', 'serviceTypeCategories/delete'],
 
   // Cost Types
   ['GET',    '/cost-types',                                      'costTypes/list'],
@@ -115,6 +148,11 @@ const ROUTES = [
   ['DELETE', '/plans/{planId}',                                  'plans/delete'],
 
   // Plan Services
+  // Plan Categories
+  ['GET',    '/plans/{planId}/categories',                       'planCategories/list'],
+  ['POST',   '/plans/{planId}/categories',                       'planCategories/create'],
+  ['DELETE', '/plans/{planId}/categories/{categoryId}',          'planCategories/delete'],
+
   ['GET',    '/plans/{planId}/services',                         'planServices/list'],
   ['POST',   '/plans/{planId}/services',                         'planServices/create'],
   ['DELETE', '/plans/{planId}/services/{serviceTypeId}',         'planServices/delete'],
@@ -272,20 +310,22 @@ async function main() {
 
   for (const [method, apiGwPath, handlerPath] of ROUTES) {
     const modulePath = path.join(BACKEND_DIST, 'handlers', handlerPath);
-    let mod;
-    try {
-      mod = require(modulePath);
-    } catch (err) {
-      skipped++;
-      fastify.log.warn(`Skipping ${method} ${apiGwPath} — handler not found at ${modulePath}: ${err.message}`);
-      continue;
-    }
 
-    const handler = mod.handler;
-    if (typeof handler !== 'function') {
-      skipped++;
-      fastify.log.warn(`Skipping ${method} ${apiGwPath} — no handler export in ${modulePath}`);
-      continue;
+    // In non-watch mode, verify the handler exists at startup
+    if (!HOT_RELOAD) {
+      let mod;
+      try {
+        mod = require(modulePath);
+      } catch (err) {
+        skipped++;
+        fastify.log.warn(`Skipping ${method} ${apiGwPath} — handler not found at ${modulePath}: ${err.message}`);
+        continue;
+      }
+      if (typeof mod.handler !== 'function') {
+        skipped++;
+        fastify.log.warn(`Skipping ${method} ${apiGwPath} — no handler export in ${modulePath}`);
+        continue;
+      }
     }
 
     const fastifyPath = toFastifyPath(apiGwPath);
@@ -294,6 +334,19 @@ async function main() {
       method,
       url: fastifyPath,
       handler: async (request, reply) => {
+        // In watch mode, clear the cache so we pick up rebuilt files
+        if (HOT_RELOAD) {
+          clearBackendCache();
+        }
+
+        let handler;
+        try {
+          handler = require(modulePath).handler;
+        } catch (err) {
+          request.log.error(err, `Failed to load handler for ${method} ${apiGwPath}`);
+          return reply.code(500).send({ message: 'Handler module not found', error: err.message });
+        }
+
         const event = buildEvent(request, apiGwPath);
         const context = buildContext();
 
@@ -335,10 +388,13 @@ async function main() {
 
   try {
     await fastify.listen({ port: PORT, host: '0.0.0.0' });
-    console.log(`\n  Local API server ready`);
+    console.log(`\n  Local API server ready${HOT_RELOAD ? ' (hot-reload enabled)' : ''}`);
     console.log(`  ${registered} routes registered, ${skipped} skipped`);
     console.log(`  http://localhost:${PORT}\n`);
     console.log(`  Health check: http://localhost:${PORT}/health`);
+    if (HOT_RELOAD) {
+      console.log(`  Hot-reload: handler changes picked up automatically (run tsc --watch)`);
+    }
     console.log(`  Tip: pass x-organization-id header (default: versa-default)\n`);
   } catch (err) {
     fastify.log.error(err);

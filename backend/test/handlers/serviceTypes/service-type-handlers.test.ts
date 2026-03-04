@@ -56,14 +56,12 @@ describe('Service Type Handlers', () => {
                 serviceTypeId: 'st-123',
                 name: 'Lawn Care',
                 description: 'Regular lawn mowing and edging',
-                category: 'Outdoor',
             };
             mockCreateServiceType.mockResolvedValue(mockServiceType);
 
             const event = makeCreateEvent({
                 name: 'Lawn Care',
                 description: 'Regular lawn mowing and edging',
-                category: 'Outdoor',
             });
             const result = await handler(event, mockContext);
 
@@ -106,7 +104,7 @@ describe('Service Type Handlers', () => {
         });
 
         it('should return 400 when required name field is missing', async () => {
-            const event = makeCreateEvent({ description: 'Some description', category: 'Outdoor' });
+            const event = makeCreateEvent({ description: 'Some description' });
             const result = await handler(event, mockContext);
 
             expect(result.statusCode).toBe(400);
@@ -124,7 +122,6 @@ describe('Service Type Handlers', () => {
             const mockServiceType = {
                 serviceTypeId: 'st-123',
                 name: 'Lawn Care',
-                category: 'Outdoor',
             };
             mockGetServiceType.mockResolvedValue(mockServiceType);
 
@@ -191,7 +188,7 @@ describe('Service Type Handlers', () => {
         });
 
         it('should return 200 when service type is updated with valid data', async () => {
-            const mockUpdated = { serviceTypeId: 'st-123', name: 'Premium Lawn Care', category: 'Outdoor' };
+            const mockUpdated = { serviceTypeId: 'st-123', name: 'Premium Lawn Care' };
             mockUpdateServiceType.mockResolvedValue(mockUpdated);
 
             const event = makeUpdateEvent({ serviceTypeId: 'st-123' }, { name: 'Premium Lawn Care' });

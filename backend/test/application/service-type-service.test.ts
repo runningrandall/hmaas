@@ -34,7 +34,6 @@ describe('ServiceTypeService', () => {
             const request = {
                 name: 'Lawn Care',
                 description: 'Regular lawn maintenance',
-                category: 'outdoor',
             };
 
             const created = {
@@ -60,7 +59,6 @@ describe('ServiceTypeService', () => {
             const request = {
                 name: 'Pest Control',
                 description: 'Pest elimination services',
-                category: 'pest',
             };
 
             mockRepo.create.mockImplementation(async (st: any) => st);
@@ -74,7 +72,7 @@ describe('ServiceTypeService', () => {
 
     describe('getServiceType', () => {
         it('should return service type when found', async () => {
-            const serviceType = { organizationId: ORG_ID, serviceTypeId: 'st-1', name: 'Lawn Care', category: 'outdoor' };
+            const serviceType = { organizationId: ORG_ID, serviceTypeId: 'st-1', name: 'Lawn Care' };
             mockRepo.get.mockResolvedValue(serviceType);
 
             const result = await service.getServiceType(ORG_ID, 'st-1');
@@ -105,8 +103,8 @@ describe('ServiceTypeService', () => {
 
     describe('updateServiceType', () => {
         it('should update service type and return updated without publishing event', async () => {
-            const existing = { organizationId: ORG_ID, serviceTypeId: 'st-1', name: 'Lawn Care', category: 'outdoor' };
-            const updated = { organizationId: ORG_ID, serviceTypeId: 'st-1', name: 'Premium Lawn Care', category: 'outdoor' };
+            const existing = { organizationId: ORG_ID, serviceTypeId: 'st-1', name: 'Lawn Care' };
+            const updated = { organizationId: ORG_ID, serviceTypeId: 'st-1', name: 'Premium Lawn Care' };
             mockRepo.get.mockResolvedValue(existing);
             mockRepo.update.mockResolvedValue(updated);
 

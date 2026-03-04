@@ -18,7 +18,8 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
     if (!organizationId) {
         throw new AppError("Missing organizationId", 400);
     }
-    await service.deleteOrganization(organizationId);
+    const userId = (event.requestContext?.authorizer as any)?.userId || '';
+    await service.deleteOrganization(organizationId, { userId });
     return { statusCode: 200, body: JSON.stringify({ message: "Organization deleted" }) };
 };
 

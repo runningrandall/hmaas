@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Globe, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
-import { organizationsApi, Organization, OrganizationConfig, UpdateOrganizationData, OrganizationStatus } from '@/lib/api/organizations';
+import { organizationsApi, Organization, OrganizationConfig, UpdateOrganizationData, OrganizationStatus, CognitoUser } from '@/lib/api/organizations';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const ORG_STATUSES: OrganizationStatus[] = ['active', 'inactive', 'suspended'];
@@ -28,6 +29,8 @@ export default function OrganizationDetailPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [form, setForm] = useState<UpdateOrganizationData>({});
+    const [adminUsers, setAdminUsers] = useState<CognitoUser[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
 
     const loadOrganization = useCallback(async () => {
         if (!organizationId) return;
@@ -42,6 +45,7 @@ export default function OrganizationDetailPage() {
             setForm({
                 name: orgData.name,
                 slug: orgData.slug,
+                description: orgData.description || '',
                 status: orgData.status,
                 ownerUserId: orgData.ownerUserId,
                 billingEmail: orgData.billingEmail,
@@ -60,6 +64,18 @@ export default function OrganizationDetailPage() {
         }
     }, [organizationId]);
 
+    const loadAdminUsers = useCallback(async () => {
+        setLoadingUsers(true);
+        try {
+            const users = await organizationsApi.listAdminUsers();
+            setAdminUsers(users);
+        } catch {
+            setAdminUsers([]);
+        } finally {
+            setLoadingUsers(false);
+        }
+    }, []);
+
     useEffect(() => {
         if (!isSuperAdmin) {
             router.push('/admin');
@@ -70,7 +86,8 @@ export default function OrganizationDetailPage() {
             return;
         }
         loadOrganization();
-    }, [isSuperAdmin, router, organizationId, loadOrganization]);
+        loadAdminUsers();
+    }, [isSuperAdmin, router, organizationId, loadOrganization, loadAdminUsers]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -185,6 +202,16 @@ export default function OrganizationDetailPage() {
                                     />
                                 </div>
                             </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="description">Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={form.description || ''}
+                                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                                    disabled={!editing}
+                                    rows={2}
+                                />
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="status">Status</Label>
@@ -201,13 +228,30 @@ export default function OrganizationDetailPage() {
                                     </select>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="ownerUserId">Owner User ID</Label>
-                                    <Input
-                                        id="ownerUserId"
-                                        value={form.ownerUserId || ''}
-                                        onChange={(e) => setForm({ ...form, ownerUserId: e.target.value })}
-                                        disabled={!editing}
-                                    />
+                                    <Label htmlFor="ownerUserId">Owner</Label>
+                                    {loadingUsers ? (
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground h-9">
+                                            <Loader2 className="h-4 w-4 animate-spin" /> Loading users...
+                                        </div>
+                                    ) : (
+                                        <select
+                                            id="ownerUserId"
+                                            value={form.ownerUserId || ''}
+                                            onChange={(e) => setForm({ ...form, ownerUserId: e.target.value })}
+                                            disabled={!editing}
+                                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <option value="">Select an owner...</option>
+                                            {adminUsers.map((user) => (
+                                                <option key={user.userId} value={user.userId}>
+                                                    {user.email || user.userId}{user.name ? ` (${user.name})` : ''}
+                                                </option>
+                                            ))}
+                                            {form.ownerUserId && !adminUsers.find(u => u.userId === form.ownerUserId) && (
+                                                <option value={form.ownerUserId}>{form.ownerUserId}</option>
+                                            )}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -289,6 +333,7 @@ export default function OrganizationDetailPage() {
                                         setForm({
                                             name: org.name,
                                             slug: org.slug,
+                                            description: org.description || '',
                                             status: org.status,
                                             ownerUserId: org.ownerUserId,
                                             billingEmail: org.billingEmail,
@@ -306,6 +351,11 @@ export default function OrganizationDetailPage() {
                             )}
                         </div>
                     </form>
+
+                    <div className="mt-6 pt-4 border-t text-sm text-muted-foreground flex gap-6">
+                        <span>Created: {org.createdAt ? new Date(org.createdAt).toLocaleString() : '-'}</span>
+                        <span>Updated: {org.updatedAt ? new Date(org.updatedAt).toLocaleString() : '-'}</span>
+                    </div>
                 </CardContent>
             </Card>
 

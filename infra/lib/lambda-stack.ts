@@ -20,6 +20,7 @@ interface LambdaStackProps {
   stageName: string;
   lambdas: LambdaDefinition[];
   additionalPolicies?: iam.PolicyStatement[];
+  additionalEnvironment?: Record<string, string>;
 }
 
 export class LambdaStack extends cdk.NestedStack {
@@ -35,6 +36,7 @@ export class LambdaStack extends cdk.NestedStack {
       environment: {
         TABLE_NAME: props.table.tableName,
         EVENT_BUS_NAME: props.eventBus.eventBusName,
+        ...props.additionalEnvironment,
       },
       bundling: { minify: true, sourceMap: true },
       tracing: lambda.Tracing.ACTIVE,

@@ -21,7 +21,7 @@
         "db:seed": "node ./scripts/seed-local-db.js",
         "api:start": "dotenv -e .env -- ./scripts/start-local-api.sh",
         "api:local": "dotenv -e .env -- node scripts/local-api-server.js",
-        "dev:backend": "dotenv -e .env -- pnpm --filter backend run build --watch & pnpm api:local",
+        "dev:backend": "concurrently -n tsc,api -c blue,green \"dotenv -e .env -- pnpm --filter backend run build -- --watch\" \"dotenv -e .env -- node scripts/local-api-server.js --watch\"",
         "generate": "plop",
         "commit": "cz",
         "test:integration": "node scripts/integration-test.js",

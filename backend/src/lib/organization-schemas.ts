@@ -6,6 +6,7 @@ extendZodWithOpenApi(z);
 export const CreateOrganizationSchema = z.object({
     name: z.string().min(1, "Organization name is required").openapi({ example: 'Versa Property Management' }),
     slug: z.string().min(1).max(63).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with hyphens").openapi({ example: 'versa-pm' }),
+    description: z.string().optional().openapi({ example: 'Full-service property management company' }),
     ownerUserId: z.string().min(1, "Owner user ID is required").openapi({ example: 'user-abc-123' }),
     billingEmail: z.string().email("Invalid billing email").openapi({ example: 'billing@versa.com' }),
     phone: z.string().optional().openapi({ example: '555-0100' }),
@@ -21,6 +22,7 @@ export type CreateOrganizationInput = z.infer<typeof CreateOrganizationSchema>;
 export const UpdateOrganizationSchema = z.object({
     name: z.string().min(1).optional().openapi({ example: 'Versa Property Management' }),
     slug: z.string().min(1).max(63).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with hyphens").optional().openapi({ example: 'versa-pm' }),
+    description: z.string().optional().openapi({ example: 'Full-service property management company' }),
     status: z.enum(["active", "inactive", "suspended"]).optional().openapi({ example: 'active' }),
     ownerUserId: z.string().min(1).optional().openapi({ example: 'user-abc-123' }),
     billingEmail: z.string().email().optional().openapi({ example: 'billing@versa.com' }),

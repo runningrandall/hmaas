@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import OrganizationsPage from '../../../../app/admin/organizations/page';
 import { organizationsApi } from '../../../../lib/api/organizations';
 
@@ -46,6 +46,16 @@ describe('OrganizationsPage', () => {
         expect(screen.getByText('billing@acme.com')).toBeInTheDocument();
     });
 
+    it('should render Created column in table header', async () => {
+        vi.spyOn(organizationsApi, 'list').mockResolvedValue({ items: [] });
+
+        render(<OrganizationsPage />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Created')).toBeInTheDocument();
+        });
+    });
+
     it('should render stat card with org count', async () => {
         vi.spyOn(organizationsApi, 'list').mockResolvedValue({ items: [] });
 
@@ -81,6 +91,39 @@ describe('OrganizationsPage', () => {
 
         await waitFor(() => {
             expect(screen.getByText('Failed to load organizations.')).toBeInTheDocument();
+        });
+    });
+
+    it('should load admin users and show owner dropdown in create dialog', async () => {
+        vi.spyOn(organizationsApi, 'list').mockResolvedValue({ items: [] });
+        vi.spyOn(organizationsApi, 'listAdminUsers').mockResolvedValue([
+            { userId: 'user-1', email: 'admin@test.com', name: 'Admin User', groups: ['SuperAdmin'] },
+            { userId: 'user-2', email: 'manager@test.com', groups: ['Manager'] },
+        ]);
+
+        render(<OrganizationsPage />);
+
+        fireEvent.click(screen.getByText('New Organization'));
+
+        await waitFor(() => {
+            expect(organizationsApi.listAdminUsers).toHaveBeenCalled();
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText('admin@test.com (Admin User)')).toBeInTheDocument();
+        });
+    });
+
+    it('should show description field in create dialog', async () => {
+        vi.spyOn(organizationsApi, 'list').mockResolvedValue({ items: [] });
+        vi.spyOn(organizationsApi, 'listAdminUsers').mockResolvedValue([]);
+
+        render(<OrganizationsPage />);
+
+        fireEvent.click(screen.getByText('New Organization'));
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Description')).toBeInTheDocument();
         });
     });
 });

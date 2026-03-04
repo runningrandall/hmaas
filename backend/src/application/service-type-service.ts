@@ -19,7 +19,6 @@ export class ServiceTypeService {
             serviceTypeId: randomUUID(),
             name: request.name,
             description: request.description,
-            category: request.category,
             createdAt: new Date().toISOString(),
         };
 
