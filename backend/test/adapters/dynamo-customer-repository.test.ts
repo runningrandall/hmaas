@@ -13,7 +13,7 @@ vi.mock('../../src/entities/service', () => ({
                 create: vi.fn(),
                 get: vi.fn(),
                 query: {
-                    byCustomerId: vi.fn(),
+                    byOrgCustomers: vi.fn(),
                 },
                 patch: vi.fn(),
                 delete: vi.fn(),
@@ -92,7 +92,7 @@ describe('DynamoCustomerRepository', () => {
 
     describe('list', () => {
         it('should return paginated list of customers', async () => {
-            mockEntity.query.byCustomerId.mockReturnValue({
+            mockEntity.query.byOrgCustomers.mockReturnValue({
                 go: vi.fn().mockResolvedValue({ data: [mockCustomer], cursor: null }),
             });
 
@@ -105,18 +105,18 @@ describe('DynamoCustomerRepository', () => {
 
         it('should pass limit and cursor options', async () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [mockCustomer], cursor: 'next-page' });
-            mockEntity.query.byCustomerId.mockReturnValue({ go: mockGo });
+            mockEntity.query.byOrgCustomers.mockReturnValue({ go: mockGo });
 
             const result = await repo.list('org-test-123', { limit: 5, cursor: 'some-cursor' });
 
-            expect(mockEntity.query.byCustomerId).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
+            expect(mockEntity.query.byOrgCustomers).toHaveBeenCalledWith({ organizationId: 'org-test-123' });
             expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
             expect(result.cursor).toBe('next-page');
         });
 
         it('should use default page size when no options provided', async () => {
             const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
-            mockEntity.query.byCustomerId.mockReturnValue({ go: mockGo });
+            mockEntity.query.byOrgCustomers.mockReturnValue({ go: mockGo });
 
             await repo.list('org-test-123');
 
