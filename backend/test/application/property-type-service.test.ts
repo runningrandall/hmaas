@@ -34,6 +34,7 @@ describe('PropertyTypeService', () => {
             const request = {
                 name: 'Single Family',
                 description: 'A single family residential home',
+                status: 'active' as const,
             };
 
             const created = {

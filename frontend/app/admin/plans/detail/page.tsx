@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, FileText, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, Save, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { plansApi, Plan, UpdatePlanData } from '@/lib/api/plans';
+import { planServicesApi, PlanService, CreatePlanServiceData } from '@/lib/api/plan-services';
+import { serviceTypesApi, ServiceType } from '@/lib/api/service-types';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +14,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import CategoryTagInput from '@/components/CategoryTagInput';
 
 export default function PlanDetailPage() {
@@ -32,6 +44,16 @@ export default function PlanDetailPage() {
         monthlyPrice: '',
         annualPrice: '',
         status: 'active' as 'active' | 'inactive',
+    });
+
+    // Bundled Services state
+    const [planServices, setPlanServices] = useState<PlanService[]>([]);
+    const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
+    const [servicesLoading, setServicesLoading] = useState(false);
+    const [addServiceDialogOpen, setAddServiceDialogOpen] = useState(false);
+    const [addingService, setAddingService] = useState(false);
+    const [serviceForm, setServiceForm] = useState<CreatePlanServiceData>({
+        serviceTypeId: '',
     });
 
     const loadPlan = useCallback(async () => {
@@ -55,6 +77,23 @@ export default function PlanDetailPage() {
         }
     }, [planId]);
 
+    const loadPlanServices = useCallback(async () => {
+        if (!planId) return;
+        setServicesLoading(true);
+        try {
+            const [servicesData, typesData] = await Promise.all([
+                planServicesApi.list(planId),
+                serviceTypesApi.list(),
+            ]);
+            setPlanServices(servicesData.items || []);
+            setServiceTypes(typesData.items || []);
+        } catch {
+            // silent fail for services section
+        } finally {
+            setServicesLoading(false);
+        }
+    }, [planId]);
+
     useEffect(() => {
         if (!isSuperAdmin) {
             router.push('/admin');
@@ -65,7 +104,8 @@ export default function PlanDetailPage() {
             return;
         }
         loadPlan();
-    }, [isSuperAdmin, router, planId, loadPlan]);
+        loadPlanServices();
+    }, [isSuperAdmin, router, planId, loadPlan, loadPlanServices]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -91,6 +131,45 @@ export default function PlanDetailPage() {
             setSaving(false);
         }
     };
+
+    const handleAddService = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!planId || !serviceForm.serviceTypeId) return;
+        setAddingService(true);
+        try {
+            const created = await planServicesApi.create(planId, serviceForm);
+            setPlanServices((prev) => [...prev, created]);
+            setServiceForm({ serviceTypeId: '' });
+            setAddServiceDialogOpen(false);
+        } catch {
+            setError('Failed to add service to plan.');
+        } finally {
+            setAddingService(false);
+        }
+    };
+
+    const handleDeleteService = async (serviceTypeId: string) => {
+        if (!planId) return;
+        if (!confirm('Remove this service from the plan?')) return;
+        // Optimistic removal
+        const prev = planServices;
+        setPlanServices((s) => s.filter((ps) => ps.serviceTypeId !== serviceTypeId));
+        try {
+            await planServicesApi.delete(planId, serviceTypeId);
+        } catch {
+            setPlanServices(prev);
+            setError('Failed to remove service from plan.');
+        }
+    };
+
+    const getServiceTypeName = (serviceTypeId: string) => {
+        const st = serviceTypes.find((t) => t.serviceTypeId === serviceTypeId);
+        return st?.name || serviceTypeId;
+    };
+
+    const availableServiceTypes = serviceTypes.filter(
+        (st) => !planServices.some((ps) => ps.serviceTypeId === st.serviceTypeId)
+    );
 
     if (!isSuperAdmin) return null;
 
@@ -240,6 +319,129 @@ export default function PlanDetailPage() {
                         <span>Created: {plan.createdAt ? new Date(plan.createdAt).toLocaleString() : '-'}</span>
                         <span>Updated: {plan.updatedAt ? new Date(plan.updatedAt).toLocaleString() : '-'}</span>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Bundled Services</CardTitle>
+                        <CardDescription>Services included in this plan.</CardDescription>
+                    </div>
+                    <Dialog open={addServiceDialogOpen} onOpenChange={setAddServiceDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Service
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <form onSubmit={handleAddService}>
+                                <DialogHeader>
+                                    <DialogTitle>Add Service to Plan</DialogTitle>
+                                    <DialogDescription>Select a service type to include in this plan.</DialogDescription>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="serviceTypeId">Service Type</Label>
+                                        <select
+                                            id="serviceTypeId"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                            value={serviceForm.serviceTypeId}
+                                            onChange={(e) => setServiceForm({ ...serviceForm, serviceTypeId: e.target.value })}
+                                            required
+                                        >
+                                            <option value="">Select service type</option>
+                                            {availableServiceTypes.map((st) => (
+                                                <option key={st.serviceTypeId} value={st.serviceTypeId}>
+                                                    {st.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="includedVisits">Included Visits</Label>
+                                        <Input
+                                            id="includedVisits"
+                                            type="number"
+                                            min="0"
+                                            value={serviceForm.includedVisits ?? ''}
+                                            onChange={(e) => setServiceForm({ ...serviceForm, includedVisits: e.target.value ? parseInt(e.target.value) : undefined })}
+                                            placeholder="e.g. 12"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="serviceFrequency">Frequency</Label>
+                                        <select
+                                            id="serviceFrequency"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                            value={serviceForm.frequency || ''}
+                                            onChange={(e) => setServiceForm({ ...serviceForm, frequency: e.target.value || undefined })}
+                                        >
+                                            <option value="">Select frequency</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="biweekly">Biweekly</option>
+                                            <option value="monthly">Monthly</option>
+                                            <option value="quarterly">Quarterly</option>
+                                            <option value="annually">Annually</option>
+                                            <option value="one_time">One Time</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button type="submit" disabled={addingService || !serviceForm.serviceTypeId}>
+                                        {addingService ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                        Add
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </CardHeader>
+                <CardContent>
+                    {servicesLoading ? (
+                        <div className="flex justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Service Type</TableHead>
+                                    <TableHead>Included Visits</TableHead>
+                                    <TableHead>Frequency</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {planServices.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                            No services added to this plan yet.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    planServices.map((ps) => (
+                                        <TableRow key={ps.serviceTypeId}>
+                                            <TableCell className="font-medium">{getServiceTypeName(ps.serviceTypeId)}</TableCell>
+                                            <TableCell>{ps.includedVisits ?? '-'}</TableCell>
+                                            <TableCell>{ps.frequency ? ps.frequency.replace('_', ' ') : '-'}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleDeleteService(ps.serviceTypeId)}
+                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
 

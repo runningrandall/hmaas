@@ -34,6 +34,10 @@ describe('ServiceTypeService', () => {
             const request = {
                 name: 'Lawn Care',
                 description: 'Regular lawn maintenance',
+                basePrice: 4999,
+                unit: 'per_visit' as const,
+                estimatedDuration: 60,
+                frequency: 'monthly' as const,
             };
 
             const created = {
@@ -59,6 +63,10 @@ describe('ServiceTypeService', () => {
             const request = {
                 name: 'Pest Control',
                 description: 'Pest elimination services',
+                basePrice: 7500,
+                unit: 'per_visit' as const,
+                estimatedDuration: 45,
+                frequency: 'quarterly' as const,
             };
 
             mockRepo.create.mockImplementation(async (st: any) => st);

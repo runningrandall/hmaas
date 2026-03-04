@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Wrench, Plus, Loader2, Trash2, Pencil } from 'lucide-react';
-import { serviceTypesApi, ServiceType, CreateServiceTypeData } from '@/lib/api/service-types';
+import { serviceTypesApi, ServiceType, CreateServiceTypeData, ServiceUnit, ServiceFrequency } from '@/lib/api/service-types';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,8 +29,9 @@ export default function ServicesPage() {
     const [error, setError] = useState('');
     const [creating, setCreating] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [form, setForm] = useState<CreateServiceTypeData>({
+    const [form, setForm] = useState<CreateServiceTypeData & { basePriceDollars: string }>({
         name: '',
+        basePriceDollars: '',
     });
 
     useEffect(() => {
@@ -60,8 +61,13 @@ export default function ServicesPage() {
 
         setCreating(true);
         try {
-            await serviceTypesApi.create(form);
-            setForm({ name: '' });
+            const { basePriceDollars, ...rest } = form;
+            const createData: CreateServiceTypeData = {
+                ...rest,
+                ...(basePriceDollars ? { basePrice: Math.round(parseFloat(basePriceDollars) * 100) } : {}),
+            };
+            await serviceTypesApi.create(createData);
+            setForm({ name: '', basePriceDollars: '' });
             setDialogOpen(false);
             await loadServiceTypes();
         } catch {
@@ -127,6 +133,64 @@ export default function ServicesPage() {
                                         rows={2}
                                     />
                                 </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="basePrice">Base Price ($)</Label>
+                                        <Input
+                                            id="basePrice"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={form.basePriceDollars}
+                                            onChange={(e) => setForm({ ...form, basePriceDollars: e.target.value })}
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="unit">Unit</Label>
+                                        <select
+                                            id="unit"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                            value={form.unit || ''}
+                                            onChange={(e) => setForm({ ...form, unit: (e.target.value || undefined) as ServiceUnit | undefined })}
+                                        >
+                                            <option value="">Select unit</option>
+                                            <option value="per_visit">Per Visit</option>
+                                            <option value="per_hour">Per Hour</option>
+                                            <option value="per_sqft">Per Sq Ft</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="estimatedDuration">Est. Duration (min)</Label>
+                                        <Input
+                                            id="estimatedDuration"
+                                            type="number"
+                                            min="1"
+                                            value={form.estimatedDuration || ''}
+                                            onChange={(e) => setForm({ ...form, estimatedDuration: e.target.value ? parseInt(e.target.value) : undefined })}
+                                            placeholder="60"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="frequency">Frequency</Label>
+                                        <select
+                                            id="frequency"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                            value={form.frequency || ''}
+                                            onChange={(e) => setForm({ ...form, frequency: (e.target.value || undefined) as ServiceFrequency | undefined })}
+                                        >
+                                            <option value="">Select frequency</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="biweekly">Biweekly</option>
+                                            <option value="monthly">Monthly</option>
+                                            <option value="quarterly">Quarterly</option>
+                                            <option value="annually">Annually</option>
+                                            <option value="one_time">One Time</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                             <DialogFooter>
                                 <Button type="submit" disabled={creating || !form.name.trim()}>
@@ -173,13 +237,16 @@ export default function ServicesPage() {
                                 <TableRow>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Description</TableHead>
+                                    <TableHead>Base Price</TableHead>
+                                    <TableHead>Duration</TableHead>
+                                    <TableHead>Frequency</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {serviceTypes.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                             No service types found. Create one to get started.
                                         </TableCell>
                                     </TableRow>
@@ -188,6 +255,9 @@ export default function ServicesPage() {
                                         <TableRow key={st.serviceTypeId}>
                                             <TableCell className="font-medium">{st.name}</TableCell>
                                             <TableCell className="max-w-xs truncate">{st.description || '-'}</TableCell>
+                                            <TableCell>{st.basePrice != null ? `$${(st.basePrice / 100).toFixed(2)}` : '-'}</TableCell>
+                                            <TableCell>{st.estimatedDuration ? `${st.estimatedDuration} min` : '-'}</TableCell>
+                                            <TableCell>{st.frequency ? st.frequency.replace('_', ' ') : '-'}</TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-1">
                                                     <Button
