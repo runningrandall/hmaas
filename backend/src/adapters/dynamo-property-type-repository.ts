@@ -9,6 +9,7 @@ const DynamoPropertyTypeSchema = z.object({
     propertyTypeId: z.string(),
     name: z.string(),
     description: z.string().optional().nullable(),
+    status: z.string().optional().nullable().transform(v => v ?? "active"),
     createdAt: z.union([z.string(), z.number()]).transform(v => String(v)),
     updatedAt: z.union([z.string(), z.number()]).optional().transform(v => v != null ? String(v) : undefined),
 }).passthrough();

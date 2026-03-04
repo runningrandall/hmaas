@@ -42,6 +42,10 @@ const mockServiceType = {
     serviceTypeId: 'st-123',
     name: 'Lawn Care',
     description: 'Regular lawn mowing',
+    basePrice: 4999,
+    unit: 'per_visit' as const,
+    estimatedDuration: 60,
+    frequency: 'monthly' as const,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-02T00:00:00Z',
 };
@@ -51,7 +55,7 @@ describe('ServiceTypeDetailPage', () => {
         vi.clearAllMocks();
     });
 
-    it('should render service type details', async () => {
+    it('should render service type details with enriched fields', async () => {
         mockGet.mockResolvedValue(mockServiceType);
 
         render(<ServiceTypeDetailPage />);
@@ -60,6 +64,8 @@ describe('ServiceTypeDetailPage', () => {
             expect(screen.getByText('Lawn Care')).toBeInTheDocument();
         });
         expect(screen.getByText('Service Type ID: st-123')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('49.99')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('60')).toBeInTheDocument();
     });
 
     it('should show loading state initially', () => {

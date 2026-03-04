@@ -19,6 +19,7 @@ export class PropertyTypeService {
             propertyTypeId: randomUUID(),
             name: request.name,
             description: request.description,
+            status: request.status || "active",
             createdAt: new Date().toISOString(),
         };
 

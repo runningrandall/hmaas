@@ -18,13 +18,14 @@ describe('PropertiesPage', () => {
         vi.clearAllMocks();
     });
 
-    it('should render property type list', async () => {
+    it('should render property type list with status column', async () => {
         const mockPropertyTypes = [
             {
                 organizationId: 'GLOBAL',
                 propertyTypeId: 'pt-1',
                 name: 'Residential',
                 description: 'Single-family residential properties',
+                status: 'active' as const,
                 createdAt: '2024-01-01T00:00:00Z',
             },
         ];
@@ -39,6 +40,7 @@ describe('PropertiesPage', () => {
         await waitFor(() => {
             expect(screen.getByText('Residential')).toBeInTheDocument();
         });
+        expect(screen.getByText('active')).toBeInTheDocument();
     });
 
     it('should render stat card with count', async () => {

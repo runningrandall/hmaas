@@ -37,6 +37,30 @@ vi.mock('../../../../../lib/api/plans', () => ({
     },
 }));
 
+const mockPlanServicesList = vi.fn();
+const mockPlanServicesCreate = vi.fn();
+const mockPlanServicesDelete = vi.fn();
+
+vi.mock('../../../../../lib/api/plan-services', () => ({
+    planServicesApi: {
+        list: (...args: unknown[]) => mockPlanServicesList(...args),
+        create: (...args: unknown[]) => mockPlanServicesCreate(...args),
+        delete: (...args: unknown[]) => mockPlanServicesDelete(...args),
+    },
+}));
+
+const mockServiceTypesList = vi.fn();
+
+vi.mock('../../../../../lib/api/service-types', () => ({
+    serviceTypesApi: {
+        list: (...args: unknown[]) => mockServiceTypesList(...args),
+        get: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+    },
+}));
+
 const mockPlan = {
     organizationId: 'org-1',
     planId: 'plan-123',
@@ -49,9 +73,20 @@ const mockPlan = {
     updatedAt: '2024-01-02T00:00:00Z',
 };
 
+const mockServiceTypes = [
+    { organizationId: 'GLOBAL', serviceTypeId: 'st-1', name: 'Lawn Care', createdAt: '2024-01-01T00:00:00Z' },
+    { organizationId: 'GLOBAL', serviceTypeId: 'st-2', name: 'Pest Control', createdAt: '2024-01-01T00:00:00Z' },
+];
+
+const mockPlanServices = [
+    { planId: 'plan-123', serviceTypeId: 'st-1', includedVisits: 12, frequency: 'monthly', createdAt: '2024-01-01T00:00:00Z' },
+];
+
 describe('PlanDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockPlanServicesList.mockResolvedValue({ items: mockPlanServices });
+        mockServiceTypesList.mockResolvedValue({ items: mockServiceTypes });
     });
 
     it('should render plan details', async () => {
@@ -276,6 +311,118 @@ describe('PlanDetailPage', () => {
                 monthlyPrice: 4999,
                 annualPrice: 49999,
             }));
+        });
+    });
+
+    // Bundled Services tests
+    it('should render Bundled Services card with plan services', async () => {
+        mockGet.mockResolvedValue(mockPlan);
+
+        render(<PlanDetailPage />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Bundled Services')).toBeInTheDocument();
+        });
+        await waitFor(() => {
+            expect(screen.getByText('Lawn Care')).toBeInTheDocument();
+        });
+        expect(screen.getByText('12')).toBeInTheDocument();
+        expect(screen.getByText('monthly')).toBeInTheDocument();
+    });
+
+    it('should show Add Service button', async () => {
+        mockGet.mockResolvedValue(mockPlan);
+
+        render(<PlanDetailPage />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Add Service')).toBeInTheDocument();
+        });
+    });
+
+    it('should show empty state when no plan services', async () => {
+        mockGet.mockResolvedValue(mockPlan);
+        mockPlanServicesList.mockResolvedValue({ items: [] });
+
+        render(<PlanDetailPage />);
+
+        await waitFor(() => {
+            expect(screen.getByText('No services added to this plan yet.')).toBeInTheDocument();
+        });
+    });
+
+    it('should open add service dialog and show available service types', async () => {
+        mockGet.mockResolvedValue(mockPlan);
+
+        render(<PlanDetailPage />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Bundled Services')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Add Service'));
+
+        await waitFor(() => {
+            expect(screen.getByText('Add Service to Plan')).toBeInTheDocument();
+        });
+        // st-1 (Lawn Care) is already added, only st-2 (Pest Control) should appear
+        expect(screen.getByText('Pest Control')).toBeInTheDocument();
+    });
+
+    it('should add a service to the plan', async () => {
+        mockGet.mockResolvedValue(mockPlan);
+        const newPlanService = { planId: 'plan-123', serviceTypeId: 'st-2', includedVisits: 4, frequency: 'quarterly', createdAt: '2024-01-03T00:00:00Z' };
+        mockPlanServicesCreate.mockResolvedValue(newPlanService);
+
+        render(<PlanDetailPage />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Bundled Services')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Add Service'));
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Service Type')).toBeInTheDocument();
+        });
+
+        fireEvent.change(screen.getByLabelText('Service Type'), { target: { value: 'st-2' } });
+        fireEvent.change(screen.getByLabelText('Included Visits'), { target: { value: '4' } });
+        fireEvent.change(screen.getByLabelText('Frequency'), { target: { value: 'quarterly' } });
+
+        fireEvent.click(screen.getByText('Add'));
+
+        await waitFor(() => {
+            expect(mockPlanServicesCreate).toHaveBeenCalledWith('plan-123', {
+                serviceTypeId: 'st-2',
+                includedVisits: 4,
+                frequency: 'quarterly',
+            });
+        });
+    });
+
+    it('should delete a service from the plan', async () => {
+        mockGet.mockResolvedValue(mockPlan);
+        mockPlanServicesDelete.mockResolvedValue(undefined);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+        render(<PlanDetailPage />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Lawn Care')).toBeInTheDocument();
+        });
+
+        // Click the delete button (trash icon) in the plan services table
+        const deleteButtons = document.querySelectorAll('.text-destructive');
+        const planServiceDeleteBtn = Array.from(deleteButtons).find(btn =>
+            btn.closest('tr')?.textContent?.includes('Lawn Care')
+        );
+        if (planServiceDeleteBtn) {
+            fireEvent.click(planServiceDeleteBtn);
+        }
+
+        await waitFor(() => {
+            expect(mockPlanServicesDelete).toHaveBeenCalledWith('plan-123', 'st-1');
         });
     });
 });

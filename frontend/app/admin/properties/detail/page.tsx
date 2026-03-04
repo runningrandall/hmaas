@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Building2, Loader2, Save } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { propertyTypesApi, PropertyType, UpdatePropertyTypeData } from '@/lib/api/property-types';
+import { propertyTypesApi, PropertyType, UpdatePropertyTypeData, PropertyTypeStatus } from '@/lib/api/property-types';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,7 @@ export default function PropertyTypeDetailPage() {
             setForm({
                 name: data.name,
                 description: data.description || '',
+                status: data.status || 'active',
             });
             setError('');
         } catch {
@@ -101,10 +103,15 @@ export default function PropertyTypeDetailPage() {
                 <Link href="/admin/properties" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
                     <ArrowLeft className="h-4 w-4" /> Back to Property Types
                 </Link>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Building2 className="h-6 w-6" />
-                    {propertyType.name}
-                </h1>
+                <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Building2 className="h-6 w-6" />
+                        {propertyType.name}
+                    </h1>
+                    <Badge variant={propertyType.status === 'active' ? 'default' : 'secondary'}>
+                        {propertyType.status || 'active'}
+                    </Badge>
+                </div>
                 <p className="text-muted-foreground">Property Type ID: {propertyType.propertyTypeId}</p>
             </div>
 
@@ -151,6 +158,19 @@ export default function PropertyTypeDetailPage() {
                                     rows={3}
                                 />
                             </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="status">Status</Label>
+                                <select
+                                    id="status"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    value={form.status || 'active'}
+                                    onChange={(e) => setForm({ ...form, status: e.target.value as PropertyTypeStatus })}
+                                    disabled={!editing}
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
                             {editing && (
                                 <div className="flex gap-2">
                                     <Button type="submit" disabled={saving}>
@@ -162,6 +182,7 @@ export default function PropertyTypeDetailPage() {
                                         setForm({
                                             name: propertyType.name,
                                             description: propertyType.description || '',
+                                            status: propertyType.status || 'active',
                                         });
                                     }}>
                                         Cancel

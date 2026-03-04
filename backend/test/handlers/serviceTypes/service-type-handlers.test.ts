@@ -56,12 +56,20 @@ describe('Service Type Handlers', () => {
                 serviceTypeId: 'st-123',
                 name: 'Lawn Care',
                 description: 'Regular lawn mowing and edging',
+                basePrice: 4999,
+                unit: 'per_visit',
+                estimatedDuration: 60,
+                frequency: 'monthly',
             };
             mockCreateServiceType.mockResolvedValue(mockServiceType);
 
             const event = makeCreateEvent({
                 name: 'Lawn Care',
                 description: 'Regular lawn mowing and edging',
+                basePrice: 4999,
+                unit: 'per_visit',
+                estimatedDuration: 60,
+                frequency: 'monthly',
             });
             const result = await handler(event, mockContext);
 

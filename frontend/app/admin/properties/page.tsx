@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, Plus, Loader2, Trash2, Pencil } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { propertyTypesApi, PropertyType, CreatePropertyTypeData } from '@/lib/api/property-types';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
 import { Button } from '@/components/ui/button';
@@ -173,13 +174,14 @@ export default function PropertiesPage() {
                                 <TableRow>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Description</TableHead>
+                                    <TableHead>Status</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {propertyTypes.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                                             No property types found. Create one to get started.
                                         </TableCell>
                                     </TableRow>
@@ -188,6 +190,11 @@ export default function PropertiesPage() {
                                         <TableRow key={pt.propertyTypeId}>
                                             <TableCell className="font-medium">{pt.name}</TableCell>
                                             <TableCell className="max-w-xs truncate">{pt.description || '-'}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={pt.status === 'active' ? 'default' : 'secondary'}>
+                                                    {pt.status || 'active'}
+                                                </Badge>
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-1">
                                                     <Button

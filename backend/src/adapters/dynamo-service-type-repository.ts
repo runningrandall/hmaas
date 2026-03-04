@@ -10,6 +10,10 @@ const DynamoServiceTypeSchema = z.object({
     name: z.string(),
     description: z.string().optional().nullable(),
     category: z.string().optional().nullable(),
+    basePrice: z.number().optional().nullable(),
+    unit: z.string().optional().nullable(),
+    estimatedDuration: z.number().optional().nullable(),
+    frequency: z.string().optional().nullable(),
     createdAt: z.union([z.string(), z.number()]).transform(v => String(v)),
     updatedAt: z.union([z.string(), z.number()]).optional().transform(v => v != null ? String(v) : undefined),
 }).passthrough();

@@ -18,13 +18,17 @@ describe('ServicesPage', () => {
         vi.clearAllMocks();
     });
 
-    it('should render service type list', async () => {
+    it('should render service type list with new columns', async () => {
         const mockServiceTypes = [
             {
                 organizationId: 'GLOBAL',
                 serviceTypeId: 'st-1',
                 name: 'Lawn Care',
                 description: 'Regular lawn mowing and edging',
+                basePrice: 4999,
+                unit: 'per_visit' as const,
+                estimatedDuration: 60,
+                frequency: 'monthly' as const,
                 createdAt: '2024-01-01T00:00:00Z',
             },
         ];
@@ -40,6 +44,9 @@ describe('ServicesPage', () => {
             expect(screen.getByText('Lawn Care')).toBeInTheDocument();
         });
         expect(screen.getByText('Regular lawn mowing and edging')).toBeInTheDocument();
+        expect(screen.getByText('$49.99')).toBeInTheDocument();
+        expect(screen.getByText('60 min')).toBeInTheDocument();
+        expect(screen.getByText('monthly')).toBeInTheDocument();
     });
 
     it('should render stat card with count', async () => {
@@ -80,7 +87,7 @@ describe('ServicesPage', () => {
         });
     });
 
-    it('should show create dialog with Name and Description fields', async () => {
+    it('should show create dialog with all fields', async () => {
         vi.spyOn(serviceTypesApi, 'list').mockResolvedValue({ items: [] });
 
         render(<ServicesPage />);
@@ -91,5 +98,9 @@ describe('ServicesPage', () => {
             expect(screen.getByLabelText('Name')).toBeInTheDocument();
         });
         expect(screen.getByLabelText('Description')).toBeInTheDocument();
+        expect(screen.getByLabelText('Base Price ($)')).toBeInTheDocument();
+        expect(screen.getByLabelText('Unit')).toBeInTheDocument();
+        expect(screen.getByLabelText('Est. Duration (min)')).toBeInTheDocument();
+        expect(screen.getByLabelText('Frequency')).toBeInTheDocument();
     });
 });

@@ -15,6 +15,7 @@ export const PropertyTypeEntity = new Entity(
             propertyTypeId: { type: "string", required: true },
             name: { type: "string", required: true },
             description: { type: "string" },
+            status: { type: ["active", "inactive"] as const, required: true, default: "active" },
             createdAt: { type: "number", default: () => Date.now(), readOnly: true },
             updatedAt: { type: "number", watch: "*", set: () => Date.now(), readOnly: true },
         },
