@@ -43,6 +43,7 @@ describe('PropertyService', () => {
                 lat: 39.78,
                 lng: -89.65,
                 lotSize: 5000,
+                measurements: { lawnSqft: 5000, gutterLinearFeet: 150 },
                 notes: 'Corner lot',
             };
 

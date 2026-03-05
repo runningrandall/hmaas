@@ -38,6 +38,7 @@ const mockProperty = {
     lat: 39.7817,
     lng: -89.6501,
     lotSize: 5000,
+    measurements: { lawnSqft: 5000, gutterLinearFeet: 150 },
     notes: null,
     status: 'active' as const,
     createdAt: '2024-01-01T00:00:00.000Z',
@@ -61,6 +62,7 @@ describe('DynamoPropertyRepository', () => {
 
             expect(result.propertyId).toBe('prop-1');
             expect(result.name).toBe('My Home');
+            expect(result.measurements).toEqual({ lawnSqft: 5000, gutterLinearFeet: 150 });
         });
 
         it('should throw Data integrity error when create returns invalid data', async () => {

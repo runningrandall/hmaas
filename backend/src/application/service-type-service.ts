@@ -25,6 +25,10 @@ export class ServiceTypeService {
             unit: request.unit,
             estimatedDuration: request.estimatedDuration,
             frequency: request.frequency,
+            measurementKey: request.measurementKey,
+            measurementUnit: request.measurementUnit,
+            ratePerUnit: request.ratePerUnit,
+            durationPerUnit: request.durationPerUnit,
             createdAt: new Date().toISOString(),
         };
 

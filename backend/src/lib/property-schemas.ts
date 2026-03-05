@@ -13,6 +13,7 @@ export const CreatePropertySchema = z.object({
     lat: z.number().optional().openapi({ example: 39.7392 }),
     lng: z.number().optional().openapi({ example: -104.9903 }),
     lotSize: z.number().optional().openapi({ example: 5000 }),
+    measurements: z.record(z.string(), z.number()).optional().openapi({ example: { lawnSqft: 5000, gutterLinearFeet: 150 } }),
     notes: z.string().optional().openapi({ example: 'Corner lot with large backyard' }),
 }).openapi('CreateProperty');
 
@@ -28,6 +29,7 @@ export const UpdatePropertySchema = z.object({
     lat: z.number().optional().openapi({ example: 39.7392 }),
     lng: z.number().optional().openapi({ example: -104.9903 }),
     lotSize: z.number().optional().openapi({ example: 5000 }),
+    measurements: z.record(z.string(), z.number()).optional().openapi({ example: { lawnSqft: 5000, gutterLinearFeet: 150 } }),
     notes: z.string().optional().openapi({ example: 'Updated notes' }),
     status: z.enum(["active", "inactive"]).optional().openapi({ example: 'active' }),
 }).openapi('UpdateProperty');

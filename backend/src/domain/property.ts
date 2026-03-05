@@ -13,6 +13,7 @@ export interface Property {
     lat?: number;
     lng?: number;
     lotSize?: number;
+    measurements?: Record<string, number>;
     notes?: string;
     status: PropertyStatus;
     createdAt: string;
@@ -30,6 +31,7 @@ export interface CreatePropertyRequest {
     lat?: number;
     lng?: number;
     lotSize?: number;
+    measurements?: Record<string, number>;
     notes?: string;
 }
 
@@ -43,6 +45,7 @@ export interface UpdatePropertyRequest {
     lat?: number;
     lng?: number;
     lotSize?: number;
+    measurements?: Record<string, number>;
     notes?: string;
     status?: PropertyStatus;
 }

@@ -304,6 +304,12 @@ export class InfraStack extends cdk.Stack {
       { id: 'listPaySchedules', entry: 'paySchedules/list.ts' },
       { id: 'updatePaySchedule', entry: 'paySchedules/update.ts' },
       { id: 'deletePaySchedule', entry: 'paySchedules/delete.ts' },
+      { id: 'createEstimate', entry: 'estimates/create.ts' },
+      { id: 'getEstimate', entry: 'estimates/get.ts' },
+      { id: 'listEstimates', entry: 'estimates/list.ts' },
+      { id: 'updateEstimate', entry: 'estimates/update.ts' },
+      { id: 'deleteEstimate', entry: 'estimates/delete.ts' },
+      { id: 'convertEstimateToInvoice', entry: 'estimates/convertToInvoice.ts' },
     ];
 
     const organizationLambdas: LambdaDefinition[] = [
@@ -543,6 +549,17 @@ export class InfraStack extends cdk.Stack {
     const invoiceRes = invoices.addResource('{invoiceId}');
     invoiceRes.addMethod('GET', li(billing.functions.getInvoice), opts);
     invoiceRes.addMethod('PUT', li(billing.functions.updateInvoice), opts);
+
+    // Estimates
+    const estimates = api.root.addResource('estimates');
+    estimates.addMethod('GET', li(billing.functions.listEstimates), opts);
+    estimates.addMethod('POST', li(billing.functions.createEstimate), opts);
+    const estimateRes = estimates.addResource('{estimateId}');
+    estimateRes.addMethod('GET', li(billing.functions.getEstimate), opts);
+    estimateRes.addMethod('PUT', li(billing.functions.updateEstimate), opts);
+    estimateRes.addMethod('DELETE', li(billing.functions.deleteEstimate), opts);
+    const estimateInvoice = estimateRes.addResource('invoice');
+    estimateInvoice.addMethod('POST', li(billing.functions.convertEstimateToInvoice), opts);
 
     // Payment Methods (top-level delete)
     const paymentMethods = api.root.addResource('payment-methods');

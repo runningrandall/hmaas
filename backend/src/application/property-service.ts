@@ -29,6 +29,7 @@ export class PropertyService {
             lat: request.lat,
             lng: request.lng,
             lotSize: request.lotSize,
+            measurements: request.measurements,
             notes: request.notes,
             status: "active",
             createdAt: new Date().toISOString(),

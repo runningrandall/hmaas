@@ -15,6 +15,10 @@ const DynamoServiceTypeSchema = z.object({
     unit: z.string().optional().nullable(),
     estimatedDuration: z.number().optional().nullable(),
     frequency: z.string().optional().nullable(),
+    measurementKey: z.string().optional().nullable(),
+    measurementUnit: z.string().optional().nullable(),
+    ratePerUnit: z.number().optional().nullable(),
+    durationPerUnit: z.number().optional().nullable(),
     createdAt: z.union([z.string(), z.number()]).transform(v => String(v)),
     updatedAt: z.union([z.string(), z.number()]).optional().transform(v => v != null ? String(v) : undefined),
 }).passthrough();

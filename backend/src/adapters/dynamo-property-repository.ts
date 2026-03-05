@@ -18,6 +18,7 @@ const DynamoPropertySchema = z.object({
     lat: z.number().optional().nullable(),
     lng: z.number().optional().nullable(),
     lotSize: z.number().optional().nullable(),
+    measurements: z.record(z.string(), z.number()).optional().nullable(),
     notes: z.string().optional().nullable(),
     status: z.enum(["active", "inactive"]),
     createdAt: z.union([z.string(), z.number()]).transform(v => String(v)),

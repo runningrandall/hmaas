@@ -20,6 +20,7 @@ export { ServicerRepository } from "./servicer-repository";
 export { CapabilityRepository } from "./capability-repository";
 export { ServiceScheduleRepository } from "./service-schedule-repository";
 export { InvoiceRepository } from "./invoice-repository";
+export { EstimateRepository } from "./estimate-repository";
 export { PaymentMethodRepository } from "./payment-method-repository";
 export { InvoiceScheduleRepository } from "./invoice-schedule-repository";
 export { PayRepository } from "./pay-repository";

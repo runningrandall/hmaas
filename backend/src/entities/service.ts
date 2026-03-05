@@ -18,6 +18,7 @@ import { ServiceScheduleEntity } from "./service-schedule";
 import { PayEntity } from "./pay";
 import { PayScheduleEntity } from "./pay-schedule";
 import { InvoiceEntity } from "./invoice";
+import { EstimateEntity } from "./estimate";
 import { PaymentMethodEntity } from "./payment-method";
 import { InvoiceScheduleEntity } from "./invoice-schedule";
 import { OrganizationEntity } from "./organization";
@@ -47,6 +48,7 @@ export const DBService = new Service(
         pay: PayEntity,
         paySchedule: PayScheduleEntity,
         invoice: InvoiceEntity,
+        estimate: EstimateEntity,
         paymentMethod: PaymentMethodEntity,
         invoiceSchedule: InvoiceScheduleEntity,
     },
