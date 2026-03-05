@@ -7,7 +7,10 @@ import { FrontendStack } from '../lib/frontend-stack';
 
 test('Infra Stack Created', () => {
     const app = new cdk.App({
-        context: { 'aws:cdk:bundling-stacks': [] },
+        context: {
+            'aws:cdk:bundling-stacks': [],
+            '@aws-cdk/core:stackResourceLimit': 600,
+        },
     });
     const authStack = new AuthStack(app, 'AuthStack', {
         stageName: 'test',
@@ -31,8 +34,8 @@ test('Infra Stack Created', () => {
         Name: 'Versa-Api-test',
     });
 
-    // Verify nested stacks are created (7: lookup, customer, property, plan, workforce, billing, organization)
-    template.resourceCountIs('AWS::CloudFormation::Stack', 7);
+    // Verify nested stacks are created (8: lookup, customer, property, plan, workforce, billing, estimate, organization)
+    template.resourceCountIs('AWS::CloudFormation::Stack', 8);
 });
 
 test('Auth Stack Created', () => {

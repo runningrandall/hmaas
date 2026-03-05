@@ -304,6 +304,9 @@ export class InfraStack extends cdk.Stack {
       { id: 'listPaySchedules', entry: 'paySchedules/list.ts' },
       { id: 'updatePaySchedule', entry: 'paySchedules/update.ts' },
       { id: 'deletePaySchedule', entry: 'paySchedules/delete.ts' },
+    ];
+
+    const estimateLambdas: LambdaDefinition[] = [
       { id: 'createEstimate', entry: 'estimates/create.ts' },
       { id: 'getEstimate', entry: 'estimates/get.ts' },
       { id: 'listEstimates', entry: 'estimates/list.ts' },
@@ -341,6 +344,7 @@ export class InfraStack extends cdk.Stack {
     const plan = new LambdaStack(this, 'PlanLambdas', { ...commonNestedProps, lambdas: planLambdas });
     const workforce = new LambdaStack(this, 'WorkforceLambdas', { ...commonNestedProps, lambdas: workforceLambdas });
     const billing = new LambdaStack(this, 'BillingLambdas', { ...commonNestedProps, lambdas: billingLambdas });
+    const estimate = new LambdaStack(this, 'EstimateLambdas', { ...commonNestedProps, lambdas: estimateLambdas });
     const cognitoListUsersPolicy = new iam.PolicyStatement({
       actions: ['cognito-idp:ListUsersInGroup'],
       resources: [props.auth.userPool.userPoolArn],
@@ -552,14 +556,14 @@ export class InfraStack extends cdk.Stack {
 
     // Estimates
     const estimates = api.root.addResource('estimates');
-    estimates.addMethod('GET', li(billing.functions.listEstimates), opts);
-    estimates.addMethod('POST', li(billing.functions.createEstimate), opts);
+    estimates.addMethod('GET', li(estimate.functions.listEstimates), opts);
+    estimates.addMethod('POST', li(estimate.functions.createEstimate), opts);
     const estimateRes = estimates.addResource('{estimateId}');
-    estimateRes.addMethod('GET', li(billing.functions.getEstimate), opts);
-    estimateRes.addMethod('PUT', li(billing.functions.updateEstimate), opts);
-    estimateRes.addMethod('DELETE', li(billing.functions.deleteEstimate), opts);
+    estimateRes.addMethod('GET', li(estimate.functions.getEstimate), opts);
+    estimateRes.addMethod('PUT', li(estimate.functions.updateEstimate), opts);
+    estimateRes.addMethod('DELETE', li(estimate.functions.deleteEstimate), opts);
     const estimateInvoice = estimateRes.addResource('invoice');
-    estimateInvoice.addMethod('POST', li(billing.functions.convertEstimateToInvoice), opts);
+    estimateInvoice.addMethod('POST', li(estimate.functions.convertEstimateToInvoice), opts);
 
     // Payment Methods (top-level delete)
     const paymentMethods = api.root.addResource('payment-methods');
