@@ -369,8 +369,11 @@ export class InfraStack extends cdk.Stack {
     });
 
     // ─── 10. Manual Deployment & Stage ───
+    // Scope Stage under the RestApi with the same construct ID that CDK uses
+    // internally (DeploymentStage.{stageName}) so the logical ID matches the
+    // previously deployed stage and CloudFormation treats it as an update.
     const deployment = new apigateway.Deployment(this, 'Deployment', { api });
-    const stage = new apigateway.Stage(this, 'DeployStage', {
+    const stage = new apigateway.Stage(api, `DeploymentStage.${props.stageName}`, {
       deployment,
       stageName: props.stageName,
     });
