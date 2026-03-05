@@ -1,4 +1,5 @@
-import { CostRepository, Cost } from "../domain/cost";
+import { Cost } from "../domain/cost";
+import { CostRepository } from "../ports/cost-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

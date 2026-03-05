@@ -1,4 +1,5 @@
-import { DelegateRepository, Delegate } from "../domain/delegate";
+import { Delegate } from "../domain/delegate";
+import { DelegateRepository } from "../ports/delegate-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

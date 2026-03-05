@@ -1,4 +1,5 @@
-import { PropertyServiceRepository, PropertyService, UpdatePropertyServiceRequest } from "../domain/property-service";
+import { PropertyService, UpdatePropertyServiceRequest } from "../domain/property-service";
+import { PropertyServiceRepository } from "../ports/property-service-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

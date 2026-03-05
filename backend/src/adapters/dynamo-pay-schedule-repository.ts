@@ -1,4 +1,5 @@
-import { PayScheduleRepository, PaySchedule, UpdatePayScheduleRequest } from "../domain/pay-schedule";
+import { PaySchedule, UpdatePayScheduleRequest } from "../domain/pay-schedule";
+import { PayScheduleRepository } from "../ports/pay-schedule-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

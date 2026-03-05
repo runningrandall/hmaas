@@ -1,4 +1,5 @@
-import { EntityCategoryRepository, EntityCategory, EntityType } from "../domain/entity-category";
+import { EntityCategory, EntityType } from "../domain/entity-category";
+import { EntityCategoryRepository } from "../ports/entity-category-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

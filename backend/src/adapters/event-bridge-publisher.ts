@@ -1,4 +1,4 @@
-import { EventPublisher } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { tracer, logger } from "../lib/observability";
 

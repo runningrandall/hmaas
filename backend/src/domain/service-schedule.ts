@@ -1,5 +1,3 @@
-import { PaginationOptions, PaginatedResult } from "./shared";
-
 export type ServiceScheduleStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 
 export interface ServiceSchedule {
@@ -30,11 +28,4 @@ export interface UpdateServiceScheduleRequest {
     estimatedDuration?: number;
     status?: ServiceScheduleStatus;
     completedAt?: string;
-}
-
-export interface ServiceScheduleRepository {
-    create(schedule: ServiceSchedule): Promise<ServiceSchedule>;
-    get(organizationId: string, serviceScheduleId: string): Promise<ServiceSchedule | null>;
-    listByServicerId(organizationId: string, servicerId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceSchedule>>;
-    update(organizationId: string, serviceScheduleId: string, data: UpdateServiceScheduleRequest): Promise<ServiceSchedule>;
 }

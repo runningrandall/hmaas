@@ -1,4 +1,5 @@
-import { AccountRepository, Account, UpdateAccountRequest } from "../domain/account";
+import { Account, UpdateAccountRequest } from "../domain/account";
+import { AccountRepository } from "../ports/account-repository";
 import { DBService } from "../entities/service";
 import { z } from "zod";
 import { logger } from "../lib/observability";

@@ -1,48 +1,50 @@
-import { {{pascalCase name}}, Create{{pascalCase name}}Request, {{pascalCase name}}Repository } from
-"../domain/{{camelCase name}}";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/item";
+import { {{pascalCase name}}, Create{{pascalCase name}}Request } from "../domain/{{camelCase name}}";
+import { {{pascalCase name}}Repository } from "../ports/{{dashCase name}}-repository";
+import { EventPublisher } from "../ports/event-publisher";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { AppError } from "../lib/error";
 
 export class {{pascalCase name}}Service {
-constructor(
-private repository: {{pascalCase name}}Repository,
-private eventPublisher: EventPublisher
-) {}
+    constructor(
+        private repository: {{pascalCase name}}Repository,
+        private eventPublisher: EventPublisher
+    ) {}
 
-async create{{pascalCase name}}(request: Create{{pascalCase name}}Request): Promise<{{pascalCase name}}> {
-    logger.info("Creating {{camelCase name}}", { name: request.name });
+    async create{{pascalCase name}}(organizationId: string, request: Create{{pascalCase name}}Request): Promise<{{pascalCase name}}> {
+        logger.info("Creating {{camelCase name}}", { organizationId, name: request.name });
 
-    const item = {
-    {{camelCase name}}Id: randomUUID(),
-    name: request.name,
-    description: request.description,
-    };
+        const item = {
+            organizationId,
+            {{camelCase name}}Id: randomUUID(),
+            name: request.name,
+            description: request.description,
+        };
 
-    const created = await this.repository.create(item as {{pascalCase name}});
-    metrics.addMetric('{{pascalCase name}}sCreated', MetricUnit.Count, 1);
+        const created = await this.repository.create(item as {{pascalCase name}});
+        metrics.addMetric('{{pascalCase name}}sCreated', MetricUnit.Count, 1);
 
-    await this.eventPublisher.publish("{{pascalCase name}}Created", created);
+        await this.eventPublisher.publish("{{pascalCase name}}Created", created);
 
-    return created;
+        return created;
     }
 
-    async get{{pascalCase name}}({{camelCase name}}Id: string): Promise<{{pascalCase name}}> {
-        const item = await this.repository.get({{camelCase name}}Id);
+    async get{{pascalCase name}}(organizationId: string, {{camelCase name}}Id: string): Promise<{{pascalCase name}}> {
+        const item = await this.repository.get(organizationId, {{camelCase name}}Id);
         if (!item) {
-        throw new AppError("{{pascalCase name}} not found", 404);
+            throw new AppError("{{pascalCase name}} not found", 404);
         }
         return item;
-        }
+    }
 
-        async list{{pascalCase name}}s(options?: PaginationOptions): Promise<PaginatedResult<{{pascalCase name}}>> {
-            return this.repository.list(options);
-            }
+    async list{{pascalCase name}}s(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<{{pascalCase name}}>> {
+        return this.repository.list(organizationId, options);
+    }
 
-            async delete{{pascalCase name}}({{camelCase name}}Id: string): Promise<void> {
-                await this.repository.delete({{camelCase name}}Id);
-                logger.info("{{pascalCase name}} deleted", { {{camelCase name}}Id });
-                }
-                }
+    async delete{{pascalCase name}}(organizationId: string, {{camelCase name}}Id: string): Promise<void> {
+        await this.repository.delete(organizationId, {{camelCase name}}Id);
+        logger.info("{{pascalCase name}} deleted", { organizationId, {{camelCase name}}Id });
+    }
+}

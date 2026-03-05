@@ -1,4 +1,5 @@
-import { ServiceTypeRepository, ServiceType, UpdateServiceTypeRequest } from "../domain/service-type";
+import { ServiceType, UpdateServiceTypeRequest } from "../domain/service-type";
+import { ServiceTypeRepository } from "../ports/service-type-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

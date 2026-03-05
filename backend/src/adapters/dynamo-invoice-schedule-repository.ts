@@ -1,4 +1,5 @@
-import { InvoiceScheduleRepository, InvoiceSchedule, UpdateInvoiceScheduleRequest } from "../domain/invoice-schedule";
+import { InvoiceSchedule, UpdateInvoiceScheduleRequest } from "../domain/invoice-schedule";
+import { InvoiceScheduleRepository } from "../ports/invoice-schedule-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

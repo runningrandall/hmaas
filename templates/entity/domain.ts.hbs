@@ -1,20 +1,15 @@
-import { PaginationOptions, PaginatedResult } from "../domain/item";
+import { PaginationOptions, PaginatedResult } from "./shared";
 
 export interface {{pascalCase name}} {
-{{camelCase name}}Id: string;
-name: string;
-description?: string;
-createdAt: string;
+    organizationId: string;
+    {{camelCase name}}Id: string;
+    name: string;
+    description?: string;
+    createdAt: string;
+    updatedAt?: string;
 }
 
 export interface Create{{pascalCase name}}Request {
-name: string;
-description?: string;
+    name: string;
+    description?: string;
 }
-
-export interface {{pascalCase name}}Repository {
-create(item: {{pascalCase name}}): Promise<{{pascalCase name}}>;
-    get({{camelCase name}}Id: string): Promise<{{pascalCase name}} | null>;
-        list(options?: PaginationOptions): Promise<PaginatedResult<{{pascalCase name}}>>;
-            delete({{camelCase name}}Id: string): Promise<void>;
-                }

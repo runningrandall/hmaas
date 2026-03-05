@@ -1,4 +1,5 @@
-import { PaymentMethodRepository, PaymentMethod } from "../domain/payment-method";
+import { PaymentMethod } from "../domain/payment-method";
+import { PaymentMethodRepository } from "../ports/payment-method-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

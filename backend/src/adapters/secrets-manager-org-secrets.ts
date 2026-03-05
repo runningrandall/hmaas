@@ -5,7 +5,7 @@ import {
     PutSecretValueCommand,
     ResourceNotFoundException,
 } from "@aws-sdk/client-secrets-manager";
-import { OrganizationSecretsManager } from "../domain/organization";
+import { OrganizationSecretsManager } from "../ports/organization-secrets";
 import { tracer, logger } from "../lib/observability";
 
 export class SecretsManagerOrgSecrets implements OrganizationSecretsManager {

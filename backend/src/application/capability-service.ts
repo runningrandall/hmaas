@@ -1,5 +1,7 @@
-import { Capability, CreateCapabilityRequest, CapabilityRepository } from "../domain/capability";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { Capability, CreateCapabilityRequest } from "../domain/capability";
+import { CapabilityRepository } from "../ports/capability-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

@@ -1,4 +1,5 @@
-import { CustomerRepository, Customer, UpdateCustomerRequest } from "../domain/customer";
+import { Customer, UpdateCustomerRequest } from "../domain/customer";
+import { CustomerRepository } from "../ports/customer-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

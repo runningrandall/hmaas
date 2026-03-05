@@ -1,5 +1,3 @@
-import { PaginationOptions, PaginatedResult } from "./shared";
-
 export type PropertyStatus = "active" | "inactive";
 
 export interface Property {
@@ -47,12 +45,4 @@ export interface UpdatePropertyRequest {
     lotSize?: number;
     notes?: string;
     status?: PropertyStatus;
-}
-
-export interface PropertyRepository {
-    create(property: Property): Promise<Property>;
-    get(organizationId: string, propertyId: string): Promise<Property | null>;
-    listByCustomerId(organizationId: string, customerId: string, options?: PaginationOptions): Promise<PaginatedResult<Property>>;
-    update(organizationId: string, propertyId: string, data: UpdatePropertyRequest): Promise<Property>;
-    delete(organizationId: string, propertyId: string): Promise<void>;
 }

@@ -1,5 +1,7 @@
-import { Delegate, CreateDelegateRequest, DelegateRepository } from "../domain/delegate";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { Delegate, CreateDelegateRequest } from "../domain/delegate";
+import { DelegateRepository } from "../ports/delegate-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

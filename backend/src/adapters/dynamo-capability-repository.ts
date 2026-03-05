@@ -1,4 +1,5 @@
-import { CapabilityRepository, Capability } from "../domain/capability";
+import { Capability } from "../domain/capability";
+import { CapabilityRepository } from "../ports/capability-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

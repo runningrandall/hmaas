@@ -1,5 +1,7 @@
-import { Employee, CreateEmployeeRequest, UpdateEmployeeRequest, EmployeeRepository } from "../domain/employee";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { Employee, CreateEmployeeRequest, UpdateEmployeeRequest } from "../domain/employee";
+import { EmployeeRepository } from "../ports/employee-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

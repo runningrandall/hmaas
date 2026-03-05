@@ -63,7 +63,8 @@ Each entity follows the hexagonal (ports & adapters) pattern:
 ```
 handlers/          → Thin HTTP layer (Lambda entry points, Middy middleware)
 application/       → Business logic services (orchestrate domain + ports)
-domain/            → Interfaces, types, contracts (ports)
+domain/            → Entity interfaces, types, DTOs, contracts
+ports/             → Port interfaces (repository contracts, EventPublisher, etc.)
 adapters/          → Implementations (DynamoDB repositories, EventBridge publisher)
 entities/          → ElectroDB entity definitions (DynamoDB schema)
 lib/               → Shared utilities (middleware, error handling, observability, Zod schemas)

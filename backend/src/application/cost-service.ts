@@ -1,5 +1,7 @@
-import { Cost, CreateCostRequest, CostRepository } from "../domain/cost";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { Cost, CreateCostRequest } from "../domain/cost";
+import { CostRepository } from "../ports/cost-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

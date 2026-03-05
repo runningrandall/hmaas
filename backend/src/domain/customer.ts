@@ -1,5 +1,3 @@
-import { PaginationOptions, PaginatedResult } from "./shared";
-
 export type CustomerStatus = "active" | "inactive" | "suspended";
 
 export interface Customer {
@@ -30,12 +28,4 @@ export interface UpdateCustomerRequest {
     phone?: string;
     status?: CustomerStatus;
     notes?: string;
-}
-
-export interface CustomerRepository {
-    create(customer: Customer): Promise<Customer>;
-    get(organizationId: string, customerId: string): Promise<Customer | null>;
-    list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Customer>>;
-    update(organizationId: string, customerId: string, data: UpdateCustomerRequest): Promise<Customer>;
-    delete(organizationId: string, customerId: string): Promise<void>;
 }

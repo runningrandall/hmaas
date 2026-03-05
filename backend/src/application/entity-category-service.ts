@@ -1,5 +1,7 @@
-import { EntityCategory, CreateEntityCategoryRequest, EntityCategoryRepository, EntityType } from "../domain/entity-category";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EntityCategory, CreateEntityCategoryRequest, EntityType } from "../domain/entity-category";
+import { EntityCategoryRepository } from "../ports/entity-category-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 

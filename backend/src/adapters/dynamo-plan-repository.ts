@@ -1,4 +1,5 @@
-import { PlanRepository, Plan, UpdatePlanRequest } from "../domain/plan";
+import { Plan, UpdatePlanRequest } from "../domain/plan";
+import { PlanRepository } from "../ports/plan-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

@@ -1,4 +1,5 @@
-import { ServicerRepository, Servicer, UpdateServicerRequest } from "../domain/servicer";
+import { Servicer, UpdateServicerRequest } from "../domain/servicer";
+import { ServicerRepository } from "../ports/servicer-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

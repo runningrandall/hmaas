@@ -1,5 +1,6 @@
-import { {{pascalCase name}}Repository, {{pascalCase name}} } from "../domain/{{camelCase name}}";
-import { PaginationOptions, PaginatedResult } from "../domain/item";
+import { {{pascalCase name}} } from "../domain/{{camelCase name}}";
+import { {{pascalCase name}}Repository } from "../ports/{{dashCase name}}-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";
 import { logger } from "../lib/observability";
@@ -9,55 +10,58 @@ import { logger } from "../lib/observability";
 * Catches data corruption or schema drift at the adapter boundary.
 */
 const Dynamo{{pascalCase name}}Schema = z.object({
-{{camelCase name}}Id: z.string(),
-name: z.string(),
-description: z.string().optional().nullable(),
-createdAt: z.union([z.string(), z.number()]).transform(v => String(v)),
-updatedAt: z.union([z.string(), z.number()]).optional().transform(v => v != null ? String(v) : undefined),
+    organizationId: z.string(),
+    {{camelCase name}}Id: z.string(),
+    name: z.string(),
+    description: z.string().optional().nullable(),
+    createdAt: z.union([z.string(), z.number()]).transform(v => String(v)),
+    updatedAt: z.union([z.string(), z.number()]).optional().transform(v => v != null ? String(v) : undefined),
 }).passthrough();
 
 function parse{{pascalCase name}}(data: unknown): {{pascalCase name}} {
-const result = Dynamo{{pascalCase name}}Schema.safeParse(data);
-if (!result.success) {
-logger.error("Data validation failed reading from DynamoDB", {
-errors: result.error.issues,
-data,
-});
-throw new Error(`Data integrity error: ${result.error.message}`);
-}
-return result.data as {{pascalCase name}};
+    const result = Dynamo{{pascalCase name}}Schema.safeParse(data);
+    if (!result.success) {
+        logger.error("Data validation failed reading from DynamoDB", {
+            errors: result.error.issues,
+            data,
+        });
+        throw new Error(`Data integrity error: ${result.error.message}`);
+    }
+    return result.data as {{pascalCase name}};
 }
 
 const DEFAULT_PAGE_SIZE = 20;
 
 export class Dynamo{{pascalCase name}}Repository implements {{pascalCase name}}Repository {
-async create(item: {{pascalCase name}}): Promise<{{pascalCase name}}> {
-    const { createdAt, ...data } = item;
-    const result = await DBService.entities.{{camelCase name}}.create(data).go();
-    return parse{{pascalCase name}}(result.data);
+    async create(item: {{pascalCase name}}): Promise<{{pascalCase name}}> {
+        const { createdAt, ...data } = item;
+        const result = await DBService.entities.{{camelCase name}}.create(data).go();
+        return parse{{pascalCase name}}(result.data);
     }
 
-    async get({{camelCase name}}Id: string): Promise<{{pascalCase name}} | null> {
-        const result = await DBService.entities.{{camelCase name}}.get({ {{camelCase name}}Id }).go();
+    async get(organizationId: string, {{camelCase name}}Id: string): Promise<{{pascalCase name}} | null> {
+        const result = await DBService.entities.{{camelCase name}}.get({ organizationId, {{camelCase name}}Id }).go();
         if (!result.data) return null;
         return parse{{pascalCase name}}(result.data);
-        }
+    }
 
-        async list(options?: PaginationOptions): Promise<PaginatedResult<{{pascalCase name}}>> {
-            const limit = options?.limit || DEFAULT_PAGE_SIZE;
+    async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<{{pascalCase name}}>> {
+        const limit = options?.limit || DEFAULT_PAGE_SIZE;
 
-            const result = await DBService.entities.{{camelCase name}}.scan.go({
-            limit,
-            ...(options?.cursor && { cursor: options.cursor }),
+        const result = await DBService.entities.{{camelCase name}}
+            .query.by{{pascalCase name}}Id({ organizationId })
+            .go({
+                limit,
+                ...(options?.cursor && { cursor: options.cursor }),
             });
 
-            return {
+        return {
             items: result.data.map(parse{{pascalCase name}}),
             cursor: result.cursor ?? null,
-            };
-            }
+        };
+    }
 
-            async delete({{camelCase name}}Id: string): Promise<void> {
-                await DBService.entities.{{camelCase name}}.delete({ {{camelCase name}}Id }).go();
-                }
-                }
+    async delete(organizationId: string, {{camelCase name}}Id: string): Promise<void> {
+        await DBService.entities.{{camelCase name}}.delete({ organizationId, {{camelCase name}}Id }).go();
+    }
+}

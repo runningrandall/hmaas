@@ -1,5 +1,7 @@
-import { PropertyType, CreatePropertyTypeRequest, UpdatePropertyTypeRequest, PropertyTypeRepository } from "../domain/property-type";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { PropertyType, CreatePropertyTypeRequest, UpdatePropertyTypeRequest } from "../domain/property-type";
+import { PropertyTypeRepository } from "../ports/property-type-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

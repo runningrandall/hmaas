@@ -2,7 +2,8 @@ import {
     CognitoIdentityProviderClient,
     ListUsersInGroupCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
-import { CognitoUser, CognitoUserProvider as ICognitoUserProvider } from "../domain/organization";
+import { CognitoUser } from "../domain/organization";
+import { CognitoUserProvider as ICognitoUserProvider } from "../ports/cognito-user-provider";
 import { tracer, logger } from "../lib/observability";
 
 const ADMIN_GROUPS = ["SuperAdmin", "Admin", "Manager"];

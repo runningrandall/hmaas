@@ -1,5 +1,3 @@
-import { PaginationOptions, PaginatedResult } from "./shared";
-
 export type DelegateStatus = "active" | "inactive";
 
 export interface Delegate {
@@ -19,11 +17,4 @@ export interface CreateDelegateRequest {
     email: string;
     name: string;
     permissions?: string[];
-}
-
-export interface DelegateRepository {
-    create(delegate: Delegate): Promise<Delegate>;
-    get(organizationId: string, delegateId: string): Promise<Delegate | null>;
-    listByAccountId(organizationId: string, accountId: string, options?: PaginationOptions): Promise<PaginatedResult<Delegate>>;
-    delete(organizationId: string, delegateId: string): Promise<void>;
 }

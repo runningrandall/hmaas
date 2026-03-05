@@ -1,4 +1,5 @@
-import { Pay, CreatePayRequest, UpdatePayRequest, PayRepository } from "../domain/pay";
+import { Pay, CreatePayRequest, UpdatePayRequest } from "../domain/pay";
+import { PayRepository } from "../ports/pay-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
