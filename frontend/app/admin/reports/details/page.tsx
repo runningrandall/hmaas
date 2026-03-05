@@ -98,7 +98,7 @@ function ReportDetailsContent() {
                                     <CardTitle className="text-xl text-primary">{report.concernType}</CardTitle>
                                     <CardDescription>Created on {new Date(report.createdAt).toLocaleString()}</CardDescription>
                                 </div>
-                                <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold uppercase">
+                                <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold uppercase">
                                     {report.status}
                                 </div>
                             </div>

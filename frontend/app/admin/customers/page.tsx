@@ -239,7 +239,7 @@ export default function CustomersPage() {
                         <CardTitle className="text-sm font-medium">Active</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{activeCount}</div>
+                        <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{activeCount}</div>
                     </CardContent>
                 </Card>
                 <Card>
