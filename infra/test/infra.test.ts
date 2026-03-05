@@ -34,8 +34,8 @@ test('Infra Stack Created', () => {
         Name: 'Versa-Api-test',
     });
 
-    // Verify nested stacks are created (8: lookup, customer, property, plan, workforce, billing, estimate, organization)
-    template.resourceCountIs('AWS::CloudFormation::Stack', 8);
+    // Verify nested stacks are created (8 lambda + 3 route = 11)
+    template.resourceCountIs('AWS::CloudFormation::Stack', 11);
 });
 
 test('Auth Stack Created', () => {

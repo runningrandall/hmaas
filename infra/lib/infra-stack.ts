@@ -17,6 +17,9 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import { AuthStack } from './auth-stack';
 import { NagSuppressions } from 'cdk-nag';
 import { LambdaStack, LambdaDefinition } from './lambda-stack';
+import { LookupRouteStack } from './routes/lookup-routes';
+import { CoreRouteStack } from './routes/core-routes';
+import { OperationsRouteStack } from './routes/operations-routes';
 
 interface InfraStackProps extends cdk.StackProps {
   auth: AuthStack;
@@ -102,7 +105,7 @@ export class InfraStack extends cdk.Stack {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
       },
-      deployOptions: { stageName: props.stageName },
+      deploy: false,
     });
 
     // ─── 5. WAF Web ACL ───
@@ -131,11 +134,6 @@ export class InfraStack extends cdk.Stack {
           visibilityConfig: { cloudWatchMetricsEnabled: true, metricName: 'AWSManagedKnownBadInputs', sampledRequestsEnabled: true },
         },
       ],
-    });
-
-    new wafv2.CfnWebACLAssociation(this, 'ApiWafAssociation', {
-      resourceArn: api.deploymentStage.stageArn,
-      webAclArn: webAcl.attrArn,
     });
 
     // ─── 6. EventBridge ───
@@ -357,274 +355,47 @@ export class InfraStack extends cdk.Stack {
       additionalEnvironment: { USER_POOL_ID: props.auth.userPool.userPoolId },
     });
 
-    // ─── 9. API Gateway Routes ───
-    const opts = { authorizer };
-    const li = (fn: nodejs.NodejsFunction) => new apigateway.LambdaIntegration(fn);
+    // ─── 9. API Gateway Route Stacks ───
+    const lookupRoutes = new LookupRouteStack(this, 'LookupRoutes', {
+      apiRoot: api.root, authorizer, lookup, plan,
+    });
 
-    // Property Types
-    const propertyTypes = api.root.addResource('property-types');
-    propertyTypes.addMethod('GET', li(lookup.functions.listPropertyTypes), opts);
-    propertyTypes.addMethod('POST', li(lookup.functions.createPropertyType), opts);
-    const propertyTypeRes = propertyTypes.addResource('{propertyTypeId}');
-    propertyTypeRes.addMethod('GET', li(lookup.functions.getPropertyType), opts);
-    propertyTypeRes.addMethod('PUT', li(lookup.functions.updatePropertyType), opts);
-    propertyTypeRes.addMethod('DELETE', li(lookup.functions.deletePropertyType), opts);
+    const coreRoutes = new CoreRouteStack(this, 'CoreRoutes', {
+      apiRoot: api.root, authorizer, customer, property, billing, plan,
+    });
 
-    // Service Types
-    const serviceTypes = api.root.addResource('service-types');
-    serviceTypes.addMethod('GET', li(lookup.functions.listServiceTypes), opts);
-    serviceTypes.addMethod('POST', li(lookup.functions.createServiceType), opts);
-    const serviceTypeRes = serviceTypes.addResource('{serviceTypeId}');
-    serviceTypeRes.addMethod('GET', li(lookup.functions.getServiceType), opts);
-    serviceTypeRes.addMethod('PUT', li(lookup.functions.updateServiceType), opts);
-    serviceTypeRes.addMethod('DELETE', li(lookup.functions.deleteServiceType), opts);
+    const opsRoutes = new OperationsRouteStack(this, 'OperationsRoutes', {
+      apiRoot: api.root, authorizer, workforce, billing, estimate, organization,
+    });
 
-    // Service Type Categories (nested under service types)
-    const serviceTypeCategories = serviceTypeRes.addResource('categories');
-    serviceTypeCategories.addMethod('GET', li(lookup.functions.listServiceTypeCategories), opts);
-    serviceTypeCategories.addMethod('POST', li(lookup.functions.createServiceTypeCategory), opts);
-    const serviceTypeCategoryRes = serviceTypeCategories.addResource('{categoryId}');
-    serviceTypeCategoryRes.addMethod('DELETE', li(lookup.functions.deleteServiceTypeCategory), opts);
+    // ─── 10. Manual Deployment & Stage ───
+    const deployment = new apigateway.Deployment(this, 'Deployment', { api });
+    const stage = new apigateway.Stage(this, 'DeployStage', {
+      deployment,
+      stageName: props.stageName,
+    });
+    new wafv2.CfnWebACLAssociation(this, 'ApiWafAssociation', {
+      resourceArn: stage.stageArn,
+      webAclArn: webAcl.attrArn,
+    });
 
-    // Categories
-    const categories = api.root.addResource('categories');
-    categories.addMethod('GET', li(lookup.functions.listCategories), opts);
-    categories.addMethod('POST', li(lookup.functions.createCategory), opts);
-    const categoryRes = categories.addResource('{categoryId}');
-    categoryRes.addMethod('GET', li(lookup.functions.getCategory), opts);
-    categoryRes.addMethod('PUT', li(lookup.functions.updateCategory), opts);
-    categoryRes.addMethod('DELETE', li(lookup.functions.deleteCategory), opts);
+    // Deployment must wait for all route stacks
+    [lookupRoutes, coreRoutes, opsRoutes].forEach(rs => {
+      if (rs.nestedStackResource) {
+        deployment.node.addDependency(rs);
+      }
+    });
 
-    // Public (unauthenticated) routes
-    const publicRes = api.root.addResource('public');
-    const publicServiceTypes = publicRes.addResource('service-types');
-    publicServiceTypes.addMethod('GET', li(lookup.functions.listPublicServiceTypes));
-    const publicPropertyTypes = publicRes.addResource('property-types');
-    publicPropertyTypes.addMethod('GET', li(lookup.functions.listPublicPropertyTypes));
-    const publicCategories = publicRes.addResource('categories');
-    publicCategories.addMethod('GET', li(lookup.functions.listPublicCategories));
-    const publicPlans = publicRes.addResource('plans');
-    publicPlans.addMethod('GET', li(plan.functions.listPublicPlans));
-
-    // Cost Types
-    const costTypes = api.root.addResource('cost-types');
-    costTypes.addMethod('GET', li(lookup.functions.listCostTypes), opts);
-    costTypes.addMethod('POST', li(lookup.functions.createCostType), opts);
-    const costTypeRes = costTypes.addResource('{costTypeId}');
-    costTypeRes.addMethod('GET', li(lookup.functions.getCostType), opts);
-    costTypeRes.addMethod('PUT', li(lookup.functions.updateCostType), opts);
-    costTypeRes.addMethod('DELETE', li(lookup.functions.deleteCostType), opts);
-
-    // Customers
-    const customers = api.root.addResource('customers');
-    customers.addMethod('GET', li(customer.functions.listCustomers), opts);
-    customers.addMethod('POST', li(customer.functions.createCustomer), opts);
-    const customerRes = customers.addResource('{customerId}');
-    customerRes.addMethod('GET', li(customer.functions.getCustomer), opts);
-    customerRes.addMethod('PUT', li(customer.functions.updateCustomer), opts);
-    customerRes.addMethod('DELETE', li(customer.functions.deleteCustomer), opts);
-    const customerAccount = customerRes.addResource('account');
-    customerAccount.addMethod('GET', li(customer.functions.getCustomerAccount), opts);
-
-    // Customer Properties
-    const customerProperties = customerRes.addResource('properties');
-    customerProperties.addMethod('GET', li(property.functions.listPropertiesByCustomer), opts);
-    customerProperties.addMethod('POST', li(property.functions.createProperty), opts);
-
-    // Customer Payment Methods
-    const customerPaymentMethods = customerRes.addResource('payment-methods');
-    customerPaymentMethods.addMethod('GET', li(billing.functions.listPaymentMethods), opts);
-    customerPaymentMethods.addMethod('POST', li(billing.functions.createPaymentMethod), opts);
-
-    // Customer Invoice Schedules
-    const customerInvoiceSchedules = customerRes.addResource('invoice-schedules');
-    customerInvoiceSchedules.addMethod('GET', li(billing.functions.listInvoiceSchedules), opts);
-    customerInvoiceSchedules.addMethod('POST', li(billing.functions.createInvoiceSchedule), opts);
-
-    // Accounts / Delegates
-    const accounts = api.root.addResource('accounts');
-    const accountRes = accounts.addResource('{accountId}');
-    const accountDelegates = accountRes.addResource('delegates');
-    accountDelegates.addMethod('GET', li(customer.functions.listDelegates), opts);
-    accountDelegates.addMethod('POST', li(customer.functions.createDelegate), opts);
-
-    // Delegates (top-level delete)
-    const delegates = api.root.addResource('delegates');
-    const delegateRes = delegates.addResource('{delegateId}');
-    delegateRes.addMethod('DELETE', li(customer.functions.deleteDelegate), opts);
-
-    // Properties (top-level)
-    const properties = api.root.addResource('properties');
-    const propertyRes = properties.addResource('{propertyId}');
-    propertyRes.addMethod('GET', li(property.functions.getProperty), opts);
-    propertyRes.addMethod('PUT', li(property.functions.updateProperty), opts);
-    propertyRes.addMethod('DELETE', li(property.functions.deleteProperty), opts);
-
-    // Plans
-    const plans = api.root.addResource('plans');
-    plans.addMethod('GET', li(plan.functions.listPlans), opts);
-    plans.addMethod('POST', li(plan.functions.createPlan), opts);
-    const planRes = plans.addResource('{planId}');
-    planRes.addMethod('GET', li(plan.functions.getPlan), opts);
-    planRes.addMethod('PUT', li(plan.functions.updatePlan), opts);
-    planRes.addMethod('DELETE', li(plan.functions.deletePlan), opts);
-
-    // Plan Categories
-    const planCategories = planRes.addResource('categories');
-    planCategories.addMethod('GET', li(plan.functions.listPlanCategories), opts);
-    planCategories.addMethod('POST', li(plan.functions.createPlanCategory), opts);
-    const planCategoryRes = planCategories.addResource('{categoryId}');
-    planCategoryRes.addMethod('DELETE', li(plan.functions.deletePlanCategory), opts);
-
-    // Plan Services
-    const planServices = planRes.addResource('services');
-    planServices.addMethod('GET', li(plan.functions.listPlanServices), opts);
-    planServices.addMethod('POST', li(plan.functions.createPlanService), opts);
-    const planServiceRes = planServices.addResource('{serviceTypeId}');
-    planServiceRes.addMethod('DELETE', li(plan.functions.deletePlanService), opts);
-
-    // Property Services (top-level)
-    const propertyServicesRoot = api.root.addResource('property-services');
-    const propertyServiceItem = propertyServicesRoot.addResource('{serviceId}');
-    propertyServiceItem.addMethod('GET', li(property.functions.getPropertyService), opts);
-    propertyServiceItem.addMethod('PUT', li(property.functions.updatePropertyService), opts);
-    propertyServiceItem.addMethod('DELETE', li(property.functions.deletePropertyService), opts);
-
-    // Property Services by Property
-    const propertyPropertyServices = propertyRes.addResource('services');
-    propertyPropertyServices.addMethod('GET', li(property.functions.listPropertyServices), opts);
-    propertyPropertyServices.addMethod('POST', li(property.functions.createPropertyService), opts);
-
-    // Costs
-    const serviceCosts = propertyServiceItem.addResource('costs');
-    serviceCosts.addMethod('GET', li(property.functions.listCosts), opts);
-    serviceCosts.addMethod('POST', li(property.functions.createCost), opts);
-
-    const costs = api.root.addResource('costs');
-    const costRes = costs.addResource('{costId}');
-    costRes.addMethod('DELETE', li(property.functions.deleteCost), opts);
-
-    // Employees
-    const employees = api.root.addResource('employees');
-    employees.addMethod('GET', li(workforce.functions.listEmployees), opts);
-    employees.addMethod('POST', li(workforce.functions.createEmployee), opts);
-    const employeeRes = employees.addResource('{employeeId}');
-    employeeRes.addMethod('GET', li(workforce.functions.getEmployee), opts);
-    employeeRes.addMethod('PUT', li(workforce.functions.updateEmployee), opts);
-    employeeRes.addMethod('DELETE', li(workforce.functions.deleteEmployee), opts);
-
-    // Employee Servicer
-    const employeeServicer = employeeRes.addResource('servicer');
-    employeeServicer.addMethod('POST', li(workforce.functions.createServicer), opts);
-
-    // Employee Capabilities
-    const employeeCapabilities = employeeRes.addResource('capabilities');
-    employeeCapabilities.addMethod('GET', li(workforce.functions.listCapabilities), opts);
-    employeeCapabilities.addMethod('POST', li(workforce.functions.createCapability), opts);
-
-    // Employee Pay
-    const employeePay = employeeRes.addResource('pay');
-    employeePay.addMethod('GET', li(billing.functions.listPay), opts);
-    employeePay.addMethod('POST', li(billing.functions.createPay), opts);
-
-    // Servicers (top-level)
-    const servicers = api.root.addResource('servicers');
-    const servicerRes = servicers.addResource('{servicerId}');
-    servicerRes.addMethod('GET', li(workforce.functions.getServicer), opts);
-    servicerRes.addMethod('PUT', li(workforce.functions.updateServicer), opts);
-
-    // Capabilities (top-level delete)
-    const capabilities = api.root.addResource('capabilities');
-    const capabilityRes = capabilities.addResource('{capabilityId}');
-    capabilityRes.addMethod('DELETE', li(workforce.functions.deleteCapability), opts);
-
-    // Service Schedules
-    const serviceSchedules = api.root.addResource('service-schedules');
-    serviceSchedules.addMethod('GET', li(workforce.functions.listServiceSchedules), opts);
-    serviceSchedules.addMethod('POST', li(workforce.functions.createServiceSchedule), opts);
-    const serviceScheduleRes = serviceSchedules.addResource('{serviceScheduleId}');
-    serviceScheduleRes.addMethod('GET', li(workforce.functions.getServiceSchedule), opts);
-    serviceScheduleRes.addMethod('PUT', li(workforce.functions.updateServiceSchedule), opts);
-
-    // Invoices
-    const invoices = api.root.addResource('invoices');
-    invoices.addMethod('GET', li(billing.functions.listInvoices), opts);
-    invoices.addMethod('POST', li(billing.functions.createInvoice), opts);
-    const invoiceRes = invoices.addResource('{invoiceId}');
-    invoiceRes.addMethod('GET', li(billing.functions.getInvoice), opts);
-    invoiceRes.addMethod('PUT', li(billing.functions.updateInvoice), opts);
-
-    // Estimates
-    const estimates = api.root.addResource('estimates');
-    estimates.addMethod('GET', li(estimate.functions.listEstimates), opts);
-    estimates.addMethod('POST', li(estimate.functions.createEstimate), opts);
-    const estimateRes = estimates.addResource('{estimateId}');
-    estimateRes.addMethod('GET', li(estimate.functions.getEstimate), opts);
-    estimateRes.addMethod('PUT', li(estimate.functions.updateEstimate), opts);
-    estimateRes.addMethod('DELETE', li(estimate.functions.deleteEstimate), opts);
-    const estimateInvoice = estimateRes.addResource('invoice');
-    estimateInvoice.addMethod('POST', li(estimate.functions.convertEstimateToInvoice), opts);
-
-    // Payment Methods (top-level delete)
-    const paymentMethods = api.root.addResource('payment-methods');
-    const paymentMethodRes = paymentMethods.addResource('{paymentMethodId}');
-    paymentMethodRes.addMethod('DELETE', li(billing.functions.deletePaymentMethod), opts);
-
-    // Invoice Schedules (top-level)
-    const invoiceSchedules = api.root.addResource('invoice-schedules');
-    const invoiceScheduleRes = invoiceSchedules.addResource('{invoiceScheduleId}');
-    invoiceScheduleRes.addMethod('PUT', li(billing.functions.updateInvoiceSchedule), opts);
-    invoiceScheduleRes.addMethod('DELETE', li(billing.functions.deleteInvoiceSchedule), opts);
-
-    // Pay (top-level)
-    const payRoot = api.root.addResource('pay');
-    const payItem = payRoot.addResource('{payId}');
-    payItem.addMethod('PUT', li(billing.functions.updatePay), opts);
-    payItem.addMethod('DELETE', li(billing.functions.deletePay), opts);
-
-    // Pay Schedules
-    const paySchedules = api.root.addResource('pay-schedules');
-    paySchedules.addMethod('GET', li(billing.functions.listPaySchedules), opts);
-    paySchedules.addMethod('POST', li(billing.functions.createPaySchedule), opts);
-    const payScheduleRes = paySchedules.addResource('{payScheduleId}');
-    payScheduleRes.addMethod('GET', li(billing.functions.getPaySchedule), opts);
-    payScheduleRes.addMethod('PUT', li(billing.functions.updatePaySchedule), opts);
-    payScheduleRes.addMethod('DELETE', li(billing.functions.deletePaySchedule), opts);
-
-    // Organizations
-    const organizations = api.root.addResource('organizations');
-    organizations.addMethod('GET', li(organization.functions.listOrganizations), opts);
-    organizations.addMethod('POST', li(organization.functions.createOrganization), opts);
-    const organizationRes = organizations.addResource('{organizationId}');
-    organizationRes.addMethod('GET', li(organization.functions.getOrganization), opts);
-    organizationRes.addMethod('PUT', li(organization.functions.updateOrganization), opts);
-    organizationRes.addMethod('DELETE', li(organization.functions.deleteOrganization), opts);
-
-    // Admin Users
-    const adminUsers = api.root.addResource('admin-users');
-    adminUsers.addMethod('GET', li(organization.functions.listAdminUsers), opts);
-
-    // Organization Config
-    const orgConfig = organizationRes.addResource('config');
-    orgConfig.addMethod('GET', li(organization.functions.getOrgConfig), opts);
-    orgConfig.addMethod('PUT', li(organization.functions.updateOrgConfig), opts);
-
-    // Organization Secrets
-    const orgSecrets = organizationRes.addResource('secrets');
-    orgSecrets.addMethod('GET', li(organization.functions.getOrgSecrets), opts);
-    const orgSecretKey = orgSecrets.addResource('{key}');
-    orgSecretKey.addMethod('PUT', li(organization.functions.setOrgSecret), opts);
-
-    // ─── 10. API Gateway Usage Plan ───
+    // ─── 11. API Gateway Usage Plan ───
     const usagePlan = api.addUsagePlan('UsagePlan', {
       name: `Versa-UsagePlan-${props.stageName}`,
       description: 'Rate limiting usage plan',
       throttle: { rateLimit: 100, burstLimit: 200 },
       quota: { limit: 10000, period: apigateway.Period.DAY },
     });
-    usagePlan.addApiStage({ stage: api.deploymentStage });
+    usagePlan.addApiStage({ stage });
 
-    new cdk.CfnOutput(this, 'ApiUrl', { value: api.url });
+    new cdk.CfnOutput(this, 'ApiUrl', { value: stage.urlForPath('/') });
 
     // ─── 11. CloudWatch Alarms ───
     const api5xxAlarm = new cloudwatch.Alarm(this, 'Api5xxAlarm', {
