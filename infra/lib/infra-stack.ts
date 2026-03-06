@@ -57,7 +57,7 @@ export class InfraStack extends cdk.Stack {
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(30),
       environment: { TABLE_NAME: table.tableName },
-      bundling: { minify: true, sourceMap: true },
+      bundling: { minify: true, sourceMap: true, externalModules: ['@aws-sdk/*'] },
     });
     table.grantWriteData(seedLambda);
 
@@ -153,7 +153,7 @@ export class InfraStack extends cdk.Stack {
         TABLE_NAME: table.tableName,
         EVENT_BUS_NAME: eventBus.eventBusName,
       },
-      bundling: { minify: true, sourceMap: true },
+      bundling: { minify: true, sourceMap: true, externalModules: ['@aws-sdk/*'] },
       tracing: lambda.Tracing.ACTIVE,
       deadLetterQueue: lambdaDLQ,
     });
@@ -177,7 +177,7 @@ export class InfraStack extends cdk.Stack {
         USER_POOL_CLIENT_ID: props.auth.userPoolClient.userPoolClientId,
         POLICY_STORE_ID: props.auth.policyStoreId,
       },
-      bundling: { minify: true, sourceMap: true },
+      bundling: { minify: true, sourceMap: true, externalModules: ['@aws-sdk/*'] },
     });
 
     authLambda.addToRolePolicy(new iam.PolicyStatement({

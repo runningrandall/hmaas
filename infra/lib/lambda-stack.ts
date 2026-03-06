@@ -38,7 +38,7 @@ export class LambdaStack extends cdk.NestedStack {
         EVENT_BUS_NAME: props.eventBus.eventBusName,
         ...props.additionalEnvironment,
       },
-      bundling: { minify: true, sourceMap: true },
+      bundling: { minify: true, sourceMap: true, externalModules: ['@aws-sdk/*'] },
       tracing: lambda.Tracing.ACTIVE,
       deadLetterQueue: props.dlq,
     };
