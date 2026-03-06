@@ -1,3 +1,13 @@
+## [1.4.1](https://github.com/runningrandall/hmaas/compare/v1.4.0...v1.4.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* explicitly set externalModules to bundle [@smithy](https://github.com/smithy) packages ([0bde631](https://github.com/runningrandall/hmaas/commit/0bde631a1357ae0d950cc99994048403342ecb03))
+* restrict CORS to localhost:3000 and *.vproservices.com ([3d80275](https://github.com/runningrandall/hmaas/commit/3d802752c9e349c67dde095589564f13dddfa056))
+* upgrade Pre Token Generation to V2 for access token claims ([72cbaad](https://github.com/runningrandall/hmaas/commit/72cbaadc2559b9b2c5d2c60517755d066f56f261))
+* use wildcard region in authorizer IAM policy for Verified Permissions ([b3e422a](https://github.com/runningrandall/hmaas/commit/b3e422a20c6d8bc1d20ee54e4b0ff775bc467764))
+
 # [1.4.0](https://github.com/runningrandall/hmaas/compare/v1.3.0...v1.4.0) (2026-03-06)
 
 
