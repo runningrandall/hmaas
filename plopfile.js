@@ -29,6 +29,12 @@ export default function (plop) {
                 path: 'backend/src/lib/{{camelCase name}}-schemas.ts',
                 templateFile: 'templates/entity/schema.ts.hbs',
             },
+            // ── Port (Repository Interface) ──
+            {
+                type: 'add',
+                path: 'backend/src/ports/{{dashCase name}}-repository.ts',
+                templateFile: 'templates/entity/port.ts.hbs',
+            },
             // ── Adapter (Repository) ──
             {
                 type: 'add',

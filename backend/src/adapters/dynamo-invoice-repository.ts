@@ -1,4 +1,5 @@
-import { InvoiceRepository, Invoice, UpdateInvoiceRequest } from "../domain/invoice";
+import { Invoice, UpdateInvoiceRequest } from "../domain/invoice";
+import { InvoiceRepository } from "../ports/invoice-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

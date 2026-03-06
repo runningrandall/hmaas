@@ -63,7 +63,8 @@ Each entity follows the hexagonal (ports & adapters) pattern:
 ```
 handlers/          → Thin HTTP layer (Lambda entry points, Middy middleware)
 application/       → Business logic services (orchestrate domain + ports)
-domain/            → Interfaces, types, contracts (ports)
+domain/            → Entity interfaces, types, DTOs, contracts
+ports/             → Port interfaces (repository contracts, EventPublisher, etc.)
 adapters/          → Implementations (DynamoDB repositories, EventBridge publisher)
 entities/          → ElectroDB entity definitions (DynamoDB schema)
 lib/               → Shared utilities (middleware, error handling, observability, Zod schemas)
@@ -93,7 +94,7 @@ All data is scoped by `organizationId`. The `Organization` entity is the top-lev
 | Entity | Key Attributes | PK Composite | GSI2 |
 |---|---|---|---|
 | **PropertyType** | propertyTypeId, name, description | `[orgId, propertyTypeId]` | `[]` / `[orgId, propertyTypeId]` |
-| **ServiceType** | serviceTypeId, name, description, category | `[orgId, serviceTypeId]` | `[]` / `[orgId, serviceTypeId]` |
+| **ServiceType** | serviceTypeId, name, description, category, basePrice, unit, estimatedDuration, frequency, measurementKey, measurementUnit, ratePerUnit, durationPerUnit | `[orgId, serviceTypeId]` | `[]` / `[orgId, serviceTypeId]` |
 | **CostType** | costTypeId, name, description | `[orgId, costTypeId]` | `[]` / `[orgId, costTypeId]` |
 
 ### Core Entities
@@ -102,7 +103,7 @@ All data is scoped by `organizationId`. The `Organization` entity is the top-lev
 | **Customer** | customerId, firstName, lastName, email, phone, status, notes | `[orgId, customerId]` | `[orgId, status]` / `[customerId]` | `[orgId, customerId]` |
 | **Account** | accountId, customerId, cognitoUserId, planId, status, billingEmail | `[orgId, accountId]` | `[orgId, customerId]` / `[accountId]` | `[orgId, accountId]` |
 | **Delegate** | delegateId, accountId, email, name, permissions[], status | `[orgId, delegateId]` | `[orgId, accountId]` / `[delegateId]` | `[orgId, delegateId]` |
-| **Property** | propertyId, customerId, propertyTypeId, name, address, city, state, zip, lat, lng, lotSize, notes, status | `[orgId, propertyId]` | `[orgId, customerId]` / `[propertyId]` | `[orgId, propertyId]` |
+| **Property** | propertyId, customerId, propertyTypeId, name, address, city, state, zip, lat, lng, lotSize, measurements, notes, status | `[orgId, propertyId]` | `[orgId, customerId]` / `[propertyId]` | `[orgId, propertyId]` |
 
 ### Plan & Service Entities
 | Entity | Key Attributes | PK Composite | GSI1 PK/SK | GSI2 SK |
@@ -124,6 +125,7 @@ All data is scoped by `organizationId`. The `Organization` entity is the top-lev
 | Entity | Key Attributes | PK Composite | GSI1 PK/SK | GSI2 SK |
 |---|---|---|---|---|
 | **Invoice** | invoiceId, customerId, invoiceNumber, invoiceDate, dueDate, subtotal, tax, total, status, lineItems[], paidAt | `[orgId, invoiceId]` | `[orgId, customerId]` / `[invoiceDate]` | `[orgId, invoiceId]` |
+| **Estimate** | estimateId, customerId, propertyId, estimateNumber, estimateDate, expirationDate, status, subtotal, tax, total, lineItems[], notes, acceptedAt, invoiceId | `[orgId, estimateId]` | `[orgId, customerId]` / `[estimateDate]` | `[orgId, estimateId]` |
 | **PaymentMethod** | paymentMethodId, customerId, type, last4, isDefault, status | `[orgId, paymentMethodId]` | `[orgId, customerId]` / `[paymentMethodId]` | `[orgId, paymentMethodId]` |
 | **InvoiceSchedule** | invoiceScheduleId, customerId, frequency, nextInvoiceDate, dayOfMonth | `[orgId, invoiceScheduleId]` | `[orgId, customerId]` / `[invoiceScheduleId]` | `[orgId, invoiceScheduleId]` |
 
@@ -180,6 +182,7 @@ All data is scoped by `organizationId`. The `Organization` entity is the top-lev
 
 ### Billing
 - `POST/GET /invoices`, `GET/PUT /invoices/{id}`
+- `POST/GET /estimates`, `GET/PUT/DELETE /estimates/{id}`, `POST /estimates/{id}/invoice`
 - `POST/GET /customers/{id}/payment-methods`, `DELETE /payment-methods/{id}`
 - `POST/GET /customers/{id}/invoice-schedules`, `PUT/DELETE /invoice-schedules/{id}`
 
@@ -198,6 +201,7 @@ All events include `organizationId` in the detail payload.
 - `PlanCreated`, `PropertyServiceActivated`, `PropertyServiceCancelled`, `CostAdded`
 - `EmployeeCreated`, `ServiceScheduleCreated`, `ServiceScheduleCompleted`
 - `InvoiceCreated`, `InvoicePaid`, `InvoiceOverdue`, `PaymentMethodAdded`
+- `EstimateCreated`, `EstimateAccepted`, `EstimateInvoiced`
 
 ## CDK Stacks (infra/)
 
@@ -212,6 +216,9 @@ All events include `organizationId` in the detail payload.
 - Plan pricing: monthlyPrice and annualPrice stored in cents
 - Cost amounts in cents, linked to PropertyService + CostType
 - Invoice totals: subtotal + tax = total (all cents)
+- Estimate generation: measurement-based pricing uses `totalPrice = basePrice + (ratePerUnit × propertyMeasurement)` and `totalDuration = estimatedDuration + (durationPerUnit × propertyMeasurement)`; falls back to flat rate when no measurement key
+- Estimate lifecycle: draft → sent → accepted → invoiced (via `/estimates/{id}/invoice`); also sent → rejected/expired
+- Property measurements: dynamic `Record<string, number>` map (e.g., `{ lawnSqft: 5000, gutterLinearFeet: 150 }`) linked to ServiceType.measurementKey
 
 ## Standards
 

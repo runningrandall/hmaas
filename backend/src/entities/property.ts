@@ -19,6 +19,7 @@ export const PropertyEntity = new Entity(
             lat: { type: "number" },
             lng: { type: "number" },
             lotSize: { type: "number" },
+            measurements: { type: "any" },
             notes: { type: "string" },
             status: { type: ["active", "inactive"] as const, required: true, default: "active" },
             createdAt: { type: "number", default: () => Date.now(), readOnly: true },

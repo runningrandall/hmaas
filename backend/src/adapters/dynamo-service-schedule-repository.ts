@@ -1,4 +1,5 @@
-import { ServiceScheduleRepository, ServiceSchedule, UpdateServiceScheduleRequest } from "../domain/service-schedule";
+import { ServiceSchedule, UpdateServiceScheduleRequest } from "../domain/service-schedule";
+import { ServiceScheduleRepository } from "../ports/service-schedule-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

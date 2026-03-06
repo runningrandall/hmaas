@@ -1,7 +1,9 @@
-import { Customer, CreateCustomerRequest, UpdateCustomerRequest, CustomerRepository } from "../domain/customer";
-import { AccountRepository } from "../domain/account";
+import { Customer, CreateCustomerRequest, UpdateCustomerRequest } from "../domain/customer";
+import { CustomerRepository } from "../ports/customer-repository";
 import { Account } from "../domain/account";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { AccountRepository } from "../ports/account-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

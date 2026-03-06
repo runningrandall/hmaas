@@ -1,4 +1,5 @@
-import { EmployeeRepository, Employee, UpdateEmployeeRequest } from "../domain/employee";
+import { Employee, UpdateEmployeeRequest } from "../domain/employee";
+import { EmployeeRepository } from "../ports/employee-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

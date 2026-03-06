@@ -1,4 +1,5 @@
-import { PayRepository, Pay, UpdatePayRequest } from "../domain/pay";
+import { Pay, UpdatePayRequest } from "../domain/pay";
+import { PayRepository } from "../ports/pay-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

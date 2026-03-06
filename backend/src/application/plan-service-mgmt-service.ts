@@ -1,5 +1,7 @@
-import { PlanService, CreatePlanServiceRequest, PlanServiceRepository } from "../domain/plan-service";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { PlanService, CreatePlanServiceRequest } from "../domain/plan-service";
+import { PlanServiceRepository } from "../ports/plan-service-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { AppError } from "../lib/error";

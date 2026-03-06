@@ -1,5 +1,7 @@
-import { Servicer, CreateServicerRequest, UpdateServicerRequest, ServicerRepository } from "../domain/servicer";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { Servicer, CreateServicerRequest, UpdateServicerRequest } from "../domain/servicer";
+import { ServicerRepository } from "../ports/servicer-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

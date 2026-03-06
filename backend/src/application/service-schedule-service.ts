@@ -1,5 +1,7 @@
-import { ServiceSchedule, CreateServiceScheduleRequest, UpdateServiceScheduleRequest, ServiceScheduleRepository } from "../domain/service-schedule";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { ServiceSchedule, CreateServiceScheduleRequest, UpdateServiceScheduleRequest } from "../domain/service-schedule";
+import { ServiceScheduleRepository } from "../ports/service-schedule-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

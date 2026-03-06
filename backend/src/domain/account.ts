@@ -1,5 +1,3 @@
-import { PaginationOptions, PaginatedResult } from "./shared";
-
 export type AccountStatus = "active" | "inactive" | "suspended";
 
 export interface Account {
@@ -26,12 +24,4 @@ export interface UpdateAccountRequest {
     planId?: string;
     status?: AccountStatus;
     billingEmail?: string;
-}
-
-export interface AccountRepository {
-    create(account: Account): Promise<Account>;
-    get(organizationId: string, accountId: string): Promise<Account | null>;
-    getByCustomerId(organizationId: string, customerId: string): Promise<Account | null>;
-    update(organizationId: string, accountId: string, data: UpdateAccountRequest): Promise<Account>;
-    delete(organizationId: string, accountId: string): Promise<void>;
 }

@@ -1,5 +1,3 @@
-import { PaginationOptions, PaginatedResult } from "./shared";
-
 export type ServicerStatus = "active" | "inactive";
 
 export interface Servicer {
@@ -25,12 +23,4 @@ export interface UpdateServicerRequest {
     maxDailyJobs?: number;
     rating?: number;
     status?: ServicerStatus;
-}
-
-export interface ServicerRepository {
-    create(servicer: Servicer): Promise<Servicer>;
-    get(organizationId: string, servicerId: string): Promise<Servicer | null>;
-    getByEmployeeId(organizationId: string, employeeId: string, options?: PaginationOptions): Promise<PaginatedResult<Servicer>>;
-    update(organizationId: string, servicerId: string, data: UpdateServicerRequest): Promise<Servicer>;
-    delete(organizationId: string, servicerId: string): Promise<void>;
 }

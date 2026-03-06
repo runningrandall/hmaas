@@ -60,6 +60,10 @@ describe('Service Type Handlers', () => {
                 unit: 'per_visit',
                 estimatedDuration: 60,
                 frequency: 'monthly',
+                measurementKey: 'lawnSqft',
+                measurementUnit: 'sq ft',
+                ratePerUnit: 5,
+                durationPerUnit: 0.5,
             };
             mockCreateServiceType.mockResolvedValue(mockServiceType);
 
@@ -70,6 +74,10 @@ describe('Service Type Handlers', () => {
                 unit: 'per_visit',
                 estimatedDuration: 60,
                 frequency: 'monthly',
+                measurementKey: 'lawnSqft',
+                measurementUnit: 'sq ft',
+                ratePerUnit: 5,
+                durationPerUnit: 0.5,
             });
             const result = await handler(event, mockContext);
 

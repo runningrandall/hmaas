@@ -1,0 +1,9 @@
+import { {{pascalCase name}} } from "../domain/{{camelCase name}}";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+
+export interface {{pascalCase name}}Repository {
+    create(item: {{pascalCase name}}): Promise<{{pascalCase name}}>;
+    get(organizationId: string, {{camelCase name}}Id: string): Promise<{{pascalCase name}} | null>;
+    list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<{{pascalCase name}}>>;
+    delete(organizationId: string, {{camelCase name}}Id: string): Promise<void>;
+}

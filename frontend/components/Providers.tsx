@@ -1,6 +1,7 @@
 'use client';
 
 import { Authenticator } from '@aws-amplify/ui-react';
+import { ThemeProvider } from 'next-themes';
 import { Amplify } from 'aws-amplify';
 import '@aws-amplify/ui-react/styles.css';
 
@@ -15,8 +16,10 @@ Amplify.configure({
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     return (
-        <Authenticator.Provider>
-            {children}
-        </Authenticator.Provider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <Authenticator.Provider>
+                {children}
+            </Authenticator.Provider>
+        </ThemeProvider>
     );
 }

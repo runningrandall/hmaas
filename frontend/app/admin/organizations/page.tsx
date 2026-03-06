@@ -22,9 +22,9 @@ import {
 } from '@/components/ui/dialog';
 
 const statusStyles: Record<string, string> = {
-    active: 'bg-green-100 text-green-700',
-    inactive: 'bg-gray-100 text-gray-700',
-    suspended: 'bg-red-100 text-red-700',
+    active: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    inactive: 'bg-muted text-muted-foreground',
+    suspended: 'bg-destructive/10 text-destructive',
 };
 
 export default function OrganizationsPage() {
@@ -300,7 +300,7 @@ export default function OrganizationsPage() {
                                             <TableCell className="font-medium">{org.name}</TableCell>
                                             <TableCell>{org.slug}</TableCell>
                                             <TableCell>
-                                                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${statusStyles[org.status] || 'bg-gray-100 text-gray-700'}`}>
+                                                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${statusStyles[org.status] || 'bg-muted text-muted-foreground'}`}>
                                                     {org.status}
                                                 </span>
                                             </TableCell>

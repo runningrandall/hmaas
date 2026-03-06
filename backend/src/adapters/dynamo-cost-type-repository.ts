@@ -1,4 +1,5 @@
-import { CostTypeRepository, CostType, UpdateCostTypeRequest } from "../domain/cost-type";
+import { CostType, UpdateCostTypeRequest } from "../domain/cost-type";
+import { CostTypeRepository } from "../ports/cost-type-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

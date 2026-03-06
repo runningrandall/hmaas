@@ -34,6 +34,10 @@ const mockServiceType = {
     unit: 'per_visit',
     estimatedDuration: 60,
     frequency: 'monthly',
+    measurementKey: 'lawnSqft',
+    measurementUnit: 'sq ft',
+    ratePerUnit: 5,
+    durationPerUnit: 0.5,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-02T00:00:00.000Z',
 };
@@ -55,6 +59,8 @@ describe('DynamoServiceTypeRepository', () => {
 
             expect(result.serviceTypeId).toBe('st-1');
             expect(result.name).toBe('Lawn Mowing');
+            expect(result.measurementKey).toBe('lawnSqft');
+            expect(result.ratePerUnit).toBe(5);
         });
 
         it('should throw Data integrity error when create returns invalid data', async () => {

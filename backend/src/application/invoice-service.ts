@@ -1,5 +1,7 @@
-import { Invoice, CreateInvoiceRequest, UpdateInvoiceRequest, InvoiceRepository } from "../domain/invoice";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { Invoice, CreateInvoiceRequest, UpdateInvoiceRequest } from "../domain/invoice";
+import { InvoiceRepository } from "../ports/invoice-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

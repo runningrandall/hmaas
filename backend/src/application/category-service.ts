@@ -1,5 +1,7 @@
-import { Category, CreateCategoryRequest, UpdateCategoryRequest, CategoryRepository } from "../domain/category";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { Category, CreateCategoryRequest, UpdateCategoryRequest } from "../domain/category";
+import { CategoryRepository } from "../ports/category-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

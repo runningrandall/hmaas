@@ -191,9 +191,9 @@ export default function AdminDashboard() {
                                             <TableCell>{customer.email}</TableCell>
                                             <TableCell>
                                                 <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                                                    customer.status === 'active' ? 'bg-green-100 text-green-700' :
-                                                    customer.status === 'inactive' ? 'bg-gray-100 text-gray-700' :
-                                                    'bg-red-100 text-red-700'
+                                                    customer.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                                                    customer.status === 'inactive' ? 'bg-muted text-muted-foreground' :
+                                                    'bg-destructive/10 text-destructive'
                                                 }`}>
                                                     {customer.status}
                                                 </span>

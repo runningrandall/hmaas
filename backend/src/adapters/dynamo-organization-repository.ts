@@ -1,4 +1,5 @@
-import { OrganizationRepository, Organization, UpdateOrganizationRequest, OrganizationStatus, OrganizationConfig } from "../domain/organization";
+import { Organization, UpdateOrganizationRequest, OrganizationStatus, OrganizationConfig } from "../domain/organization";
+import { OrganizationRepository } from "../ports/organization-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";

@@ -1,6 +1,4 @@
-import { PaginationOptions, PaginatedResult } from "./shared";
-
-export type ServiceUnit = "per_visit" | "per_hour" | "per_sqft";
+export type ServiceUnit = "per_visit" | "per_hour" | "per_sqft" | "per_linear_foot" | "per_unit";
 export type ServiceFrequency = "weekly" | "biweekly" | "monthly" | "quarterly" | "annually" | "one_time";
 
 export interface ServiceType {
@@ -12,6 +10,10 @@ export interface ServiceType {
     unit?: ServiceUnit;
     estimatedDuration?: number;
     frequency?: ServiceFrequency;
+    measurementKey?: string;
+    measurementUnit?: string;
+    ratePerUnit?: number;
+    durationPerUnit?: number;
     createdAt: string;
     updatedAt?: string;
 }
@@ -23,6 +25,10 @@ export interface CreateServiceTypeRequest {
     unit?: ServiceUnit;
     estimatedDuration?: number;
     frequency?: ServiceFrequency;
+    measurementKey?: string;
+    measurementUnit?: string;
+    ratePerUnit?: number;
+    durationPerUnit?: number;
 }
 
 export interface UpdateServiceTypeRequest {
@@ -32,12 +38,8 @@ export interface UpdateServiceTypeRequest {
     unit?: ServiceUnit;
     estimatedDuration?: number;
     frequency?: ServiceFrequency;
-}
-
-export interface ServiceTypeRepository {
-    create(serviceType: ServiceType): Promise<ServiceType>;
-    get(organizationId: string, serviceTypeId: string): Promise<ServiceType | null>;
-    list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<ServiceType>>;
-    update(organizationId: string, serviceTypeId: string, data: UpdateServiceTypeRequest): Promise<ServiceType>;
-    delete(organizationId: string, serviceTypeId: string): Promise<void>;
+    measurementKey?: string;
+    measurementUnit?: string;
+    ratePerUnit?: number;
+    durationPerUnit?: number;
 }

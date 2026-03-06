@@ -114,7 +114,7 @@ export default function CategoryDetailPage() {
                 </div>
             )}
             {success && (
-                <div className="bg-green-50 text-green-700 p-3 rounded-md border border-green-200 text-sm">
+                <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-3 rounded-md border border-emerald-500/20 text-sm">
                     {success}
                 </div>
             )}

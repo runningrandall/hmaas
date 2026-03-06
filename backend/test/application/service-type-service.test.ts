@@ -38,6 +38,10 @@ describe('ServiceTypeService', () => {
                 unit: 'per_visit' as const,
                 estimatedDuration: 60,
                 frequency: 'monthly' as const,
+                measurementKey: 'lawnSqft',
+                measurementUnit: 'sq ft',
+                ratePerUnit: 5,
+                durationPerUnit: 0.5,
             };
 
             const created = {

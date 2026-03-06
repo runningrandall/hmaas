@@ -306,6 +306,15 @@ export class InfraStack extends cdk.Stack {
       { id: 'deletePaySchedule', entry: 'paySchedules/delete.ts' },
     ];
 
+    const estimateLambdas: LambdaDefinition[] = [
+      { id: 'createEstimate', entry: 'estimates/create.ts' },
+      { id: 'getEstimate', entry: 'estimates/get.ts' },
+      { id: 'listEstimates', entry: 'estimates/list.ts' },
+      { id: 'updateEstimate', entry: 'estimates/update.ts' },
+      { id: 'deleteEstimate', entry: 'estimates/delete.ts' },
+      { id: 'convertEstimateToInvoice', entry: 'estimates/convertToInvoice.ts' },
+    ];
+
     const organizationLambdas: LambdaDefinition[] = [
       { id: 'createOrganization', entry: 'organizations/create.ts' },
       { id: 'getOrganization', entry: 'organizations/get.ts' },
@@ -335,6 +344,7 @@ export class InfraStack extends cdk.Stack {
     const plan = new LambdaStack(this, 'PlanLambdas', { ...commonNestedProps, lambdas: planLambdas });
     const workforce = new LambdaStack(this, 'WorkforceLambdas', { ...commonNestedProps, lambdas: workforceLambdas });
     const billing = new LambdaStack(this, 'BillingLambdas', { ...commonNestedProps, lambdas: billingLambdas });
+    const estimate = new LambdaStack(this, 'EstimateLambdas', { ...commonNestedProps, lambdas: estimateLambdas });
     const cognitoListUsersPolicy = new iam.PolicyStatement({
       actions: ['cognito-idp:ListUsersInGroup'],
       resources: [props.auth.userPool.userPoolArn],
@@ -349,7 +359,7 @@ export class InfraStack extends cdk.Stack {
 
     // ─── 9. API Gateway Routes ───
     const opts = { authorizer };
-    const li = (fn: nodejs.NodejsFunction) => new apigateway.LambdaIntegration(fn);
+    const li = (fn: nodejs.NodejsFunction) => new apigateway.LambdaIntegration(fn, { allowTestInvoke: false });
 
     // Property Types
     const propertyTypes = api.root.addResource('property-types');
@@ -543,6 +553,17 @@ export class InfraStack extends cdk.Stack {
     const invoiceRes = invoices.addResource('{invoiceId}');
     invoiceRes.addMethod('GET', li(billing.functions.getInvoice), opts);
     invoiceRes.addMethod('PUT', li(billing.functions.updateInvoice), opts);
+
+    // Estimates
+    const estimates = api.root.addResource('estimates');
+    estimates.addMethod('GET', li(estimate.functions.listEstimates), opts);
+    estimates.addMethod('POST', li(estimate.functions.createEstimate), opts);
+    const estimateRes = estimates.addResource('{estimateId}');
+    estimateRes.addMethod('GET', li(estimate.functions.getEstimate), opts);
+    estimateRes.addMethod('PUT', li(estimate.functions.updateEstimate), opts);
+    estimateRes.addMethod('DELETE', li(estimate.functions.deleteEstimate), opts);
+    const estimateInvoice = estimateRes.addResource('invoice');
+    estimateInvoice.addMethod('POST', li(estimate.functions.convertEstimateToInvoice), opts);
 
     // Payment Methods (top-level delete)
     const paymentMethods = api.root.addResource('payment-methods');

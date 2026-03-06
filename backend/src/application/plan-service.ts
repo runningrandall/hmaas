@@ -1,5 +1,7 @@
-import { Plan, CreatePlanRequest, UpdatePlanRequest, PlanRepository } from "../domain/plan";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { Plan, CreatePlanRequest, UpdatePlanRequest } from "../domain/plan";
+import { PlanRepository } from "../ports/plan-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

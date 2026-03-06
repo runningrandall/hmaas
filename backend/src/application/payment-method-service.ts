@@ -1,5 +1,7 @@
-import { PaymentMethod, CreatePaymentMethodRequest, PaymentMethodRepository } from "../domain/payment-method";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { PaymentMethod, CreatePaymentMethodRequest } from "../domain/payment-method";
+import { PaymentMethodRepository } from "../ports/payment-method-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

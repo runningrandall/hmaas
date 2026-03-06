@@ -1,5 +1,7 @@
-import { ServiceType, CreateServiceTypeRequest, UpdateServiceTypeRequest, ServiceTypeRepository } from "../domain/service-type";
-import { EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { ServiceType, CreateServiceTypeRequest, UpdateServiceTypeRequest } from "../domain/service-type";
+import { ServiceTypeRepository } from "../ports/service-type-repository";
+import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
@@ -23,6 +25,10 @@ export class ServiceTypeService {
             unit: request.unit,
             estimatedDuration: request.estimatedDuration,
             frequency: request.frequency,
+            measurementKey: request.measurementKey,
+            measurementUnit: request.measurementUnit,
+            ratePerUnit: request.ratePerUnit,
+            durationPerUnit: request.durationPerUnit,
             createdAt: new Date().toISOString(),
         };
 

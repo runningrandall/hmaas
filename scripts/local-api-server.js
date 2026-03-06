@@ -186,6 +186,14 @@ const ROUTES = [
   ['GET',    '/invoices/{invoiceId}',                            'invoices/get'],
   ['PUT',    '/invoices/{invoiceId}',                            'invoices/update'],
 
+  // Estimates
+  ['GET',    '/estimates',                                       'estimates/list'],
+  ['POST',   '/estimates',                                       'estimates/create'],
+  ['GET',    '/estimates/{estimateId}',                          'estimates/get'],
+  ['PUT',    '/estimates/{estimateId}',                          'estimates/update'],
+  ['DELETE', '/estimates/{estimateId}',                          'estimates/delete'],
+  ['POST',   '/estimates/{estimateId}/invoice',                  'estimates/convertToInvoice'],
+
   // Payment Methods
   ['DELETE', '/payment-methods/{paymentMethodId}',               'paymentMethods/delete'],
 

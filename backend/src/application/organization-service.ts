@@ -2,11 +2,12 @@ import {
     Organization,
     CreateOrganizationRequest,
     UpdateOrganizationRequest,
-    OrganizationRepository,
-    OrganizationSecretsManager,
     OrganizationConfig,
 } from "../domain/organization";
-import { ActorContext, EventPublisher, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { OrganizationRepository } from "../ports/organization-repository";
+import { OrganizationSecretsManager } from "../ports/organization-secrets";
+import { ActorContext, PaginationOptions, PaginatedResult } from "../domain/shared";
+import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

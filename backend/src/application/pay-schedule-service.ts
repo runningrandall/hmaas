@@ -1,4 +1,5 @@
-import { PaySchedule, CreatePayScheduleRequest, UpdatePayScheduleRequest, PayScheduleRepository } from "../domain/pay-schedule";
+import { PaySchedule, CreatePayScheduleRequest, UpdatePayScheduleRequest } from "../domain/pay-schedule";
+import { PayScheduleRepository } from "../ports/pay-schedule-repository";
 import { PaginationOptions, PaginatedResult } from "../domain/shared";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
