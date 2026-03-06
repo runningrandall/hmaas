@@ -1,12 +1,36 @@
 import middy from '@middy/core';
 import jsonBodyParser from '@middy/http-json-body-parser';
 import httpHeaderNormalizer from '@middy/http-header-normalizer';
-import cors from '@middy/http-cors';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { logMetrics } from '@aws-lambda-powertools/metrics/middleware';
 import { metrics } from './observability';
 import { mapErrorToResponse } from './error';
 import { orgContextMiddleware } from './org-context-middleware';
+
+const ALLOWED_ORIGINS = ['http://localhost:3000'];
+const ALLOWED_ORIGIN_PATTERN = /^https:\/\/([a-z0-9-]+\.)*vproservices\.com$/;
+
+const isAllowedOrigin = (origin: string): boolean =>
+    ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGIN_PATTERN.test(origin);
+
+const corsMiddleware = (): middy.MiddlewareObj<APIGatewayProxyEvent, APIGatewayProxyResult> => {
+    const applyHeaders = (request: middy.Request<APIGatewayProxyEvent, APIGatewayProxyResult>) => {
+        const origin = request.event.headers?.origin || '';
+        if (isAllowedOrigin(origin)) {
+            request.response = request.response || {} as APIGatewayProxyResult;
+            request.response.headers = {
+                ...request.response.headers,
+                'Access-Control-Allow-Origin': origin,
+                'Vary': 'Origin',
+            };
+        }
+    };
+
+    return {
+        after: async (request) => applyHeaders(request),
+        onError: async (request) => applyHeaders(request),
+    };
+};
 
 /**
  * Custom middy error handler that maps all errors through the centralized
@@ -23,7 +47,7 @@ export const commonMiddleware = (handler: (event: APIGatewayProxyEvent, context:
     return middy(handler)
         .use(httpHeaderNormalizer())
         .use(jsonBodyParser())
-        .use(cors())
+        .use(corsMiddleware())
         .use(orgContextMiddleware())
         .use(logMetrics(metrics, { captureColdStartMetric: true }))
         .use(errorHandlerMiddleware());
@@ -37,7 +61,7 @@ export const superAdminMiddleware = (handler: (event: APIGatewayProxyEvent, cont
     return middy(handler)
         .use(httpHeaderNormalizer())
         .use(jsonBodyParser())
-        .use(cors())
+        .use(corsMiddleware())
         .use(logMetrics(metrics, { captureColdStartMetric: true }))
         .use(errorHandlerMiddleware());
 };
@@ -50,7 +74,7 @@ export const publicMiddleware = (handler: (event: APIGatewayProxyEvent, context:
     return middy(handler)
         .use(httpHeaderNormalizer())
         .use(jsonBodyParser())
-        .use(cors())
+        .use(corsMiddleware())
         .use(logMetrics(metrics, { captureColdStartMetric: true }))
         .use(errorHandlerMiddleware());
 };
