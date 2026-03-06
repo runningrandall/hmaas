@@ -182,7 +182,7 @@ export class InfraStack extends cdk.Stack {
 
     authLambda.addToRolePolicy(new iam.PolicyStatement({
       actions: ['verifiedpermissions:IsAuthorized'],
-      resources: [`arn:aws:verifiedpermissions:${this.region}:${this.account}:policy-store/${props.auth.policyStoreId}`],
+      resources: [`arn:aws:verifiedpermissions:*:${this.account}:policy-store/${props.auth.policyStoreId}`],
     }));
 
     const authorizer = new apigateway.TokenAuthorizer(this, 'APIGatewayAuthorizer', {
