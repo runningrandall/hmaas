@@ -47,10 +47,18 @@ export class AuthStack extends cdk.Stack {
                     maxLen: 128,
                 }),
             },
-            lambdaTriggers: {
-                preTokenGeneration: preTokenGenerationLambda,
-            },
             removalPolicy: cdk.RemovalPolicy.DESTROY, // NOT for production
+        });
+
+        // Override to V2_0 Pre Token Generation trigger (V2 can inject claims into access tokens)
+        const cfnUserPool = this.userPool.node.defaultChild as cognito.CfnUserPool;
+        cfnUserPool.addPropertyOverride('LambdaConfig.PreTokenGenerationConfig', {
+            LambdaArn: preTokenGenerationLambda.functionArn,
+            LambdaVersion: 'V2_0',
+        });
+        preTokenGenerationLambda.addPermission('CognitoInvoke', {
+            principal: new cdk.aws_iam.ServicePrincipal('cognito-idp.amazonaws.com'),
+            sourceArn: this.userPool.userPoolArn,
         });
 
         // 3. Groups (6 total: SuperAdmin, Admin, Manager, User, Servicer, Customer)
