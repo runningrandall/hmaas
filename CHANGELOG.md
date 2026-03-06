@@ -1,3 +1,20 @@
+# [1.4.0](https://github.com/runningrandall/hmaas/compare/v1.3.0...v1.4.0) (2026-03-06)
+
+
+### Bug Fixes
+
+* correct nested stack count to 8 in infra test ([fe48e10](https://github.com/runningrandall/hmaas/commit/fe48e101b8ced880c11e53364f4d5fb68ca3744c))
+* preserve Stage logical ID to avoid CloudFormation conflict ([cb90ee2](https://github.com/runningrandall/hmaas/commit/cb90ee2804de54ca9e2ccf6ce9e623e4738394ec))
+* revert route nested stacks, use allowTestInvoke:false to reduce resource count ([2e6abc0](https://github.com/runningrandall/hmaas/commit/2e6abc046fd5a94881e79c4040d17be2097ad150))
+* split API routes into nested stacks to stay under 500 resource limit ([27ad57f](https://github.com/runningrandall/hmaas/commit/27ad57f7667dd0edcd7b9bd2e2eab92d69f72d91))
+* split estimate lambdas into own nested stack ([1dee466](https://github.com/runningrandall/hmaas/commit/1dee466fc66eb1713a6ce61db0ed81ced89ff647))
+
+
+### Features
+
+* add estimates, measurement pricing, and customer UI ([ca3d4bb](https://github.com/runningrandall/hmaas/commit/ca3d4bb745904627c43d79f5edb3e65217e0f6ae))
+* add royal blue light/dark theme with system preference support ([14e767d](https://github.com/runningrandall/hmaas/commit/14e767d2f6009ff7fdb2db4545240ff291d28c11))
+
 # [1.3.0](https://github.com/runningrandall/hmaas/compare/v1.2.0...v1.3.0) (2026-03-04)
 
 
