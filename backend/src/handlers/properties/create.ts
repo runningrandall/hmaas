@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger, metrics } from "../../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { CreatePropertySchema } from "../../lib/property-schemas";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoPropertyRepository } from "../../adapters/dynamo-property-repository";
 import { EventBridgePublisher } from "../../adapters/event-bridge-publisher";
@@ -14,7 +14,7 @@ const service = new PropertyService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const customerId = event.pathParameters?.customerId;
     if (!customerId) {
         throw new AppError("Missing customerId", 400);

@@ -100,6 +100,65 @@ describe('getReport handler', () => {
         expect(body.imageUrls).toEqual([]);
     });
 
+    it('should return 200 with presigned URLs when report has imageKeys', async () => {
+        ddbMock.on(GetCommand).resolves({
+            Item: {
+                reportId: 'report-img',
+                concernType: 'Damage',
+                description: 'Broken fence',
+                imageKeys: ['uploads/photo1.jpg', 'uploads/photo2.jpg'],
+            },
+        });
+
+        const event = makeApiEvent({ pathParameters: { reportId: 'report-img' } });
+        const result = await handler(event, {} as any, {} as any);
+
+        expect(result.statusCode).toBe(200);
+        const body = JSON.parse(result.body);
+        expect(body.imageUrls).toHaveLength(2);
+        expect(body.imageUrls[0]).toContain('https://');
+    });
+
+    it('should return null for imageKeys when BUCKET_NAME is empty', async () => {
+        vi.resetModules();
+        process.env.BUCKET_NAME = '';
+        vi.mock('@aws-sdk/s3-request-presigner', () => ({
+            getSignedUrl: vi.fn().mockResolvedValue('https://presigned.url/test-key'),
+        }));
+        handler = (await import('../../src/handlers/getReport')).handler;
+
+        ddbMock.on(GetCommand).resolves({
+            Item: {
+                reportId: 'report-no-bucket',
+                imageKeys: ['uploads/photo1.jpg'],
+            },
+        });
+
+        const event = makeApiEvent({ pathParameters: { reportId: 'report-no-bucket' } });
+        const result = await handler(event, {} as any, {} as any);
+
+        expect(result.statusCode).toBe(200);
+        const body = JSON.parse(result.body);
+        // null urls are filtered out
+        expect(body.imageUrls).toHaveLength(0);
+    });
+
+    it('should handle report with no imageKeys field gracefully', async () => {
+        ddbMock.on(GetCommand).resolves({
+            Item: {
+                reportId: 'report-no-keys',
+                concernType: 'Other',
+            },
+        });
+
+        const event = makeApiEvent({ pathParameters: { reportId: 'report-no-keys' } });
+        const result = await handler(event, {} as any, {} as any);
+
+        expect(result.statusCode).toBe(200);
+        const body = JSON.parse(result.body);
+        expect(body.imageUrls).toEqual([]);
+    });
+
     it('should return 500 when DynamoDB throws an error', async () => {
         ddbMock.on(GetCommand).rejects(new Error('DynamoDB error'));
 

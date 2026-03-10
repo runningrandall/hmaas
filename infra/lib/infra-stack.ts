@@ -328,6 +328,24 @@ export class InfraStack extends cdk.Stack {
       { id: 'listAdminUsers', entry: 'organizations/listAdminUsers.ts' },
     ];
 
+    const integrationLambdas: LambdaDefinition[] = [
+      { id: 'getStripeKeys', entry: 'integrations/getStripeKeys.ts' },
+      { id: 'setStripeKeys', entry: 'integrations/setStripeKeys.ts' },
+    ];
+
+    const subcontractorLambdas: LambdaDefinition[] = [
+      { id: 'createSubcontractor', entry: 'subcontractors/create.ts' },
+      { id: 'getSubcontractor', entry: 'subcontractors/get.ts' },
+      { id: 'listSubcontractors', entry: 'subcontractors/list.ts' },
+      { id: 'updateSubcontractor', entry: 'subcontractors/update.ts' },
+      { id: 'deleteSubcontractor', entry: 'subcontractors/delete.ts' },
+      { id: 'createSubcontractorRate', entry: 'subcontractorRates/create.ts' },
+      { id: 'listSubcontractorRates', entry: 'subcontractorRates/list.ts' },
+      { id: 'getSubcontractorRate', entry: 'subcontractorRates/get.ts' },
+      { id: 'updateSubcontractorRate', entry: 'subcontractorRates/update.ts' },
+      { id: 'deleteSubcontractorRate', entry: 'subcontractorRates/delete.ts' },
+    ];
+
     const secretsManagerPolicy = new iam.PolicyStatement({
       actions: [
         'secretsmanager:GetSecretValue',
@@ -355,6 +373,17 @@ export class InfraStack extends cdk.Stack {
       lambdas: organizationLambdas,
       additionalPolicies: [secretsManagerPolicy, cognitoListUsersPolicy],
       additionalEnvironment: { USER_POOL_ID: props.auth.userPool.userPoolId },
+    });
+
+    const integration = new LambdaStack(this, 'IntegrationLambdas', {
+      ...commonNestedProps,
+      lambdas: integrationLambdas,
+      additionalPolicies: [secretsManagerPolicy],
+    });
+
+    const subcontractor = new LambdaStack(this, 'SubcontractorLambdas', {
+      ...commonNestedProps,
+      lambdas: subcontractorLambdas,
     });
 
     // ─── 9. API Gateway Routes ───
@@ -590,6 +619,33 @@ export class InfraStack extends cdk.Stack {
     payScheduleRes.addMethod('GET', li(billing.functions.getPaySchedule), opts);
     payScheduleRes.addMethod('PUT', li(billing.functions.updatePaySchedule), opts);
     payScheduleRes.addMethod('DELETE', li(billing.functions.deletePaySchedule), opts);
+
+    // Subcontractors
+    const subcontractors = api.root.addResource('subcontractors');
+    subcontractors.addMethod('GET', li(subcontractor.functions.listSubcontractors), opts);
+    subcontractors.addMethod('POST', li(subcontractor.functions.createSubcontractor), opts);
+    const subcontractorRes = subcontractors.addResource('{subcontractorId}');
+    subcontractorRes.addMethod('GET', li(subcontractor.functions.getSubcontractor), opts);
+    subcontractorRes.addMethod('PUT', li(subcontractor.functions.updateSubcontractor), opts);
+    subcontractorRes.addMethod('DELETE', li(subcontractor.functions.deleteSubcontractor), opts);
+
+    // Subcontractor Rates (nested under subcontractor)
+    const subcontractorRates = subcontractorRes.addResource('rates');
+    subcontractorRates.addMethod('GET', li(subcontractor.functions.listSubcontractorRates), opts);
+    subcontractorRates.addMethod('POST', li(subcontractor.functions.createSubcontractorRate), opts);
+
+    // Subcontractor Rates (top-level for get/update/delete)
+    const subcontractorRatesRoot = api.root.addResource('subcontractor-rates');
+    const subcontractorRateRes = subcontractorRatesRoot.addResource('{subcontractorRateId}');
+    subcontractorRateRes.addMethod('GET', li(subcontractor.functions.getSubcontractorRate), opts);
+    subcontractorRateRes.addMethod('PUT', li(subcontractor.functions.updateSubcontractorRate), opts);
+    subcontractorRateRes.addMethod('DELETE', li(subcontractor.functions.deleteSubcontractorRate), opts);
+
+    // Integrations
+    const integrations = api.root.addResource('integrations');
+    const stripeIntegration = integrations.addResource('stripe');
+    stripeIntegration.addMethod('GET', li(integration.functions.getStripeKeys), opts);
+    stripeIntegration.addMethod('PUT', li(integration.functions.setStripeKeys), opts);
 
     // Organizations
     const organizations = api.root.addResource('organizations');

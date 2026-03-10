@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger, metrics } from "../../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { CreateCustomerSchema } from "../../lib/customer-schemas";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoCustomerRepository } from "../../adapters/dynamo-customer-repository";
 import { DynamoAccountRepository } from "../../adapters/dynamo-account-repository";
@@ -16,7 +16,7 @@ const service = new CustomerService(customerRepo, accountRepo, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const body = event.body as unknown as any;
     if (!body) {
         throw new AppError("Missing request body", 400);

@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger, metrics } from "../../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { CreatePropertyServiceSchema } from "../../lib/property-service-schemas";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoPropertyServiceRepository } from "../../adapters/dynamo-property-service-repository";
 import { EventBridgePublisher } from "../../adapters/event-bridge-publisher";
@@ -14,7 +14,7 @@ const service = new PropertyServiceService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const body = event.body as unknown as any;
     if (!body) {
         throw new AppError("Missing request body", 400);

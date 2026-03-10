@@ -41,6 +41,18 @@ function mapPathToAction(httpMethod: string, resourcePath: string): string {
     if (resourcePath.startsWith('pay-schedules') || resourcePath.startsWith('pay')) {
         return isRead ? 'ReadDashboard' : 'ManageEmployees';
     }
+    if (resourcePath.startsWith('subcontractors') || resourcePath.startsWith('subcontractor-rates')) {
+        return isRead ? 'ReadDashboard' : 'ManageSubcontractors';
+    }
+    if (resourcePath.startsWith('integrations')) {
+        return isRead ? 'ReadDashboard' : 'ManageIntegrations';
+    }
+    if (resourcePath.startsWith('estimates')) {
+        return isRead ? 'ReadDashboard' : 'ManageEstimates';
+    }
+    if (resourcePath.startsWith('categories')) {
+        return isRead ? 'ReadDashboard' : 'ManageLookups';
+    }
     if (resourcePath.startsWith('organizations')) {
         if (resourcePath.includes('/config')) return isRead ? 'ManageOrgConfig' : 'ManageOrgConfig';
         if (resourcePath.includes('/secrets')) return isRead ? 'ManageOrgSecrets' : 'ManageOrgSecrets';

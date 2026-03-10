@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger } from "../../lib/observability";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoCostRepository } from "../../adapters/dynamo-cost-repository";
 import { EventBridgePublisher } from "../../adapters/event-bridge-publisher";
@@ -12,7 +12,7 @@ const service = new CostService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const serviceId = event.pathParameters?.serviceId;
     if (!serviceId) {
         throw new AppError("Missing serviceId", 400);

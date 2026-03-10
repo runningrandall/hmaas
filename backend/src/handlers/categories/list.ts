@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger } from "../../lib/observability";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { DynamoCategoryRepository } from "../../adapters/dynamo-category-repository";
 import { EventBridgePublisher } from "../../adapters/event-bridge-publisher";
 import { CategoryService } from "../../application/category-service";
@@ -11,7 +11,7 @@ const service = new CategoryService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : undefined;
     const cursor = event.queryStringParameters?.cursor || undefined;
     const result = await service.listCategories(organizationId, { limit, cursor });

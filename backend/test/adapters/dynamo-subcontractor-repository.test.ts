@@ -1,0 +1,154 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('../../src/lib/observability', () => ({
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+    tracer: { captureAWSv3Client: (c: any) => c },
+    metrics: { addMetric: vi.fn() },
+}));
+
+vi.mock('../../src/entities/service', () => ({
+    DBService: {
+        entities: {
+            subcontractor: {
+                create: vi.fn(),
+                get: vi.fn(),
+                query: {
+                    byStatus: vi.fn(),
+                },
+                patch: vi.fn(),
+                delete: vi.fn(),
+            },
+        },
+    },
+}));
+
+import { DynamoSubcontractorRepository } from '../../src/adapters/dynamo-subcontractor-repository';
+import { DBService } from '../../src/entities/service';
+
+const mockSubcontractor = {
+    organizationId: 'org-test-123',
+    subcontractorId: 'sub-1',
+    name: 'ABC Lawn Care',
+    contactName: 'John Smith',
+    email: 'john@abc.com',
+    phone: '555-0200',
+    status: 'active' as const,
+    notes: 'Great work',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+};
+
+describe('DynamoSubcontractorRepository', () => {
+    let repo: DynamoSubcontractorRepository;
+    const mockEntity = (DBService.entities.subcontractor as any);
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        repo = new DynamoSubcontractorRepository();
+    });
+
+    describe('create', () => {
+        it('should create a subcontractor and return the parsed result', async () => {
+            mockEntity.create.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockSubcontractor }) });
+
+            const result = await repo.create(mockSubcontractor);
+
+            expect(result.subcontractorId).toBe('sub-1');
+            expect(result.name).toBe('ABC Lawn Care');
+        });
+
+        it('should throw Data integrity error when create returns invalid data', async () => {
+            mockEntity.create.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { subcontractorId: 'sub-1' } }) });
+
+            await expect(repo.create(mockSubcontractor)).rejects.toThrow('Data integrity error');
+        });
+    });
+
+    describe('get', () => {
+        it('should return a parsed subcontractor when found', async () => {
+            mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: mockSubcontractor }) });
+
+            const result = await repo.get('org-test-123', 'sub-1');
+
+            expect(result).not.toBeNull();
+            expect(result!.subcontractorId).toBe('sub-1');
+        });
+
+        it('should return null when subcontractor not found', async () => {
+            mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: null }) });
+
+            const result = await repo.get('org-test-123', 'sub-1');
+
+            expect(result).toBeNull();
+        });
+
+        it('should throw Data integrity error when get returns invalid data', async () => {
+            mockEntity.get.mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) });
+
+            await expect(repo.get('org-test-123', 'sub-1')).rejects.toThrow('Data integrity error');
+        });
+    });
+
+    describe('list', () => {
+        it('should return paginated list of subcontractors', async () => {
+            mockEntity.query.byStatus.mockReturnValue({
+                go: vi.fn().mockResolvedValue({ data: [mockSubcontractor], cursor: null }),
+            });
+
+            const result = await repo.list('org-test-123');
+
+            expect(result.items).toHaveLength(1);
+            expect(result.items[0].subcontractorId).toBe('sub-1');
+            expect(result.cursor).toBeNull();
+        });
+
+        it('should pass limit and cursor options', async () => {
+            const mockGo = vi.fn().mockResolvedValue({ data: [mockSubcontractor], cursor: 'next-page' });
+            mockEntity.query.byStatus.mockReturnValue({ go: mockGo });
+
+            const result = await repo.list('org-test-123', { limit: 5, cursor: 'some-cursor' });
+
+            expect(mockGo).toHaveBeenCalledWith({ limit: 5, cursor: 'some-cursor' });
+            expect(result.cursor).toBe('next-page');
+        });
+
+        it('should use default page size when no options provided', async () => {
+            const mockGo = vi.fn().mockResolvedValue({ data: [], cursor: null });
+            mockEntity.query.byStatus.mockReturnValue({ go: mockGo });
+
+            await repo.list('org-test-123');
+
+            expect(mockGo).toHaveBeenCalledWith({ limit: 20 });
+        });
+    });
+
+    describe('update', () => {
+        it('should update a subcontractor and return the parsed result', async () => {
+            const updated = { ...mockSubcontractor, name: 'ABC Updated' };
+            mockEntity.patch.mockReturnValue({
+                set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: updated }) }),
+            });
+
+            const result = await repo.update('org-test-123', 'sub-1', { name: 'ABC Updated' });
+
+            expect(result.name).toBe('ABC Updated');
+        });
+
+        it('should throw Data integrity error when update returns invalid data', async () => {
+            mockEntity.patch.mockReturnValue({
+                set: vi.fn().mockReturnValue({ go: vi.fn().mockResolvedValue({ data: { badField: true } }) }),
+            });
+
+            await expect(repo.update('org-test-123', 'sub-1', { name: 'X' })).rejects.toThrow('Data integrity error');
+        });
+    });
+
+    describe('delete', () => {
+        it('should delete a subcontractor', async () => {
+            mockEntity.delete.mockReturnValue({ go: vi.fn().mockResolvedValue({}) });
+
+            await expect(repo.delete('org-test-123', 'sub-1')).resolves.toBeUndefined();
+            expect(mockEntity.delete).toHaveBeenCalledWith({ organizationId: 'org-test-123', subcontractorId: 'sub-1' });
+        });
+    });
+});

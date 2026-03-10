@@ -24,6 +24,8 @@ import { InvoiceScheduleEntity } from "./invoice-schedule";
 import { OrganizationEntity } from "./organization";
 import { CategoryEntity } from "./category";
 import { EntityCategoryEntity } from "./entity-category";
+import { SubcontractorEntity } from "./subcontractor";
+import { SubcontractorRateEntity } from "./subcontractor-rate";
 
 export const DBService = new Service(
     {
@@ -51,6 +53,8 @@ export const DBService = new Service(
         estimate: EstimateEntity,
         paymentMethod: PaymentMethodEntity,
         invoiceSchedule: InvoiceScheduleEntity,
+        subcontractor: SubcontractorEntity,
+        subcontractorRate: SubcontractorRateEntity,
     },
     { client, table: process.env.TABLE_NAME || "versa-table" }
 );

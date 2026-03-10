@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger } from "../../lib/observability";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoServiceScheduleRepository } from "../../adapters/dynamo-service-schedule-repository";
 import { EventBridgePublisher } from "../../adapters/event-bridge-publisher";
@@ -12,7 +12,7 @@ const service = new ServiceScheduleService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const serviceScheduleId = event.pathParameters?.serviceScheduleId;
     if (!serviceScheduleId) {
         throw new AppError("Missing serviceScheduleId", 400);
