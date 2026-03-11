@@ -1,3 +1,13 @@
+<<<<<<< dev
+=======
+# [1.5.0](https://github.com/runningrandall/hmaas/compare/v1.4.1...v1.5.0) (2026-03-11)
+
+
+### Features
+
+* subcontractors, integrations, and handler refactor ([#10](https://github.com/runningrandall/hmaas/issues/10)) ([3e6c8e2](https://github.com/runningrandall/hmaas/commit/3e6c8e261fafae15f102a1172ea9d84511183c51))
+
+>>>>>>> main
 ## [1.4.1](https://github.com/runningrandall/hmaas/compare/v1.4.0...v1.4.1) (2026-03-06)
 
 
