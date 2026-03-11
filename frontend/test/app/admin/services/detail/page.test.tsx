@@ -35,6 +35,23 @@ vi.mock('../../../../../lib/api/service-types', () => ({
         create: vi.fn(),
         delete: vi.fn(),
     },
+    SERVICE_UNIT_LABELS: {
+        per_visit: 'Per Visit',
+        per_hour: 'Per Hour',
+        per_sqft: 'Per Sq Ft',
+        per_linear_foot: 'Per Linear Foot',
+        per_unit: 'Per Unit',
+        per_window: 'Per Window',
+    },
+    SERVICE_FREQUENCY_LABELS: {
+        weekly: 'Weekly',
+        biweekly: 'Biweekly',
+        monthly: 'Monthly',
+        quarterly: 'Quarterly',
+        biannual: 'Biannual',
+        annually: 'Annually',
+        one_time: 'One Time',
+    },
 }));
 
 const mockServiceType = {
