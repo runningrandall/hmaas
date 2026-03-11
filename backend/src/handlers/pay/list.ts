@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger } from "../../lib/observability";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoPayRepository } from "../../adapters/dynamo-pay-repository";
 import { PayService } from "../../application/pay-service";
@@ -10,7 +10,7 @@ const service = new PayService(repository);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const employeeId = event.pathParameters?.employeeId;
     if (!employeeId) {
         throw new AppError("Missing employeeId", 400);

@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger } from "../../lib/observability";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoCustomerRepository } from "../../adapters/dynamo-customer-repository";
 import { DynamoAccountRepository } from "../../adapters/dynamo-account-repository";
@@ -14,7 +14,7 @@ const service = new CustomerService(customerRepo, accountRepo, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const customerId = event.pathParameters?.customerId;
     if (!customerId) {
         throw new AppError("Missing customerId", 400);

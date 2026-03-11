@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger } from "../../lib/observability";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoEstimateRepository } from "../../adapters/dynamo-estimate-repository";
 import { DynamoPropertyRepository } from "../../adapters/dynamo-property-repository";
@@ -20,7 +20,7 @@ const service = new EstimateService(estimateRepository, propertyRepository, serv
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const customerId = event.queryStringParameters?.customerId;
     if (!customerId) {
         throw new AppError("Missing customerId query parameter", 400);

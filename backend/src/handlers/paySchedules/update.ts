@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger, metrics } from "../../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { UpdatePayScheduleSchema } from "../../lib/pay-schedule-schemas";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoPayScheduleRepository } from "../../adapters/dynamo-pay-schedule-repository";
 import { PayScheduleService } from "../../application/pay-schedule-service";
@@ -12,7 +12,7 @@ const service = new PayScheduleService(repository);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const payScheduleId = event.pathParameters?.payScheduleId;
     if (!payScheduleId) {
         throw new AppError("Missing payScheduleId", 400);

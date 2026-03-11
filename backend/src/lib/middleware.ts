@@ -43,6 +43,13 @@ const errorHandlerMiddleware = (): middy.MiddlewareObj<APIGatewayProxyEvent, API
     },
 });
 
+/**
+ * Extracts organizationId from the event. The orgContextMiddleware sets
+ * this on the event before the handler runs, so this is the primary source.
+ */
+export const getOrgId = (event: APIGatewayProxyEvent): string =>
+    (event as any).organizationId || '';
+
 export const commonMiddleware = (handler: (event: APIGatewayProxyEvent, context: any) => Promise<APIGatewayProxyResult>) => {
     return middy(handler)
         .use(httpHeaderNormalizer())

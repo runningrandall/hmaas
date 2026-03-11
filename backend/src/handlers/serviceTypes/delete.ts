@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger } from "../../lib/observability";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoServiceTypeRepository } from "../../adapters/dynamo-service-type-repository";
 import { EventBridgePublisher } from "../../adapters/event-bridge-publisher";
@@ -12,7 +12,7 @@ const service = new ServiceTypeService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const serviceTypeId = event.pathParameters?.serviceTypeId;
     if (!serviceTypeId) {
         throw new AppError("Missing serviceTypeId", 400);

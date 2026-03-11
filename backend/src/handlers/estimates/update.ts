@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger, metrics } from "../../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { UpdateEstimateSchema } from "../../lib/estimate-schemas";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoEstimateRepository } from "../../adapters/dynamo-estimate-repository";
 import { DynamoPropertyRepository } from "../../adapters/dynamo-property-repository";
@@ -22,7 +22,7 @@ const service = new EstimateService(estimateRepository, propertyRepository, serv
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const estimateId = event.pathParameters?.estimateId;
     if (!estimateId) {
         throw new AppError("Missing estimateId", 400);

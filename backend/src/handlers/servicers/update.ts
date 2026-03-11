@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger, metrics } from "../../lib/observability";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { UpdateServicerSchema } from "../../lib/servicer-schemas";
-import { commonMiddleware } from "../../lib/middleware";
+import { commonMiddleware, getOrgId } from "../../lib/middleware";
 import { AppError } from "../../lib/error";
 import { DynamoServicerRepository } from "../../adapters/dynamo-servicer-repository";
 import { EventBridgePublisher } from "../../adapters/event-bridge-publisher";
@@ -14,7 +14,7 @@ const service = new ServicerService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
-    const organizationId = (event as any).organizationId || event.pathParameters?.organizationId || '';
+    const organizationId = getOrgId(event);
     const servicerId = event.pathParameters?.servicerId;
     if (!servicerId) {
         throw new AppError("Missing servicerId", 400);

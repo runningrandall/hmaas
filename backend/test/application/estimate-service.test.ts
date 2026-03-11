@@ -270,6 +270,41 @@ describe('EstimateService', () => {
             }));
         });
 
+        it('should update estimate with lineItems and recalculate totals', async () => {
+            const existing = { organizationId: ORG_ID, estimateId: 'est-1', status: 'draft', customerId: 'cust-1', propertyId: 'prop-1', subtotal: 5000, total: 5000 };
+            const newLineItems = [
+                { serviceTypeId: 'st-1', description: 'Lawn Mowing', quantity: 1, unit: 'per_visit', unitPrice: 10000, total: 10000 },
+                { serviceTypeId: 'st-2', description: 'Window Cleaning', quantity: 1, unit: 'per_visit', unitPrice: 7500, total: 7500 },
+            ];
+            const updated = { ...existing, lineItems: newLineItems, subtotal: 17500, total: 17500 };
+            mockEstimateRepo.get.mockResolvedValue(existing);
+            mockEstimateRepo.update.mockResolvedValue(updated);
+
+            const result = await service.updateEstimate(ORG_ID, 'est-1', { lineItems: newLineItems });
+
+            expect(mockEstimateRepo.update).toHaveBeenCalledWith(ORG_ID, 'est-1', expect.objectContaining({
+                lineItems: newLineItems,
+                subtotal: 17500,
+                total: 17500,
+            }));
+            expect(result.subtotal).toBe(17500);
+        });
+
+        it('should update notes and expirationDate', async () => {
+            const existing = { organizationId: ORG_ID, estimateId: 'est-1', status: 'draft', customerId: 'cust-1', propertyId: 'prop-1' };
+            const updated = { ...existing, notes: 'Updated notes', expirationDate: '2026-06-01' };
+            mockEstimateRepo.get.mockResolvedValue(existing);
+            mockEstimateRepo.update.mockResolvedValue(updated);
+
+            const result = await service.updateEstimate(ORG_ID, 'est-1', { notes: 'Updated notes', expirationDate: '2026-06-01' });
+
+            expect(mockEstimateRepo.update).toHaveBeenCalledWith(ORG_ID, 'est-1', expect.objectContaining({
+                notes: 'Updated notes',
+                expirationDate: '2026-06-01',
+            }));
+            expect(result.notes).toBe('Updated notes');
+        });
+
         it('should reject invalid status transitions', async () => {
             const existing = { organizationId: ORG_ID, estimateId: 'est-1', status: 'draft', customerId: 'cust-1' };
             mockEstimateRepo.get.mockResolvedValue(existing);
