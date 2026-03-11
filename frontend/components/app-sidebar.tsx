@@ -1,10 +1,10 @@
 "use client"
 
-import { Calendar, Home, Users, Building2, MapPin, Wrench, FileText, UserCog, DollarSign, Settings, Globe, X, Tag, Truck } from "lucide-react"
+import { Calendar, Home, Users, Building2, MapPin, Wrench, FileText, UserCog, DollarSign, Settings, Globe, Tag, Truck } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useMemo } from "react"
 
-import { Button } from "@/components/ui/button"
 import {
     Sidebar,
     SidebarContent,
@@ -15,7 +15,6 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    useSidebar,
 } from "@/components/ui/sidebar"
 import { useAdminAuthContext } from "@/contexts/admin-auth-context"
 
@@ -36,15 +35,14 @@ const operationsItems = [
     { title: "Invoices", url: "/admin/invoices", icon: DollarSign },
 ]
 
-export function AppSidebar() {
-    const { toggleSidebar, isMobile, setOpenMobile } = useSidebar()
-    const { isSuperAdmin } = useAdminAuthContext()
+function isActive(pathname: string, url: string): boolean {
+    if (url === "/admin") return pathname === "/admin"
+    return pathname === url || pathname.startsWith(url + "/")
+}
 
-    const handleNavClick = () => {
-        if (isMobile) {
-            setOpenMobile(false)
-        }
-    }
+export function AppSidebar() {
+    const { isSuperAdmin } = useAdminAuthContext()
+    const pathname = usePathname()
 
     const systemItems = useMemo(() => {
         const items = [
@@ -56,30 +54,29 @@ export function AppSidebar() {
         return items
     }, [isSuperAdmin])
 
+    const renderMenuItems = (items: typeof managementItems) =>
+        items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild isActive={isActive(pathname, item.url)}>
+                    <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        ))
+
     return (
-        <Sidebar>
-            <SidebarHeader className="flex flex-row items-center justify-between px-4 py-2">
+        <Sidebar collapsible="none">
+            <SidebarHeader className="flex flex-row items-center px-4 py-2">
                 <span className="text-lg font-semibold">Versa Admin</span>
-                <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-                    <X className="h-5 w-5" />
-                    <span className="sr-only">Close sidebar</span>
-                </Button>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupLabel>Management</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {managementItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild>
-                                        <Link href={item.url} onClick={handleNavClick}>
-                                            <item.icon />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {renderMenuItems(managementItems)}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -87,16 +84,7 @@ export function AppSidebar() {
                     <SidebarGroupLabel>Operations</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {operationsItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild>
-                                        <Link href={item.url} onClick={handleNavClick}>
-                                            <item.icon />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {renderMenuItems(operationsItems)}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -104,16 +92,7 @@ export function AppSidebar() {
                     <SidebarGroupLabel>System</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {systemItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild>
-                                        <Link href={item.url} onClick={handleNavClick}>
-                                            <item.icon />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {renderMenuItems(systemItems)}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

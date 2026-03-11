@@ -6,6 +6,7 @@ vi.mock('next/navigation', () => ({
     useRouter: () => ({
         push: vi.fn(),
     }),
+    usePathname: () => '/admin',
 }));
 
 vi.mock('@aws-amplify/ui-react', () => ({
@@ -34,7 +35,7 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 describe('AdminLayout', () => {
-    it('should render sidebar as collapsed by default', async () => {
+    it('should render sidebar always visible with child content', async () => {
         render(
             <AdminLayout>
                 <div>Child Content</div>
@@ -42,10 +43,9 @@ describe('AdminLayout', () => {
         );
 
         await waitFor(() => {
-            const sidebar = document.querySelector('div[data-state="collapsed"]');
-            expect(sidebar).toBeInTheDocument();
+            expect(screen.getByText('Child Content')).toBeInTheDocument();
         });
 
-        expect(screen.getByText('Child Content')).toBeInTheDocument();
+        expect(screen.getByText('Versa Admin')).toBeInTheDocument();
     });
 });

@@ -6,6 +6,7 @@ const mockPush = vi.fn();
 
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ push: mockPush }),
+    useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('../../../../contexts/admin-auth-context', () => ({
@@ -49,7 +50,7 @@ vi.mock('../../../../lib/api/properties', () => ({
 }));
 
 const mockCustomers = [
-    { customerId: 'c-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', status: 'active', createdAt: '2024-01-01T00:00:00Z' },
+    { customerId: 'c-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', phone: '303-555-1234', status: 'active', createdAt: '2024-01-01T00:00:00Z' },
 ];
 
 const mockPropertyTypes = [
@@ -72,63 +73,62 @@ describe('PropertiesPage', () => {
         });
     });
 
-    it('should load customers and property types on mount', async () => {
+    it('should load property types on mount', async () => {
         render(<PropertiesPage />);
 
         await waitFor(() => {
-            expect(mockCustomersList).toHaveBeenCalled();
-        });
-        expect(mockPropertyTypesList).toHaveBeenCalled();
-    });
-
-    it('should show customer selector', async () => {
-        render(<PropertiesPage />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Select Customer')).toBeInTheDocument();
+            expect(mockPropertyTypesList).toHaveBeenCalled();
         });
     });
 
-    it('should load properties when customer is selected', async () => {
-        const mockProperties = [
-            {
-                organizationId: 'org-1', propertyId: 'p-1', customerId: 'c-1', propertyTypeId: 'pt-1',
-                name: 'Main House', address: '123 Main St', city: 'Springfield', state: 'IL', zip: '62701',
-                createdAt: '2024-01-01T00:00:00Z',
-            },
-        ];
-        mockPropertiesList.mockResolvedValue({ items: mockProperties });
-
+    it('should show customer search box', async () => {
         render(<PropertiesPage />);
 
         await waitFor(() => {
-            expect(screen.getByText('Select a customer...')).toBeInTheDocument();
+            expect(screen.getByPlaceholderText('Search customers by name, email, or phone...')).toBeInTheDocument();
+        });
+        expect(screen.getByText('Find Customer')).toBeInTheDocument();
+    });
+
+    it('should search customers on text input', async () => {
+        render(<PropertiesPage />);
+
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText('Search customers by name, email, or phone...')).toBeInTheDocument();
         });
 
-        fireEvent.change(screen.getByRole('combobox') || screen.getByDisplayValue(''), { target: { value: 'c-1' } });
+        const input = screen.getByPlaceholderText('Search customers by name, email, or phone...');
+        fireEvent.change(input, { target: { value: 'John' } });
+
+        // Wait for debounced search to fire
+        await waitFor(() => {
+            expect(mockCustomersList).toHaveBeenCalledWith('John');
+        });
+    });
+
+    it('should show search results and select customer', async () => {
+        render(<PropertiesPage />);
+
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText('Search customers by name, email, or phone...')).toBeInTheDocument();
+        });
+
+        const input = screen.getByPlaceholderText('Search customers by name, email, or phone...');
+        fireEvent.change(input, { target: { value: 'John' } });
+
+        await waitFor(() => {
+            expect(screen.getByText('John Doe')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('John Doe'));
 
         await waitFor(() => {
             expect(mockPropertiesList).toHaveBeenCalledWith('c-1');
         });
     });
 
-    it('should show empty state when no properties for customer', async () => {
-        render(<PropertiesPage />);
-
-        await waitFor(() => {
-            expect(screen.getByText('Select a customer...')).toBeInTheDocument();
-        });
-
-        const select = screen.getAllByRole('combobox')[0];
-        fireEvent.change(select, { target: { value: 'c-1' } });
-
-        await waitFor(() => {
-            expect(screen.getByText('No properties found for this customer. Create one to get started.')).toBeInTheDocument();
-        });
-    });
-
     it('should show error on load failure', async () => {
-        mockCustomersList.mockRejectedValue(new Error('fail'));
+        mockPropertyTypesList.mockRejectedValue(new Error('fail'));
 
         render(<PropertiesPage />);
 

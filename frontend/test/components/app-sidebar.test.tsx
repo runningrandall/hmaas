@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AppSidebar } from '../../components/app-sidebar';
 import { SidebarProvider } from '../../components/ui/sidebar';
 import { AdminAuthProvider } from '../../contexts/admin-auth-context';
+
+vi.mock('next/navigation', () => ({
+    usePathname: () => '/admin',
+}));
 
 function renderSidebar({ isSuperAdmin = false }: { isSuperAdmin?: boolean } = {}) {
     const groups = isSuperAdmin ? ['SuperAdmin'] : ['Admin'];

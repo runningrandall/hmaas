@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MapPin, Plus, Loader2, Trash2, Pencil } from 'lucide-react';
+import { MapPin, Plus, Loader2, Trash2, Pencil, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { propertiesApi, Property, CreatePropertyData } from '@/lib/api/properties';
 import { formatStateInput } from '@/lib/format';
@@ -28,9 +28,8 @@ import {
 export default function PropertiesPage() {
     const router = useRouter();
     const { isSuperAdmin } = useAdminAuthContext();
-    const [customers, setCustomers] = useState<Customer[]>([]);
     const [propertyTypes, setPropertyTypes] = useState<PropertyType[]>([]);
-    const [selectedCustomerId, setSelectedCustomerId] = useState('');
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [properties, setProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
@@ -46,6 +45,14 @@ export default function PropertiesPage() {
         zip: '',
     });
 
+    // Customer search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<Customer[]>([]);
+    const [searching, setSearching] = useState(false);
+    const [showResults, setShowResults] = useState(false);
+    const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         if (!isSuperAdmin) {
             router.push('/admin');
@@ -57,11 +64,7 @@ export default function PropertiesPage() {
     const loadInitialData = async () => {
         setInitialLoading(true);
         try {
-            const [custData, ptData] = await Promise.all([
-                customersApi.list(),
-                propertyTypesApi.list(),
-            ]);
-            setCustomers(custData.items || []);
+            const ptData = await propertyTypesApi.list();
             setPropertyTypes(ptData.items || []);
             setError('');
         } catch {
@@ -71,13 +74,54 @@ export default function PropertiesPage() {
         }
     };
 
+    // Close search results when clicking outside
     useEffect(() => {
-        if (selectedCustomerId) {
-            loadProperties(selectedCustomerId);
-        } else {
-            setProperties([]);
+        const handleClickOutside = (e: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+                setShowResults(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+        if (!value.trim()) {
+            setSearchResults([]);
+            setShowResults(false);
+            return;
         }
-    }, [selectedCustomerId]);
+
+        searchTimeout.current = setTimeout(async () => {
+            setSearching(true);
+            try {
+                const data = await customersApi.list(value.trim());
+                setSearchResults(data.items || []);
+                setShowResults(true);
+            } catch {
+                setSearchResults([]);
+            } finally {
+                setSearching(false);
+            }
+        }, 300);
+    };
+
+    const selectCustomer = (customer: Customer) => {
+        setSelectedCustomer(customer);
+        setSearchQuery(`${customer.firstName} ${customer.lastName}`);
+        setShowResults(false);
+        loadProperties(customer.customerId);
+    };
+
+    const clearCustomer = () => {
+        setSelectedCustomer(null);
+        setSearchQuery('');
+        setProperties([]);
+        setSearchResults([]);
+    };
 
     const loadProperties = async (customerId: string) => {
         setLoading(true);
@@ -94,14 +138,14 @@ export default function PropertiesPage() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedCustomerId || !form.name.trim() || !form.propertyTypeId) return;
+        if (!selectedCustomer || !form.name.trim() || !form.propertyTypeId) return;
 
         setCreating(true);
         try {
-            await propertiesApi.create(selectedCustomerId, form);
+            await propertiesApi.create(selectedCustomer.customerId, form);
             setForm({ propertyTypeId: '', name: '', address: '', city: '', state: '', zip: '' });
             setDialogOpen(false);
-            await loadProperties(selectedCustomerId);
+            await loadProperties(selectedCustomer.customerId);
         } catch {
             setError('Failed to create property.');
         } finally {
@@ -113,15 +157,10 @@ export default function PropertiesPage() {
         if (!confirm('Are you sure you want to delete this property? This cannot be undone.')) return;
         try {
             await propertiesApi.delete(id);
-            if (selectedCustomerId) await loadProperties(selectedCustomerId);
+            if (selectedCustomer) await loadProperties(selectedCustomer.customerId);
         } catch {
             setError('Failed to delete property.');
         }
-    };
-
-    const getCustomerName = (customerId: string) => {
-        const c = customers.find((c) => c.customerId === customerId);
-        return c ? `${c.firstName} ${c.lastName}` : customerId;
     };
 
     const getPropertyTypeName = (propertyTypeId: string) => {
@@ -143,7 +182,7 @@ export default function PropertiesPage() {
                 </div>
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button disabled={!selectedCustomerId}>
+                        <Button disabled={!selectedCustomer}>
                             <Plus className="h-4 w-4 mr-2" />
                             New Property
                         </Button>
@@ -153,7 +192,7 @@ export default function PropertiesPage() {
                             <DialogHeader>
                                 <DialogTitle>Create Property</DialogTitle>
                                 <DialogDescription>
-                                    Add a new property for {selectedCustomerId ? getCustomerName(selectedCustomerId) : 'selected customer'}.
+                                    Add a new property for {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : 'selected customer'}.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
@@ -257,8 +296,8 @@ export default function PropertiesPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Select Customer</CardTitle>
-                    <CardDescription>Choose a customer to view and manage their properties.</CardDescription>
+                    <CardTitle>Find Customer</CardTitle>
+                    <CardDescription>Search by name, email, or phone to view their properties.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {initialLoading ? (
@@ -266,23 +305,59 @@ export default function PropertiesPage() {
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         </div>
                     ) : (
-                        <select
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            value={selectedCustomerId}
-                            onChange={(e) => setSelectedCustomerId(e.target.value)}
-                        >
-                            <option value="">Select a customer...</option>
-                            {customers.map((c) => (
-                                <option key={c.customerId} value={c.customerId}>
-                                    {c.firstName} {c.lastName} ({c.email})
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative" ref={searchRef}>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search customers by name, email, or phone..."
+                                    value={searchQuery}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
+                                    onFocus={() => { if (searchResults.length > 0 && !selectedCustomer) setShowResults(true); }}
+                                    className="pl-9"
+                                />
+                                {searching && (
+                                    <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                                )}
+                            </div>
+                            {showResults && searchResults.length > 0 && (
+                                <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-lg">
+                                    {searchResults.map((c) => (
+                                        <button
+                                            key={c.customerId}
+                                            type="button"
+                                            className="flex w-full items-center gap-3 px-3 py-2 text-sm hover:bg-accent text-left"
+                                            onClick={() => selectCustomer(c)}
+                                        >
+                                            <div>
+                                                <span className="font-medium">{c.firstName} {c.lastName}</span>
+                                                <span className="text-muted-foreground ml-2">{c.email}</span>
+                                                {c.phone && <span className="text-muted-foreground ml-2">{c.phone}</span>}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            {showResults && searchResults.length === 0 && searchQuery.trim() && !searching && (
+                                <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-lg px-3 py-2 text-sm text-muted-foreground">
+                                    No customers found.
+                                </div>
+                            )}
+                            {selectedCustomer && (
+                                <div className="mt-2 flex items-center gap-2">
+                                    <Badge variant="secondary">
+                                        {selectedCustomer.firstName} {selectedCustomer.lastName} - {selectedCustomer.email}
+                                    </Badge>
+                                    <Button variant="ghost" size="sm" onClick={clearCustomer}>
+                                        Clear
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </CardContent>
             </Card>
 
-            {selectedCustomerId && (
+            {selectedCustomer && (
                 <>
                     <div className="grid gap-4 md:grid-cols-4">
                         <Card>
@@ -298,7 +373,7 @@ export default function PropertiesPage() {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Properties for {getCustomerName(selectedCustomerId)}</CardTitle>
+                            <CardTitle>Properties for {selectedCustomer.firstName} {selectedCustomer.lastName}</CardTitle>
                             <CardDescription>View and manage properties for this customer.</CardDescription>
                         </CardHeader>
                         <CardContent>
