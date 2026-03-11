@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings, Globe, X, Tag, Truck } from "lucide-react"
+import { Calendar, Home, Users, Building2, MapPin, Wrench, FileText, UserCog, DollarSign, Settings, Globe, X, Tag, Truck } from "lucide-react"
 import Link from "next/link"
 import { useMemo } from "react"
 
@@ -22,10 +22,11 @@ import { useAdminAuthContext } from "@/contexts/admin-auth-context"
 const managementItems = [
     { title: "Dashboard", url: "/admin", icon: Home },
     { title: "Customers", url: "/admin/customers", icon: Users },
-    { title: "Properties", url: "/admin/properties", icon: Building2 },
+    { title: "Properties", url: "/admin/properties", icon: MapPin },
     { title: "Services", url: "/admin/services", icon: Wrench },
     { title: "Categories", url: "/admin/categories", icon: Tag },
     { title: "Plans", url: "/admin/plans", icon: FileText },
+    { title: "Property Types", url: "/admin/property-types", icon: Building2 },
 ]
 
 const operationsItems = [

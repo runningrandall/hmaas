@@ -90,6 +90,19 @@ jobs:
       - name: Run Infra Tests with Coverage
         run: pnpm --filter infra test:coverage
 
+      - name: Validate OpenAPI Spec
+        run: |
+          pnpm --filter backend gen:docs
+          node -e "
+            const spec = require('./docs/swagger.json');
+            const paths = Object.keys(spec.paths || {});
+            const schemas = Object.keys(spec.components?.schemas || {});
+            if (paths.length === 0) { console.error('No paths in OpenAPI spec'); process.exit(1); }
+            if (schemas.length < 2) { console.error('Too few schemas in OpenAPI spec'); process.exit(1); }
+            if (!spec.components?.securitySchemes?.BearerAuth) { console.error('Missing BearerAuth scheme'); process.exit(1); }
+            console.log('OpenAPI spec valid: ' + paths.length + ' paths, ' + schemas.length + ' schemas');
+          "
+
       - name: Run Linting
         run: pnpm --filter frontend lint
 

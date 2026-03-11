@@ -5,3 +5,11 @@ dist/
 .next
 coverage
 error*.log
+
+# Generated API docs (built during CI/CD)
+docs/swagger.json
+docs/api.md
+frontend/public/swagger.json
+frontend/public/openapi.json
+backend/openapi.json
+backend/openapi.yaml

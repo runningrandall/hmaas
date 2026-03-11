@@ -1,4 +1,4 @@
-export type EntityType = "serviceType" | "plan";
+export type EntityType = "serviceType" | "plan" | "property";
 
 export interface EntityCategory {
     organizationId: string;
