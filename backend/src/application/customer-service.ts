@@ -1,8 +1,8 @@
 import { Customer, CreateCustomerRequest, UpdateCustomerRequest } from "../domain/customer";
-import { CustomerRepository } from "../ports/customer-repository";
+import { CustomerRepository, CustomerSearchOptions } from "../ports/customer-repository";
 import { Account } from "../domain/account";
 import { AccountRepository } from "../ports/account-repository";
-import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { PaginatedResult } from "../domain/shared";
 import { EventPublisher } from "../ports/event-publisher";
 import { randomUUID } from "crypto";
 import { logger, metrics } from "../lib/observability";
@@ -60,7 +60,7 @@ export class CustomerService {
         return customer;
     }
 
-    async listCustomers(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Customer>> {
+    async listCustomers(organizationId: string, options?: CustomerSearchOptions): Promise<PaginatedResult<Customer>> {
         return this.customerRepository.list(organizationId, options);
     }
 

@@ -16,7 +16,8 @@ const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<A
     const organizationId = getOrgId(event);
     const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : undefined;
     const cursor = event.queryStringParameters?.cursor || undefined;
-    const result = await service.listCustomers(organizationId, { limit, cursor });
+    const search = event.queryStringParameters?.search || undefined;
+    const result = await service.listCustomers(organizationId, { limit, cursor, search });
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Truck, Plus, Loader2, Trash2, Pencil } from 'lucide-react';
 import { subcontractorsApi, Subcontractor, CreateSubcontractorData } from '@/lib/api/subcontractors';
+import { formatPhoneInput } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -128,8 +129,9 @@ export default function SubcontractorsPage() {
                                         <Input
                                             id="phone"
                                             value={form.phone || ''}
-                                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                                            placeholder="555-0200"
+                                            onChange={(e) => setForm({ ...form, phone: formatPhoneInput(e.target.value) })}
+                                            placeholder="303-555-0200"
+                                            maxLength={12}
                                         />
                                     </div>
                                 </div>

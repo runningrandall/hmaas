@@ -27,7 +27,7 @@ export interface PaginatedResult<T> {
 }
 
 export const customersApi = {
-    list: () => apiGet<PaginatedResult<Customer>>('customers'),
+    list: (search?: string) => apiGet<PaginatedResult<Customer>>(`customers${search ? `?search=${encodeURIComponent(search)}` : ''}`),
     get: (id: string) => apiGet<Customer>(`customers/${id}`),
     create: (data: { firstName: string; lastName: string; email: string; phone?: string; notes?: string }) =>
         apiPost<{ customer: Customer; account: Account }>('customers', data),

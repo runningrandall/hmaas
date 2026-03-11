@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Users, Plus, Loader2, Trash2, Pencil } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Users, Plus, Loader2, Trash2, Pencil, Search } from 'lucide-react';
 import { customersApi, Customer } from '@/lib/api/customers';
+import { formatPhoneInput } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,15 +42,17 @@ export default function CustomersPage() {
     const [form, setForm] = useState<CustomerForm>(emptyForm);
     const [editForm, setEditForm] = useState<CustomerForm>(emptyForm);
     const [saving, setSaving] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         loadCustomers();
     }, []);
 
-    const loadCustomers = async () => {
+    const loadCustomers = useCallback(async (search?: string) => {
         setLoading(true);
         try {
-            const data = await customersApi.list();
+            const data = await customersApi.list(search || undefined);
             setCustomers(data.items || []);
             setError('');
         } catch {
@@ -57,6 +60,15 @@ export default function CustomersPage() {
         } finally {
             setLoading(false);
         }
+    }, []);
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        if (searchTimeout) clearTimeout(searchTimeout);
+        const timeout = setTimeout(() => {
+            loadCustomers(value);
+        }, 300);
+        setSearchTimeout(timeout);
     };
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -192,8 +204,9 @@ export default function CustomersPage() {
                                     <Input
                                         id="phone"
                                         value={form.phone}
-                                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                                        onChange={(e) => setForm({ ...form, phone: formatPhoneInput(e.target.value) })}
                                         placeholder="303-555-0100"
+                                        maxLength={12}
                                     />
                                 </div>
                                 <div className="grid gap-2">
@@ -254,8 +267,21 @@ export default function CustomersPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>All Customers</CardTitle>
-                    <CardDescription>View and manage customers.</CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>All Customers</CardTitle>
+                            <CardDescription>View and manage customers.</CardDescription>
+                        </div>
+                        <div className="relative w-64">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search name, email, phone..."
+                                value={searchQuery}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                                className="pl-8 h-9"
+                            />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     {loading ? (
@@ -366,7 +392,9 @@ export default function CustomersPage() {
                                 <Input
                                     id="edit-phone"
                                     value={editForm.phone}
-                                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                    onChange={(e) => setEditForm({ ...editForm, phone: formatPhoneInput(e.target.value) })}
+                                    placeholder="303-555-0100"
+                                    maxLength={12}
                                 />
                             </div>
                             <div className="grid gap-2">

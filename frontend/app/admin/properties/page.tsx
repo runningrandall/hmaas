@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { MapPin, Plus, Loader2, Trash2, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { propertiesApi, Property, CreatePropertyData } from '@/lib/api/properties';
+import { formatStateInput } from '@/lib/format';
 import { customersApi, Customer } from '@/lib/api/customers';
 import { propertyTypesApi, PropertyType } from '@/lib/api/property-types';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
@@ -209,8 +210,9 @@ export default function PropertiesPage() {
                                         <Input
                                             id="state"
                                             value={form.state}
-                                            onChange={(e) => setForm({ ...form, state: e.target.value })}
+                                            onChange={(e) => setForm({ ...form, state: formatStateInput(e.target.value) })}
                                             placeholder="IL"
+                                            maxLength={2}
                                             required
                                         />
                                     </div>

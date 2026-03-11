@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Loader2, Save } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { propertiesApi, Property, UpdatePropertyData, MEASUREMENT_FIELDS } from '@/lib/api/properties';
+import { formatStateInput } from '@/lib/format';
 import { propertyTypesApi, PropertyType } from '@/lib/api/property-types';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
 import { Button } from '@/components/ui/button';
@@ -227,8 +228,9 @@ export default function PropertyDetailPage() {
                                         <Input
                                             id="state"
                                             value={form.state || ''}
-                                            onChange={(e) => setForm({ ...form, state: e.target.value })}
+                                            onChange={(e) => setForm({ ...form, state: formatStateInput(e.target.value) })}
                                             disabled={!editing}
+                                            maxLength={2}
                                         />
                                     </div>
                                     <div className="grid gap-2">

@@ -37,8 +37,14 @@ const operationsItems = [
 ]
 
 export function AppSidebar() {
-    const { toggleSidebar } = useSidebar()
+    const { toggleSidebar, isMobile, setOpenMobile } = useSidebar()
     const { isSuperAdmin } = useAdminAuthContext()
+
+    const handleNavClick = () => {
+        if (isMobile) {
+            setOpenMobile(false)
+        }
+    }
 
     const systemItems = useMemo(() => {
         const items = [
@@ -67,7 +73,7 @@ export function AppSidebar() {
                             {managementItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild>
-                                        <Link href={item.url}>
+                                        <Link href={item.url} onClick={handleNavClick}>
                                             <item.icon />
                                             <span>{item.title}</span>
                                         </Link>
@@ -84,7 +90,7 @@ export function AppSidebar() {
                             {operationsItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild>
-                                        <Link href={item.url}>
+                                        <Link href={item.url} onClick={handleNavClick}>
                                             <item.icon />
                                             <span>{item.title}</span>
                                         </Link>
@@ -101,7 +107,7 @@ export function AppSidebar() {
                             {systemItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild>
-                                        <Link href={item.url}>
+                                        <Link href={item.url} onClick={handleNavClick}>
                                             <item.icon />
                                             <span>{item.title}</span>
                                         </Link>

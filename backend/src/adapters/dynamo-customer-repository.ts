@@ -1,6 +1,6 @@
 import { Customer, UpdateCustomerRequest } from "../domain/customer";
-import { CustomerRepository } from "../ports/customer-repository";
-import { PaginationOptions, PaginatedResult } from "../domain/shared";
+import { CustomerRepository, CustomerSearchOptions } from "../ports/customer-repository";
+import { PaginatedResult } from "../domain/shared";
 import { DBService } from "../entities/service";
 import { z } from "zod";
 import { logger } from "../lib/observability";
@@ -42,9 +42,24 @@ export class DynamoCustomerRepository implements CustomerRepository {
         return parseCustomer(result.data);
     }
 
-    async list(organizationId: string, options?: PaginationOptions): Promise<PaginatedResult<Customer>> {
+    async list(organizationId: string, options?: CustomerSearchOptions): Promise<PaginatedResult<Customer>> {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
-        const result = await DBService.entities.customer.query.byOrgCustomers({ organizationId }).go({
+        const search = options?.search?.toLowerCase().trim();
+
+        let query = DBService.entities.customer.query.byOrgCustomers({ organizationId });
+
+        if (search) {
+            query = query.where(
+                ({ firstName, lastName, email, phone }, { contains }) => `
+                    ${contains(firstName, search)}
+                    OR ${contains(lastName, search)}
+                    OR ${contains(email, search)}
+                    ${phone ? `OR ${contains(phone, search)}` : ''}
+                `
+            );
+        }
+
+        const result = await query.go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
