@@ -1,0 +1,203 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Building2, Loader2, Save } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import { propertyTypesApi, PropertyType, UpdatePropertyTypeData, PropertyTypeStatus } from '@/lib/api/property-types';
+import { useAdminAuthContext } from '@/contexts/admin-auth-context';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+export default function PropertyTypeDetailPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const { isSuperAdmin } = useAdminAuthContext();
+    const propertyTypeId = searchParams.get('id');
+
+    const [propertyType, setPropertyType] = useState<PropertyType | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [form, setForm] = useState<UpdatePropertyTypeData>({});
+
+    const loadPropertyType = useCallback(async () => {
+        if (!propertyTypeId) return;
+        setLoading(true);
+        try {
+            const data = await propertyTypesApi.get(propertyTypeId);
+            setPropertyType(data);
+            setForm({
+                name: data.name,
+                description: data.description || '',
+                status: data.status || 'active',
+            });
+            setError('');
+        } catch {
+            setError('Failed to load property type.');
+        } finally {
+            setLoading(false);
+        }
+    }, [propertyTypeId]);
+
+    useEffect(() => {
+        if (!isSuperAdmin) {
+            router.push('/admin');
+            return;
+        }
+        if (!propertyTypeId) {
+            router.push('/admin/property-types');
+            return;
+        }
+        loadPropertyType();
+    }, [isSuperAdmin, router, propertyTypeId, loadPropertyType]);
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!propertyTypeId) return;
+        setSaving(true);
+        setSuccess('');
+        try {
+            const updated = await propertyTypesApi.update(propertyTypeId, form);
+            setPropertyType(updated);
+            setEditing(false);
+            setSuccess('Property type updated.');
+            setError('');
+        } catch {
+            setError('Failed to update property type.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (!isSuperAdmin) return null;
+
+    if (loading) {
+        return (
+            <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (!propertyType) {
+        return (
+            <div className="space-y-4">
+                <Link href="/admin/property-types" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+                    <ArrowLeft className="h-4 w-4" /> Back to Property Types
+                </Link>
+                <p className="text-muted-foreground">Property type not found.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <Link href="/admin/property-types" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
+                    <ArrowLeft className="h-4 w-4" /> Back to Property Types
+                </Link>
+                <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Building2 className="h-6 w-6" />
+                        {propertyType.name}
+                    </h1>
+                    <Badge variant={propertyType.status === 'active' ? 'default' : 'secondary'}>
+                        {propertyType.status || 'active'}
+                    </Badge>
+                </div>
+                <p className="text-muted-foreground">Property Type ID: {propertyType.propertyTypeId}</p>
+            </div>
+
+            {error && (
+                <div className="bg-destructive/15 text-destructive p-3 rounded-md border border-destructive/20 text-sm">
+                    {error}
+                </div>
+            )}
+            {success && (
+                <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-3 rounded-md border border-emerald-500/20 text-sm">
+                    {success}
+                </div>
+            )}
+
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Property Type Details</CardTitle>
+                        <CardDescription>View and edit property type information.</CardDescription>
+                    </div>
+                    {!editing && (
+                        <Button variant="outline" onClick={() => setEditing(true)}>Edit</Button>
+                    )}
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSave}>
+                        <div className="grid gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Name</Label>
+                                <Input
+                                    id="name"
+                                    value={form.name || ''}
+                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                    disabled={!editing}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="description">Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={form.description || ''}
+                                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                                    disabled={!editing}
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="status">Status</Label>
+                                <select
+                                    id="status"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    value={form.status || 'active'}
+                                    onChange={(e) => setForm({ ...form, status: e.target.value as PropertyTypeStatus })}
+                                    disabled={!editing}
+                                >
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                            {editing && (
+                                <div className="flex gap-2">
+                                    <Button type="submit" disabled={saving}>
+                                        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                                        Save
+                                    </Button>
+                                    <Button type="button" variant="outline" onClick={() => {
+                                        setEditing(false);
+                                        setForm({
+                                            name: propertyType.name,
+                                            description: propertyType.description || '',
+                                            status: propertyType.status || 'active',
+                                        });
+                                    }}>
+                                        Cancel
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </form>
+
+                    <div className="mt-6 pt-4 border-t text-sm text-muted-foreground flex gap-6">
+                        <span>Created: {propertyType.createdAt ? new Date(propertyType.createdAt).toLocaleString() : '-'}</span>
+                        <span>Updated: {propertyType.updatedAt ? new Date(propertyType.updatedAt).toLocaleString() : '-'}</span>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

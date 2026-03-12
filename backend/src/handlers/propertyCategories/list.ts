@@ -1,23 +1,25 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { logger } from "../../lib/observability";
 import { commonMiddleware, getOrgId } from "../../lib/middleware";
-import { DynamoCustomerRepository } from "../../adapters/dynamo-customer-repository";
-import { DynamoAccountRepository } from "../../adapters/dynamo-account-repository";
+import { AppError } from "../../lib/error";
+import { DynamoEntityCategoryRepository } from "../../adapters/dynamo-entity-category-repository";
 import { EventBridgePublisher } from "../../adapters/event-bridge-publisher";
-import { CustomerService } from "../../application/customer-service";
+import { EntityCategoryService } from "../../application/entity-category-service";
 
-const customerRepo = new DynamoCustomerRepository();
-const accountRepo = new DynamoAccountRepository();
+const repository = new DynamoEntityCategoryRepository();
 const publisher = new EventBridgePublisher(process.env.EVENT_BUS_NAME || "");
-const service = new CustomerService(customerRepo, accountRepo, publisher);
+const service = new EntityCategoryService(repository, publisher);
 
 const baseHandler = async (event: APIGatewayProxyEvent, context: any): Promise<APIGatewayProxyResult> => {
     logger.addContext(context);
     const organizationId = getOrgId(event);
+    const propertyId = event.pathParameters?.propertyId;
+    if (!propertyId) {
+        throw new AppError("Missing propertyId", 400);
+    }
     const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : undefined;
     const cursor = event.queryStringParameters?.cursor || undefined;
-    const search = event.queryStringParameters?.search || undefined;
-    const result = await service.listCustomers(organizationId, { limit, cursor, search });
+    const result = await service.listByEntity(organizationId, "property", propertyId, { limit, cursor });
     return { statusCode: 200, body: JSON.stringify(result) };
 };
 

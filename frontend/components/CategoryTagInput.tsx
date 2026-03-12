@@ -10,10 +10,11 @@ import {
     categoriesApi,
     serviceTypeCategoriesApi,
     planCategoriesApi,
+    propertyCategoriesApi,
     Category,
 } from '@/lib/api/categories';
 
-type EntityType = 'serviceType' | 'plan';
+type EntityType = 'serviceType' | 'plan' | 'property';
 
 interface CategoryTagInputProps {
     entityType: EntityType;
@@ -22,7 +23,9 @@ interface CategoryTagInputProps {
 }
 
 function getApi(entityType: EntityType) {
-    return entityType === 'serviceType' ? serviceTypeCategoriesApi : planCategoriesApi;
+    if (entityType === 'serviceType') return serviceTypeCategoriesApi;
+    if (entityType === 'property') return propertyCategoriesApi;
+    return planCategoriesApi;
 }
 
 export default function CategoryTagInput({ entityType, entityId, disabled }: CategoryTagInputProps) {

@@ -245,6 +245,9 @@ export class InfraStack extends cdk.Stack {
       { id: 'listPropertyServices', entry: 'propertyServices/listByProperty.ts' },
       { id: 'updatePropertyService', entry: 'propertyServices/update.ts' },
       { id: 'deletePropertyService', entry: 'propertyServices/delete.ts' },
+      { id: 'createPropertyCategory', entry: 'propertyCategories/create.ts' },
+      { id: 'listPropertyCategories', entry: 'propertyCategories/list.ts' },
+      { id: 'deletePropertyCategory', entry: 'propertyCategories/delete.ts' },
       { id: 'createCost', entry: 'costs/create.ts' },
       { id: 'listCosts', entry: 'costs/listByService.ts' },
       { id: 'deleteCost', entry: 'costs/delete.ts' },
@@ -488,6 +491,13 @@ export class InfraStack extends cdk.Stack {
     propertyRes.addMethod('GET', li(property.functions.getProperty), opts);
     propertyRes.addMethod('PUT', li(property.functions.updateProperty), opts);
     propertyRes.addMethod('DELETE', li(property.functions.deleteProperty), opts);
+
+    // Property Categories
+    const propertyCategories = propertyRes.addResource('categories');
+    propertyCategories.addMethod('GET', li(property.functions.listPropertyCategories), opts);
+    propertyCategories.addMethod('POST', li(property.functions.createPropertyCategory), opts);
+    const propertyCategoryRes = propertyCategories.addResource('{categoryId}');
+    propertyCategoryRes.addMethod('DELETE', li(property.functions.deletePropertyCategory), opts);
 
     // Plans
     const plans = api.root.addResource('plans');

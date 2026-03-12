@@ -32,7 +32,7 @@ describe('openapi', () => {
 
         it('should include a Production server', () => {
             const spec = generateOpenApiSpec();
-            const prodServer = spec.servers?.find(s => s.description === 'Production');
+            const prodServer = spec.servers?.find(s => s.description?.includes('Production'));
             expect(prodServer).toBeDefined();
             expect(prodServer?.url).toContain('amazonaws.com');
         });

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Wrench, Plus, Loader2, Trash2, Pencil } from 'lucide-react';
-import { serviceTypesApi, ServiceType, CreateServiceTypeData, ServiceUnit, ServiceFrequency } from '@/lib/api/service-types';
+import { serviceTypesApi, ServiceType, CreateServiceTypeData, ServiceUnit, ServiceFrequency, SERVICE_UNIT_LABELS, SERVICE_FREQUENCY_LABELS } from '@/lib/api/service-types';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -155,9 +155,9 @@ export default function ServicesPage() {
                                             onChange={(e) => setForm({ ...form, unit: (e.target.value || undefined) as ServiceUnit | undefined })}
                                         >
                                             <option value="">Select unit</option>
-                                            <option value="per_visit">Per Visit</option>
-                                            <option value="per_hour">Per Hour</option>
-                                            <option value="per_sqft">Per Sq Ft</option>
+                                            {Object.entries(SERVICE_UNIT_LABELS).map(([val, label]) => (
+                                                <option key={val} value={val}>{label}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -182,12 +182,9 @@ export default function ServicesPage() {
                                             onChange={(e) => setForm({ ...form, frequency: (e.target.value || undefined) as ServiceFrequency | undefined })}
                                         >
                                             <option value="">Select frequency</option>
-                                            <option value="weekly">Weekly</option>
-                                            <option value="biweekly">Biweekly</option>
-                                            <option value="monthly">Monthly</option>
-                                            <option value="quarterly">Quarterly</option>
-                                            <option value="annually">Annually</option>
-                                            <option value="one_time">One Time</option>
+                                            {Object.entries(SERVICE_FREQUENCY_LABELS).map(([val, label]) => (
+                                                <option key={val} value={val}>{label}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>

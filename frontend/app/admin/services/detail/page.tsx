@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Wrench, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
-import { serviceTypesApi, ServiceType, UpdateServiceTypeData, ServiceUnit, ServiceFrequency } from '@/lib/api/service-types';
+import { serviceTypesApi, ServiceType, UpdateServiceTypeData, ServiceUnit, ServiceFrequency, SERVICE_UNIT_LABELS, SERVICE_FREQUENCY_LABELS } from '@/lib/api/service-types';
 import CategoryTagInput from '@/components/CategoryTagInput';
 import { useAdminAuthContext } from '@/contexts/admin-auth-context';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ export default function ServiceTypeDetailPage() {
     const [editing, setEditing] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [form, setForm] = useState<UpdateServiceTypeData & { basePriceDollars: string }>({ basePriceDollars: '' });
+    const [form, setForm] = useState<UpdateServiceTypeData & { basePriceDollars: string; ratePerUnitDollars: string }>({ basePriceDollars: '', ratePerUnitDollars: '' });
 
     const loadServiceType = useCallback(async () => {
         if (!serviceTypeId) return;
@@ -40,6 +40,10 @@ export default function ServiceTypeDetailPage() {
                 unit: data.unit,
                 estimatedDuration: data.estimatedDuration,
                 frequency: data.frequency,
+                measurementKey: data.measurementKey || '',
+                measurementUnit: data.measurementUnit || '',
+                ratePerUnitDollars: data.ratePerUnit != null ? (data.ratePerUnit / 100).toFixed(2) : '',
+                durationPerUnit: data.durationPerUnit,
             });
             setError('');
         } catch {
@@ -67,10 +71,11 @@ export default function ServiceTypeDetailPage() {
         setSaving(true);
         setSuccess('');
         try {
-            const { basePriceDollars, ...rest } = form;
+            const { basePriceDollars, ratePerUnitDollars, ...rest } = form;
             const data: UpdateServiceTypeData = {
                 ...rest,
                 basePrice: basePriceDollars ? Math.round(parseFloat(basePriceDollars) * 100) : undefined,
+                ratePerUnit: ratePerUnitDollars ? Math.round(parseFloat(ratePerUnitDollars) * 100) : undefined,
             };
             const updated = await serviceTypesApi.update(serviceTypeId, data);
             setServiceType(updated);
@@ -184,9 +189,9 @@ export default function ServiceTypeDetailPage() {
                                         disabled={!editing}
                                     >
                                         <option value="">Select unit</option>
-                                        <option value="per_visit">Per Visit</option>
-                                        <option value="per_hour">Per Hour</option>
-                                        <option value="per_sqft">Per Sq Ft</option>
+                                        {Object.entries(SERVICE_UNIT_LABELS).map(([val, label]) => (
+                                            <option key={val} value={val}>{label}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
@@ -212,13 +217,63 @@ export default function ServiceTypeDetailPage() {
                                         disabled={!editing}
                                     >
                                         <option value="">Select frequency</option>
-                                        <option value="weekly">Weekly</option>
-                                        <option value="biweekly">Biweekly</option>
-                                        <option value="monthly">Monthly</option>
-                                        <option value="quarterly">Quarterly</option>
-                                        <option value="annually">Annually</option>
-                                        <option value="one_time">One Time</option>
+                                        {Object.entries(SERVICE_FREQUENCY_LABELS).map(([val, label]) => (
+                                            <option key={val} value={val}>{label}</option>
+                                        ))}
                                     </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="measurementKey">Measurement Key</Label>
+                                    <Input
+                                        id="measurementKey"
+                                        value={form.measurementKey || ''}
+                                        onChange={(e) => setForm({ ...form, measurementKey: e.target.value || undefined })}
+                                        disabled={!editing}
+                                        placeholder="e.g. lawnSqft, windowCount"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Property measurement field used for pricing calculations</p>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="measurementUnit">Measurement Unit</Label>
+                                    <Input
+                                        id="measurementUnit"
+                                        value={form.measurementUnit || ''}
+                                        onChange={(e) => setForm({ ...form, measurementUnit: e.target.value || undefined })}
+                                        disabled={!editing}
+                                        placeholder="e.g. sq ft, count, linear ft"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="ratePerUnit">Rate Per Unit ($)</Label>
+                                    <Input
+                                        id="ratePerUnit"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={form.ratePerUnitDollars}
+                                        onChange={(e) => setForm({ ...form, ratePerUnitDollars: e.target.value })}
+                                        disabled={!editing}
+                                        placeholder="0.05"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Added to base price per unit of measurement</p>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="durationPerUnit">Duration Per Unit (min)</Label>
+                                    <Input
+                                        id="durationPerUnit"
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        value={form.durationPerUnit || ''}
+                                        onChange={(e) => setForm({ ...form, durationPerUnit: e.target.value ? parseFloat(e.target.value) : undefined })}
+                                        disabled={!editing}
+                                        placeholder="0.5"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Added to base duration per unit of measurement</p>
                                 </div>
                             </div>
                             {editing && (
@@ -236,6 +291,10 @@ export default function ServiceTypeDetailPage() {
                                             unit: serviceType.unit,
                                             estimatedDuration: serviceType.estimatedDuration,
                                             frequency: serviceType.frequency,
+                                            measurementKey: serviceType.measurementKey || '',
+                                            measurementUnit: serviceType.measurementUnit || '',
+                                            ratePerUnitDollars: serviceType.ratePerUnit != null ? (serviceType.ratePerUnit / 100).toFixed(2) : '',
+                                            durationPerUnit: serviceType.durationPerUnit,
                                         });
                                     }}>
                                         Cancel

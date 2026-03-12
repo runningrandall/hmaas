@@ -1,5 +1,5 @@
-export type ServiceUnit = "per_visit" | "per_hour" | "per_sqft" | "per_linear_foot" | "per_unit";
-export type ServiceFrequency = "weekly" | "biweekly" | "monthly" | "quarterly" | "annually" | "one_time";
+export type ServiceUnit = "per_visit" | "per_hour" | "per_sqft" | "per_linear_foot" | "per_unit" | "per_window";
+export type ServiceFrequency = "weekly" | "biweekly" | "monthly" | "quarterly" | "biannual" | "annually" | "one_time";
 
 export interface ServiceType {
     organizationId: string;

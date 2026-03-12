@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+import { normalizePhone, normalizeAddress, normalizeCity, normalizeState, normalizeZip } from './normalize';
 
 extendZodWithOpenApi(z);
 
@@ -9,11 +10,11 @@ export const CreateOrganizationSchema = z.object({
     description: z.string().optional().openapi({ example: 'Full-service property management company' }),
     ownerUserId: z.string().min(1, "Owner user ID is required").openapi({ example: 'user-abc-123' }),
     billingEmail: z.string().email("Invalid billing email").openapi({ example: 'billing@versa.com' }),
-    phone: z.string().optional().openapi({ example: '555-0100' }),
-    address: z.string().optional().openapi({ example: '123 Main St' }),
-    city: z.string().optional().openapi({ example: 'Denver' }),
-    state: z.string().optional().openapi({ example: 'CO' }),
-    zip: z.string().optional().openapi({ example: '80202' }),
+    phone: z.string().transform(normalizePhone).optional().openapi({ example: '303-555-0100' }),
+    address: z.string().transform(normalizeAddress).optional().openapi({ example: '123 Main St' }),
+    city: z.string().transform(normalizeCity).optional().openapi({ example: 'Denver' }),
+    state: z.string().transform(normalizeState).optional().openapi({ example: 'CO' }),
+    zip: z.string().transform(normalizeZip).optional().openapi({ example: '80202' }),
     timezone: z.string().optional().openapi({ example: 'America/Denver' }),
 }).openapi('CreateOrganization');
 
@@ -26,11 +27,11 @@ export const UpdateOrganizationSchema = z.object({
     status: z.enum(["active", "inactive", "suspended"]).optional().openapi({ example: 'active' }),
     ownerUserId: z.string().min(1).optional().openapi({ example: 'user-abc-123' }),
     billingEmail: z.string().email().optional().openapi({ example: 'billing@versa.com' }),
-    phone: z.string().optional().openapi({ example: '555-0100' }),
-    address: z.string().optional().openapi({ example: '123 Main St' }),
-    city: z.string().optional().openapi({ example: 'Denver' }),
-    state: z.string().optional().openapi({ example: 'CO' }),
-    zip: z.string().optional().openapi({ example: '80202' }),
+    phone: z.string().transform(normalizePhone).optional().openapi({ example: '303-555-0100' }),
+    address: z.string().transform(normalizeAddress).optional().openapi({ example: '123 Main St' }),
+    city: z.string().transform(normalizeCity).optional().openapi({ example: 'Denver' }),
+    state: z.string().transform(normalizeState).optional().openapi({ example: 'CO' }),
+    zip: z.string().transform(normalizeZip).optional().openapi({ example: '80202' }),
     timezone: z.string().optional().openapi({ example: 'America/Denver' }),
 }).openapi('UpdateOrganization');
 

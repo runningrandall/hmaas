@@ -383,6 +383,7 @@ export default function PlanDetailPage() {
                                             <option value="biweekly">Biweekly</option>
                                             <option value="monthly">Monthly</option>
                                             <option value="quarterly">Quarterly</option>
+                                            <option value="biannual">Biannual</option>
                                             <option value="annually">Annually</option>
                                             <option value="one_time">One Time</option>
                                         </select>

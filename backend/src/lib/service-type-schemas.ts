@@ -3,8 +3,8 @@ import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 
 extendZodWithOpenApi(z);
 
-const serviceUnitEnum = z.enum(["per_visit", "per_hour", "per_sqft", "per_linear_foot", "per_unit"]);
-const serviceFrequencyEnum = z.enum(["weekly", "biweekly", "monthly", "quarterly", "annually", "one_time"]);
+const serviceUnitEnum = z.enum(["per_visit", "per_hour", "per_sqft", "per_linear_foot", "per_unit", "per_window"]);
+const serviceFrequencyEnum = z.enum(["weekly", "biweekly", "monthly", "quarterly", "biannual", "annually", "one_time"]);
 
 export const CreateServiceTypeSchema = z.object({
     name: z.string().min(1, "Name is required").openapi({ example: 'Lawn Care' }),

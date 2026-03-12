@@ -1,10 +1,10 @@
 "use client"
 
-import { Calendar, Home, Users, Building2, Wrench, FileText, UserCog, DollarSign, Settings, Globe, X, Tag, Truck } from "lucide-react"
+import { Calendar, Home, Users, Building2, MapPin, Wrench, FileText, UserCog, DollarSign, Settings, Globe, Tag, Truck } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useMemo } from "react"
 
-import { Button } from "@/components/ui/button"
 import {
     Sidebar,
     SidebarContent,
@@ -15,17 +15,17 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    useSidebar,
 } from "@/components/ui/sidebar"
 import { useAdminAuthContext } from "@/contexts/admin-auth-context"
 
 const managementItems = [
     { title: "Dashboard", url: "/admin", icon: Home },
     { title: "Customers", url: "/admin/customers", icon: Users },
-    { title: "Properties", url: "/admin/properties", icon: Building2 },
+    { title: "Properties", url: "/admin/properties", icon: MapPin },
     { title: "Services", url: "/admin/services", icon: Wrench },
     { title: "Categories", url: "/admin/categories", icon: Tag },
     { title: "Plans", url: "/admin/plans", icon: FileText },
+    { title: "Property Types", url: "/admin/property-types", icon: Building2 },
 ]
 
 const operationsItems = [
@@ -35,9 +35,14 @@ const operationsItems = [
     { title: "Invoices", url: "/admin/invoices", icon: DollarSign },
 ]
 
+function isActive(pathname: string, url: string): boolean {
+    if (url === "/admin") return pathname === "/admin"
+    return pathname === url || pathname.startsWith(url + "/")
+}
+
 export function AppSidebar() {
-    const { toggleSidebar } = useSidebar()
     const { isSuperAdmin } = useAdminAuthContext()
+    const pathname = usePathname()
 
     const systemItems = useMemo(() => {
         const items = [
@@ -49,30 +54,29 @@ export function AppSidebar() {
         return items
     }, [isSuperAdmin])
 
+    const renderMenuItems = (items: typeof managementItems) =>
+        items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild isActive={isActive(pathname, item.url)}>
+                    <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        ))
+
     return (
-        <Sidebar>
-            <SidebarHeader className="flex flex-row items-center justify-between px-4 py-2">
+        <Sidebar collapsible="none">
+            <SidebarHeader className="flex flex-row items-center px-4 py-2">
                 <span className="text-lg font-semibold">Versa Admin</span>
-                <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-                    <X className="h-5 w-5" />
-                    <span className="sr-only">Close sidebar</span>
-                </Button>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupLabel>Management</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {managementItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild>
-                                        <Link href={item.url}>
-                                            <item.icon />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {renderMenuItems(managementItems)}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -80,16 +84,7 @@ export function AppSidebar() {
                     <SidebarGroupLabel>Operations</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {operationsItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild>
-                                        <Link href={item.url}>
-                                            <item.icon />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {renderMenuItems(operationsItems)}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -97,16 +92,7 @@ export function AppSidebar() {
                     <SidebarGroupLabel>System</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {systemItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild>
-                                        <Link href={item.url}>
-                                            <item.icon />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {renderMenuItems(systemItems)}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

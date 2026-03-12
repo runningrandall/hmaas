@@ -57,3 +57,9 @@ export const planCategoriesApi = {
     add: (planId: string, categoryId: string) => apiPost<EntityCategory>(`plans/${planId}/categories`, { categoryId }),
     remove: (planId: string, categoryId: string) => apiDelete(`plans/${planId}/categories/${categoryId}`),
 };
+
+export const propertyCategoriesApi = {
+    list: (propertyId: string) => apiGet<PaginatedEntityCategories>(`properties/${propertyId}/categories`),
+    add: (propertyId: string, categoryId: string) => apiPost<EntityCategory>(`properties/${propertyId}/categories`, { categoryId }),
+    remove: (propertyId: string, categoryId: string) => apiDelete(`properties/${propertyId}/categories/${categoryId}`),
+};
