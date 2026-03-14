@@ -1,3 +1,15 @@
+# [1.7.0](https://github.com/runningrandall/hmaas/compare/v1.6.0...v1.7.0) (2026-03-14)
+
+
+### Bug Fixes
+
+* make bundle pricing modal mobile-friendly ([a0cd688](https://github.com/runningrandall/hmaas/commit/a0cd688f5d74efeaa0b57a44001a62075fd31712))
+
+
+### Features
+
+* quote request form with property details and service selection ([e8a3b09](https://github.com/runningrandall/hmaas/commit/e8a3b09801e4ba8397a271fd521c1a1af2231eb8))
+
 # [1.6.0](https://github.com/runningrandall/hmaas/compare/v1.5.0...v1.6.0) (2026-03-14)
 
 
