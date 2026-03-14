@@ -54,7 +54,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center pt-20 overflow-hidden">
+      <section data-testid="hero" className="relative h-screen flex items-center justify-center pt-20 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
             src="/hero.png"
@@ -139,7 +139,7 @@ export default function Home() {
           </button>
 
           <div className="pt-16 mt-16 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2 grayscale opacity-50">
+            <div className="flex items-center gap-2 opacity-75">
               <Image src="/logo.svg" alt="Versa Logo" width={32} height={32} />
               <span className="font-bold">Versa Property Management</span>
             </div>
