@@ -20,6 +20,11 @@ const servicesList = [
   { id: 'garbage-bin', name: "Garbage Bin Cleaning", cadence: "2x per year", price: 15.00, unit: "per bin", icon: "🗑️" },
   { id: 'leaf-removal', name: "Leaf Removal", cadence: "1x per year", price: 60.00, unit: "per 0.25 acre", icon: "🍂" },
   { id: 'driveway-wash', name: "Driveway/Deck Wash", cadence: "1x per year", price: 0.30, unit: "per sq ft", icon: "💧" },
+  { id: 'weed-control', name: "Weed Control (Chemical)", cadence: "5x per year", price: 45.00, unit: "per 0.25 acre", icon: "🧴" },
+  { id: 'flower-bed', name: "Flower Bed Maintenance", cadence: "Monthly", price: 30.00, unit: "per bed", icon: "🌺" },
+  { id: 'house-wash', name: "Exterior House Wash", cadence: "1x per year", price: 0.20, unit: "per sq ft", icon: "🚿" },
+  { id: 'seasonal-cleanup', name: "Spring/Fall Cleanup", cadence: "2x per year", price: 75.00, unit: "per 0.25 acre", icon: "🍁" },
+  { id: 'sprinkler-startup', name: "Sprinkler Startup", cadence: "1x per year", price: 15.00, unit: "per zone", icon: "💦" },
 ];
 
 export default function BundlePricingModal({ isOpen, onClose, onOpenContact }: BundlePricingModalProps) {

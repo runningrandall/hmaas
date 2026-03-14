@@ -14,6 +14,11 @@ const SERVICES = [
   { id: 'garbage-bin', name: "Garbage Bin Cleaning" },
   { id: 'leaf-removal', name: "Leaf Removal" },
   { id: 'driveway-wash', name: "Driveway/Deck Wash" },
+  { id: 'weed-control', name: "Weed Control (Chemical)" },
+  { id: 'flower-bed', name: "Flower Bed Maintenance" },
+  { id: 'house-wash', name: "Exterior House Wash" },
+  { id: 'seasonal-cleanup', name: "Spring/Fall Cleanup" },
+  { id: 'sprinkler-startup', name: "Sprinkler Startup" },
 ];
 
 interface ContactModalProps {
@@ -166,7 +171,7 @@ export default function ContactModal({ isOpen, onClose, selectedServices: initia
                 <div>
                   <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Property Details</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {needsField('lawn-mow', 'lawn-aeration', 'lawn-fertilizer', 'leaf-removal') && (
+                    {needsField('lawn-mow', 'lawn-aeration', 'lawn-fertilizer', 'leaf-removal', 'weed-control', 'seasonal-cleanup') && (
                       <div>
                         <label htmlFor="lot_size" className="block text-sm font-medium text-foreground mb-1">Lot Size (acres)</label>
                         <input type="number" id="lot_size" name="lot_size" step="0.05" min="0" disabled={status === "loading"} className={inputClass} placeholder="0.25" />
@@ -178,7 +183,7 @@ export default function ContactModal({ isOpen, onClose, selectedServices: initia
                         <input type="number" id="num_windows" name="num_windows" min="0" disabled={status === "loading"} className={inputClass} placeholder="20" />
                       </div>
                     )}
-                    {needsField('sprinkler-winterization') && (
+                    {needsField('sprinkler-winterization', 'sprinkler-startup') && (
                       <div>
                         <label htmlFor="sprinkler_zones" className="block text-sm font-medium text-foreground mb-1">Sprinkler Zones</label>
                         <input type="number" id="sprinkler_zones" name="sprinkler_zones" min="0" disabled={status === "loading"} className={inputClass} placeholder="6" />
@@ -188,6 +193,12 @@ export default function ContactModal({ isOpen, onClose, selectedServices: initia
                       <div>
                         <label htmlFor="num_shrubs" className="block text-sm font-medium text-foreground mb-1">Number of Shrubs</label>
                         <input type="number" id="num_shrubs" name="num_shrubs" min="0" disabled={status === "loading"} className={inputClass} placeholder="15" />
+                      </div>
+                    )}
+                    {needsField('flower-bed') && (
+                      <div>
+                        <label htmlFor="num_beds" className="block text-sm font-medium text-foreground mb-1">Number of Flower Beds</label>
+                        <input type="number" id="num_beds" name="num_beds" min="0" disabled={status === "loading"} className={inputClass} placeholder="4" />
                       </div>
                     )}
                     {needsField('gutter-cleaning') && (
@@ -202,10 +213,16 @@ export default function ContactModal({ isOpen, onClose, selectedServices: initia
                         <input type="number" id="num_bins" name="num_bins" min="0" disabled={status === "loading"} className={inputClass} placeholder="3" />
                       </div>
                     )}
-                    {needsField('driveway-wash') && (
+                    {needsField('driveway-wash', 'house-wash') && (
                       <div>
-                        <label htmlFor="driveway_sqft" className="block text-sm font-medium text-foreground mb-1">Driveway/Deck Area (sq ft)</label>
+                        <label htmlFor="driveway_sqft" className="block text-sm font-medium text-foreground mb-1">{needsField('house-wash') && !needsField('driveway-wash') ? 'House Exterior Area (sq ft)' : 'Driveway/Deck Area (sq ft)'}</label>
                         <input type="number" id="driveway_sqft" name="driveway_sqft" min="0" disabled={status === "loading"} className={inputClass} placeholder="800" />
+                      </div>
+                    )}
+                    {needsField('house-wash') && needsField('driveway-wash') && (
+                      <div>
+                        <label htmlFor="house_sqft" className="block text-sm font-medium text-foreground mb-1">House Exterior Area (sq ft)</label>
+                        <input type="number" id="house_sqft" name="house_sqft" min="0" disabled={status === "loading"} className={inputClass} placeholder="2000" />
                       </div>
                     )}
                   </div>

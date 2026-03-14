@@ -19,6 +19,11 @@ const SERVICES = [
     { name: 'Garbage Bin Cleaning', cadence: '2x per year', visitsPerYear: 2, unit: 'bin', pricePerUnit: 15.00 },
     { name: 'Leaf Removal', cadence: '3x per year (fall)', visitsPerYear: 3, unit: '0.25 acre', pricePerUnit: 60.00 },
     { name: 'Driveway/Deck Cleaning', cadence: '1x per year', visitsPerYear: 1, unit: 'sq ft', pricePerUnit: 0.30 },
+    { name: 'Weed Control (Chemical)', cadence: '5x per year', visitsPerYear: 5, unit: '0.25 acre', pricePerUnit: 45.00 },
+    { name: 'Flower Bed Maintenance', cadence: 'Monthly (seasonal)', visitsPerYear: 7, unit: 'bed', pricePerUnit: 30.00 },
+    { name: 'Exterior House Wash', cadence: '1x per year', visitsPerYear: 1, unit: 'sq ft', pricePerUnit: 0.20 },
+    { name: 'Spring/Fall Cleanup', cadence: '2x per year', visitsPerYear: 2, unit: '0.25 acre', pricePerUnit: 75.00 },
+    { name: 'Sprinkler Startup', cadence: '1x per year (spring)', visitsPerYear: 1, unit: 'zone', pricePerUnit: 15.00 },
 ];
 
 interface LineItem {

@@ -12,3 +12,10 @@
 | Garbage Bin Cleaning | 2x per year | per bin | $15.00 |
 | Leaf Removal | 3x per year (fall) | per 0.25 acre | $60.00 |
 | Driveway/Deck Cleaning | 1x per year | per sq ft | $0.30 |
+| Weed Control (Chemical) | 5x per year | per 0.25 acre | $45.00 |
+
+| Flower Bed Maintenance | Monthly (seasonal) | per bed | $30.00 |
+
+| Exterior House Wash | 1x per year | per sq ft | $0.20 |
+| Spring/Fall Cleanup | 2x per year | per 0.25 acre | $75.00 |
+| Sprinkler Startup | 1x per year (spring) | per zone | $15.00 |
