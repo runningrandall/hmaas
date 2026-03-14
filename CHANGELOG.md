@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/runningrandall/hmaas/compare/v1.5.0...v1.6.0) (2026-03-14)
+
+
+### Features
+
+* properties, categories, service enhancements, and OpenAPI spec ([#11](https://github.com/runningrandall/hmaas/issues/11)) ([b091ed6](https://github.com/runningrandall/hmaas/commit/b091ed6bd1dd2da0cdaf285a9a56ff413e7d108e))
+
 <<<<<<< dev
 =======
 # [1.5.0](https://github.com/runningrandall/hmaas/compare/v1.4.1...v1.5.0) (2026-03-11)
