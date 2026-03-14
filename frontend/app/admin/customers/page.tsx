@@ -45,10 +45,6 @@ export default function CustomersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        loadCustomers();
-    }, []);
-
     const loadCustomers = useCallback(async (search?: string) => {
         setLoading(true);
         try {
@@ -61,6 +57,10 @@ export default function CustomersPage() {
             setLoading(false);
         }
     }, []);
+
+    useEffect(() => {
+        loadCustomers();
+    }, [loadCustomers]);
 
     const handleSearchChange = (value: string) => {
         setSearchQuery(value);

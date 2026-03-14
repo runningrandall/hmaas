@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Home, Users, Building2, MapPin, Wrench, FileText, UserCog, DollarSign, Settings, Globe, Tag, Truck } from "lucide-react"
+import { Calculator, Calendar, Home, Users, Building2, MapPin, Wrench, FileText, UserCog, DollarSign, Settings, Globe, Tag, Truck } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useMemo } from "react"
@@ -33,6 +33,7 @@ const operationsItems = [
     { title: "Employees", url: "/admin/employees", icon: UserCog },
     { title: "Subcontractors", url: "/admin/subcontractors", icon: Truck },
     { title: "Invoices", url: "/admin/invoices", icon: DollarSign },
+    { title: "Estimate Generator", url: "/admin/estimate-generator", icon: Calculator },
 ]
 
 function isActive(pathname: string, url: string): boolean {

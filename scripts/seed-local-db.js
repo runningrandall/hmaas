@@ -29,9 +29,9 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-// Force local DynamoDB
+// Force local DynamoDB — always use localhost since this script runs on the host
 process.env.TABLE_NAME = process.env.TABLE_NAME || 'versa-table';
-process.env.LOCAL_DYNAMODB_ENDPOINT = process.env.LOCAL_DYNAMODB_ENDPOINT || 'http://localhost:8000';
+process.env.LOCAL_DYNAMODB_ENDPOINT = 'http://localhost:8000';
 process.env.AWS_REGION = process.env.AWS_REGION || 'us-east-1';
 
 // ── Import compiled ElectroDB entities ───────────────────────────────────────
