@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Droplets, Scissors, Wind,
   Trash2, Recycle, Home as HomeIcon, Shrub,
-  Wrench, SunSnow
+  Wrench, SunSnow, Flower2, Sparkles
 } from "lucide-react";
 import ContactModal from "@/components/ContactModal";
 import BundlePricingModal from "@/components/BundlePricingModal";
@@ -33,6 +33,11 @@ export default function Home() {
     { name: "Garbage Bin Cleaning", desc: "Eliminate odors and bacteria 2x per year.", icon: <Trash2 className="w-8 h-8 text-primary" /> },
     { name: "Leaf Removal", desc: "Fall cleanups to keep your lawn breathing.", icon: <Wind className="w-8 h-8 text-primary" /> },
     { name: "Driveway/Deck Power Wash", desc: "Annual deep clean for hard surfaces.", icon: <Wrench className="w-8 h-8 text-primary" /> },
+    { name: "Weed Control", desc: "Chemical pre/post-emergent treatments 5x per year.", icon: <Sparkles className="w-8 h-8 text-primary" /> },
+    { name: "Flower Bed Maintenance", desc: "Monthly mulching, weeding, and seasonal planting.", icon: <Flower2 className="w-8 h-8 text-primary" /> },
+    { name: "Exterior House Wash", desc: "Annual soft wash for siding and exterior.", icon: <Droplets className="w-8 h-8 text-primary" /> },
+    { name: "Spring/Fall Cleanup", desc: "Comprehensive seasonal property prep.", icon: <Wind className="w-8 h-8 text-primary" /> },
+    { name: "Sprinkler Startup", desc: "Spring activation and zone testing.", icon: <SunSnow className="w-8 h-8 text-primary" /> },
   ];
 
   return (
