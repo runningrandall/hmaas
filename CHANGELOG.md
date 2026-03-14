@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/runningrandall/hmaas/compare/v1.7.0...v1.8.0) (2026-03-14)
+
+
+### Features
+
+* add new bundled services (weed control, flower beds, house wash, cleanup, sprinkler startup) ([3fe9176](https://github.com/runningrandall/hmaas/commit/3fe91764121eda965709fa33ee01c9c4d2e7b8b4))
+
 # [1.7.0](https://github.com/runningrandall/hmaas/compare/v1.6.0...v1.7.0) (2026-03-14)
 
 
