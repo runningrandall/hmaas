@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/runningrandall/hmaas/compare/v1.8.0...v1.8.1) (2026-03-14)
+
+
+### Bug Fixes
+
+* update lawn aeration pricing to $60 per 0.25 acre ([4d5e3f9](https://github.com/runningrandall/hmaas/commit/4d5e3f9447bf15c42945c1dee910a2e7fda9e3cc))
+
 # [1.8.0](https://github.com/runningrandall/hmaas/compare/v1.7.0...v1.8.0) (2026-03-14)
 
 
