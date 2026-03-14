@@ -46,20 +46,20 @@ export class DynamoCustomerRepository implements CustomerRepository {
         const limit = options?.limit || DEFAULT_PAGE_SIZE;
         const search = options?.search?.toLowerCase().trim();
 
-        let query = DBService.entities.customer.query.byOrgCustomers({ organizationId });
+        const query = DBService.entities.customer.query.byOrgCustomers({ organizationId });
 
-        if (search) {
-            query = query.where(
+        const finalQuery = search
+            ? query.where(
                 ({ firstName, lastName, email, phone }, { contains }) => `
                     ${contains(firstName, search)}
                     OR ${contains(lastName, search)}
                     OR ${contains(email, search)}
                     ${phone ? `OR ${contains(phone, search)}` : ''}
                 `
-            );
-        }
+            )
+            : query;
 
-        const result = await query.go({
+        const result = await finalQuery.go({
             limit,
             ...(options?.cursor && { cursor: options.cursor }),
         });
