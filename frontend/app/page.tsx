@@ -14,6 +14,7 @@ import { useState } from "react";
 export default function Home() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isBundleModalOpen, setIsBundleModalOpen] = useState(false);
+  const [bundleSelectedServices, setBundleSelectedServices] = useState<Set<string>>(new Set());
   const hasApi = !!process.env.NEXT_PUBLIC_API_URL;
 
   // Render configuration error only if completely necessary and breaking
@@ -152,12 +153,17 @@ export default function Home() {
       <BundlePricingModal
         isOpen={isBundleModalOpen}
         onClose={() => setIsBundleModalOpen(false)}
-        onOpenContact={() => setIsContactModalOpen(true)}
+        onOpenContact={(selected) => {
+          setBundleSelectedServices(selected);
+          setIsContactModalOpen(true);
+        }}
       />
 
       <ContactModal
+        key={isContactModalOpen ? 'open' : 'closed'}
         isOpen={isContactModalOpen}
         onClose={() => setIsContactModalOpen(false)}
+        selectedServices={bundleSelectedServices}
       />
     </main>
   );

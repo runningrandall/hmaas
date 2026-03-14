@@ -6,7 +6,7 @@ import { X, Check } from 'lucide-react';
 interface BundlePricingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenContact: () => void;
+  onOpenContact: (selectedServices: Set<string>) => void;
 }
 
 const servicesList = [
@@ -150,7 +150,7 @@ export default function BundlePricingModal({ isOpen, onClose, onOpenContact }: B
               <button
                 onClick={() => {
                   onClose();
-                  onOpenContact();
+                  onOpenContact(selectedServices);
                 }}
                 className="w-full py-4 text-center font-bold text-white bg-primary rounded-lg shadow-lg hover:bg-emerald-600 transition-colors"
               >
@@ -178,7 +178,7 @@ export default function BundlePricingModal({ isOpen, onClose, onOpenContact }: B
               <button
                 onClick={() => {
                   onClose();
-                  onOpenContact();
+                  onOpenContact(selectedServices);
                 }}
                 className="px-5 py-3 text-sm font-bold text-white bg-primary rounded-lg shadow-lg hover:bg-emerald-600 transition-colors"
               >
