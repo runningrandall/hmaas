@@ -37,13 +37,13 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background">
       {/* Navbar */}
-      <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-border transition-all">
+      <nav aria-label="Main navigation" className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-border transition-all">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Image src="/logo.svg" alt="Versa Logo" width={48} height={48} className="w-12 h-auto" />
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-primary leading-none">Versa</h1>
-              <p className="text-xs text-primary/80 uppercase tracking-widest font-semibold mt-1">Property Management</p>
+              <p className="text-xs text-primary uppercase tracking-widest font-semibold mt-1">Property Management</p>
             </div>
           </div>
           <div className="flex items-center gap-6">
@@ -74,7 +74,7 @@ export default function Home() {
             <h2 className="text-5xl sm:text-7xl font-extrabold text-white tracking-tight">
               One Partner for Your <span className="text-emerald-400">Complete Property</span>
             </h2>
-            <p className="text-xl sm:text-2xl text-emerald-50/90 leading-relaxed font-light">
+            <p className="text-xl sm:text-2xl text-emerald-50 leading-relaxed font-light">
               We specialize in bundling every service your property needs—from pristine window cleaning to perfect lawn care—saving you time, stress, and money.
             </p>
             <div className="flex flex-wrap gap-4 pt-4">
@@ -128,7 +128,7 @@ export default function Home() {
       <footer className="bg-foreground text-background py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
           <h2 className="text-3xl font-bold">Ready to Simplify Your Property Care?</h2>
-          <p className="text-primary-foreground/70 max-w-xl mx-auto text-lg">
+          <p className="text-primary-foreground max-w-xl mx-auto text-lg">
             Join hundreds of satisfied Utah homeowners who trust Versa to manage every detail of their estate.
           </p>
           <button
@@ -143,7 +143,7 @@ export default function Home() {
               <Image src="/logo.svg" alt="Versa Logo" width={32} height={32} />
               <span className="font-bold">Versa Property Management</span>
             </div>
-            <p className="text-background/50 text-sm">© {new Date().getFullYear()} Versa Property Management. All rights reserved.</p>
+            <p className="text-background/80 text-sm">© {new Date().getFullYear()} Versa Property Management. All rights reserved.</p>
           </div>
         </div>
       </footer>
