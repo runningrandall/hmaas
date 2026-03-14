@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 const SERVICES = [
     { name: 'Window Cleaning', cadence: '3x per year', visitsPerYear: 3, unit: 'window', pricePerUnit: 8.00 },
-    { name: 'Lawn Aeration', cadence: '2x per year (spring & fall)', visitsPerYear: 2, unit: '0.25 acre', pricePerUnit: 12.00 },
+    { name: 'Lawn Aeration', cadence: '2x per year (spring & fall)', visitsPerYear: 2, unit: '0.25 acre', pricePerUnit: 60.00 },
     { name: 'Lawn Mow & Trim', cadence: 'Weekly (seasonal)', visitsPerYear: 30, unit: '0.25 acre', pricePerUnit: 60.00 },
     { name: 'Lawn Fertilizer', cadence: '5x per year', visitsPerYear: 5, unit: '0.25 acre', pricePerUnit: 50.00 },
     { name: 'Sprinkler Winterization', cadence: '1x per year (fall)', visitsPerYear: 1, unit: 'zone', pricePerUnit: 18.00 },

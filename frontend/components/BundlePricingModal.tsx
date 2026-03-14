@@ -12,7 +12,7 @@ interface BundlePricingModalProps {
 const servicesList = [
   { id: 'window-cleaning', name: "Window Cleaning", cadence: "3x per year", price: 8.00, unit: "per window", icon: "✨" },
   { id: 'lawn-mow', name: "Lawn Mow & Trim", cadence: "Weekly", price: 60.00, unit: "per 0.25 acre", icon: "🌱" },
-  { id: 'lawn-aeration', name: "Lawn Aeration", cadence: "2x per year", price: 12.00, unit: "per 0.25 acre", icon: "🪴" },
+  { id: 'lawn-aeration', name: "Lawn Aeration", cadence: "2x per year", price: 60.00, unit: "per 0.25 acre", icon: "🪴" },
   { id: 'lawn-fertilizer', name: "Lawn Fertilizer", cadence: "4x per year", price: 50.00, unit: "per 0.25 acre", icon: "🧪" },
   { id: 'sprinkler-winterization', name: "Sprinkler Winterization", cadence: "1x per year", price: 18.00, unit: "per zone", icon: "❄️" },
   { id: 'shrub-pruning', name: "Shrub Pruning", cadence: "2x per year", price: 10.00, unit: "per shrub", icon: "✂️" },
