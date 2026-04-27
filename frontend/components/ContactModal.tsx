@@ -174,7 +174,7 @@ export default function ContactModal({ isOpen, onClose, selectedServices: initia
                     {needsField('lawn-mow', 'lawn-aeration', 'lawn-fertilizer', 'leaf-removal', 'weed-control', 'seasonal-cleanup') && (
                       <div>
                         <label htmlFor="lot_size" className="block text-sm font-medium text-foreground mb-1">Lot Size (acres)</label>
-                        <input type="number" id="lot_size" name="lot_size" step="0.05" min="0" disabled={status === "loading"} className={inputClass} placeholder="0.25" />
+                        <input type="number" id="lot_size" name="lot_size" step="any" min="0" inputMode="decimal" disabled={status === "loading"} className={inputClass} placeholder="0.25" />
                       </div>
                     )}
                     {needsField('window-cleaning') && (
