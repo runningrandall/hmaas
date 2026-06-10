@@ -15,7 +15,6 @@ const SERVICES = [
   { id: 'leaf-removal', name: "Leaf Removal" },
   { id: 'driveway-wash', name: "Driveway/Deck Wash" },
   { id: 'weed-control', name: "Weed Control (Chemical)" },
-  { id: 'flower-bed', name: "Flower Bed Maintenance" },
   { id: 'house-wash', name: "Exterior House Wash" },
   { id: 'seasonal-cleanup', name: "Spring/Fall Cleanup" },
   { id: 'sprinkler-startup', name: "Sprinkler Startup" },
@@ -139,7 +138,7 @@ export default function ContactModal({ isOpen, onClose, selectedServices: initia
 
               {/* Services */}
               <div>
-                <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Services Interested In</h4>
+                <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">What services are you interested in?</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {SERVICES.map((service) => {
                     const isSelected = services.has(service.id);
@@ -174,7 +173,7 @@ export default function ContactModal({ isOpen, onClose, selectedServices: initia
                     {needsField('lawn-mow', 'lawn-aeration', 'lawn-fertilizer', 'leaf-removal', 'weed-control', 'seasonal-cleanup') && (
                       <div>
                         <label htmlFor="lot_size" className="block text-sm font-medium text-foreground mb-1">Lot Size (acres)</label>
-                        <input type="number" id="lot_size" name="lot_size" step="0.05" min="0" disabled={status === "loading"} className={inputClass} placeholder="0.25" />
+                        <input type="number" id="lot_size" name="lot_size" step="any" min="0" inputMode="decimal" disabled={status === "loading"} className={inputClass} placeholder="0.25" />
                       </div>
                     )}
                     {needsField('window-cleaning') && (
@@ -193,12 +192,6 @@ export default function ContactModal({ isOpen, onClose, selectedServices: initia
                       <div>
                         <label htmlFor="num_shrubs" className="block text-sm font-medium text-foreground mb-1">Number of Shrubs</label>
                         <input type="number" id="num_shrubs" name="num_shrubs" min="0" disabled={status === "loading"} className={inputClass} placeholder="15" />
-                      </div>
-                    )}
-                    {needsField('flower-bed') && (
-                      <div>
-                        <label htmlFor="num_beds" className="block text-sm font-medium text-foreground mb-1">Number of Flower Beds</label>
-                        <input type="number" id="num_beds" name="num_beds" min="0" disabled={status === "loading"} className={inputClass} placeholder="4" />
                       </div>
                     )}
                     {needsField('gutter-cleaning') && (
