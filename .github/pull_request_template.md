@@ -11,7 +11,7 @@
 - [ ] 🧪 Test only (adding or updating tests)
 
 ## Related Issues
-<!-- Link to related issues: Closes #123, Fixes #456 -->
+<!-- Link to related issues, e.g. Closes #<issue-number>. Remove this section if none. -->
 
 
 ## Changes Made
