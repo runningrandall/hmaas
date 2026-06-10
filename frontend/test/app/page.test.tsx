@@ -23,12 +23,20 @@ describe('Home page', () => {
         expect(screen.getByText('Sprinkler Winterization')).toBeInTheDocument();
     });
 
-    it('should render navigation links', () => {
+    it('should not expose login or profile links in the nav', () => {
         vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3001/');
 
         render(<Home />);
 
-        expect(screen.getByText('Login / Sign Up')).toBeInTheDocument();
-        expect(screen.getByText('Profile')).toBeInTheDocument();
+        expect(screen.queryByText('Login / Sign Up')).not.toBeInTheDocument();
+        expect(screen.queryByText('Profile')).not.toBeInTheDocument();
+    });
+
+    it('should render the Get a Free Quote CTA', () => {
+        vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3001/');
+
+        render(<Home />);
+
+        expect(screen.getAllByText('Get a Free Quote').length).toBeGreaterThan(0);
     });
 });
