@@ -1,3 +1,15 @@
+# [1.9.0](https://github.com/runningrandall/hmaas/compare/v1.8.1...v1.9.0) (2026-06-10)
+
+
+### Bug Fixes
+
+* allow decimal acres input in contact modal ([ca5df53](https://github.com/runningrandall/hmaas/commit/ca5df53aeccca3169f0c2e8318db452b674169aa))
+
+
+### Features
+
+* **frontend:** refine landing nav, CTAs, and services ([c71375e](https://github.com/runningrandall/hmaas/commit/c71375e7c8d5f3a8fa03bd7f21b16ff50feab1b0))
+
 ## [1.8.1](https://github.com/runningrandall/hmaas/compare/v1.8.0...v1.8.1) (2026-03-14)
 
 
