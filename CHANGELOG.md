@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/runningrandall/hmaas/compare/v1.9.0...v1.9.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* **ci:** prevent semantic-release failure on PR issue references ([8a73045](https://github.com/runningrandall/hmaas/commit/8a73045475aa194c9404fae5ba963830a6a67ff1)), closes [#123](https://github.com/runningrandall/hmaas/issues/123)
+
 # [1.9.0](https://github.com/runningrandall/hmaas/compare/v1.8.1...v1.9.0) (2026-06-10)
 
 
