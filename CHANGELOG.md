@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/runningrandall/hmaas/compare/v1.9.1...v1.10.0) (2026-11-02)
+
+
+### Features
+
+* **infra:** replace WAF with API Gateway throttling for cost-effective security ([0b8ef4e](https://github.com/runningrandall/hmaas/commit/0b8ef4edce0f2a21997b875fbd87ff9e62d689f3))
+
 ## [1.9.1](https://github.com/runningrandall/hmaas/compare/v1.9.0...v1.9.1) (2026-06-10)
 
 
