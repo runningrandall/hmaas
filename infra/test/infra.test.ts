@@ -34,6 +34,20 @@ test('Infra Stack Created', () => {
         Name: 'Versa-Api-test',
     });
 
+    // Verify stage throttling is configured and WAF is omitted for cost optimization
+    template.resourceCountIs('AWS::WAFv2::WebACL', 0);
+    template.hasResourceProperties('AWS::ApiGateway::Stage', {
+        StageName: 'test',
+        MethodSettings: [
+            {
+                HttpMethod: '*',
+                ResourcePath: '/*',
+                ThrottlingBurstLimit: 2000,
+                ThrottlingRateLimit: 1000,
+            },
+        ],
+    });
+
     // Verify nested stacks are created (10: lookup, customer, property, plan, workforce, billing, estimate, organization, integration, subcontractor)
     template.resourceCountIs('AWS::CloudFormation::Stack', 10);
 });

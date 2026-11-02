@@ -43,7 +43,7 @@ It visualizes:
 - **API**: Traffic, Latency, Errors.
 - **Functions**: Duration, Invocations, Errors.
 - **Database**: Throttles, Capacity.
-- **System**: DLQ depth, WAF blocks.
+- **System**: DLQ depth, API Gateway 4xx errors.
 
 ## 5. Alarms & Notifications
 Alarms are provisioned in `infra-stack.ts` and send notifications to an SNS Topic.

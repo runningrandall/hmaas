@@ -13,8 +13,7 @@ flowchart TD
     end
 
     subgraph API["API Layer (InfraStack)"]
-        APIGW["API Gateway REST API"]
-        WAF["AWS WAF"]
+        APIGW["API Gateway REST API\n(Rate Limiting & Throttling)"]
         AuthZ["Lambda Authorizer"]
     end
 
@@ -52,7 +51,6 @@ flowchart TD
     CF --> S3
     S3 -.- NextJS
     Browser --> APIGW
-    WAF --> APIGW
     APIGW --> AuthZ
     AuthZ --> Cognito
     AuthZ --> AVP
@@ -71,7 +69,7 @@ flowchart TD
 | Stack | Purpose | Naming |
 |---|---|---|
 | **AuthStack** | Cognito User Pool, 5 groups, Verified Permissions policy store | `VersaAuthStack-{stage}` |
-| **InfraStack** | API Gateway, WAF, DynamoDB, Lambda functions (6 nested stacks), EventBridge, CloudWatch | `VersaInfraStack-{stage}` |
+| **InfraStack** | API Gateway (with throttling), DynamoDB, Lambda functions, EventBridge, CloudWatch | `VersaInfraStack-{stage}` |
 | **FrontendStack** | S3 bucket, CloudFront distribution (per-stage) | `VersaFrontendStack-{stage}` |
 
 ## Lambda Nested Stacks

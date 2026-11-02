@@ -16,7 +16,6 @@ This project integrates [Infracost](https://www.infracost.io/) to provide cost v
 - API Gateway (requests)
 - DynamoDB (storage, WCU/RCU)
 - CloudWatch (logs, metrics)
-- WAF (rules, requests)
 - Data Transfer
 
 > **Note**: Serverless costs are usage-based. Infracost estimates usually assume a baseline (or zero) usage unless usage files are provided. It effectively shows "fixed" costs + unit prices.

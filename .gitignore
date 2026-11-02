@@ -5,6 +5,7 @@ dist/
 .next
 coverage
 error*.log
+.DS_Store
 
 # Generated API docs (built during CI/CD)
 docs/swagger.json

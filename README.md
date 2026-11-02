@@ -13,7 +13,7 @@ A production-ready, full-stack serverless template built with modern best practi
 | **Infrastructure** | AWS CDK (TypeScript), 3 stacks |
 | **CI/CD** | GitHub Actions |
 | **Observability** | AWS Powertools (Logger, Tracer, Metrics), CloudWatch Dashboard |
-| **Security** | WAF, cdk-nag, Lambda Authorizer |
+| **Security** | API Gateway Throttling, cdk-nag, Lambda Authorizer |
 | **Testing** | Vitest (unit), Cypress (E2E + a11y), Jest (infra), Integration tests |
 | **Docs** | Storybook 10, OpenAPI (Swagger UI) |
 
@@ -38,7 +38,7 @@ A production-ready, full-stack serverless template built with modern best practi
 │   └── lib/
 │       ├── auth-stack.ts    # Cognito User Pool, Verified Permissions
 │       ├── frontend-stack.ts# S3 + CloudFront (prod/non-prod)
-│       └── infra-stack.ts   # API GW, Lambda, DynamoDB, EventBridge, WAF, Alarms, Dashboard
+│       └── infra-stack.ts   # API GW, Lambda, DynamoDB, EventBridge, Alarms, Dashboard
 ├── scripts/                 # Local dev + integration tests
 ├── templates/               # Plop code generators
 ├── .github/workflows/       # CI/CD pipeline
@@ -119,7 +119,7 @@ The documentation has been split into detailed guides:
 - **Backend**: Lambda (Node.js 22), Middy Middleware, ElectroDB (Single Table).
 - **Frontend**: Next.js 16, Tailwind, shadcn/ui.
 - **Infrastructure**: AWS CDK, dev and prod environments.
-- **Security**: WAF, cdk-nag, fine-grained permissions.
+- **Security**: API Gateway Throttling, cdk-nag, fine-grained permissions.
 - **Tools**: Plop generator, Husky git hooks.
 
 [Read more in Project Structure](docs/project-structure.md).
