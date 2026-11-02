@@ -11,7 +11,6 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
-import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { AuthStack } from './auth-stack';
@@ -102,43 +101,14 @@ export class InfraStack extends cdk.Stack {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: apigateway.Cors.ALL_METHODS,
       },
-      deployOptions: { stageName: props.stageName },
-    });
-
-    // ─── 5. WAF Web ACL ───
-    const webAcl = new wafv2.CfnWebACL(this, 'ApiWaf', {
-      defaultAction: { allow: {} },
-      scope: 'REGIONAL',
-      visibilityConfig: {
-        cloudWatchMetricsEnabled: true,
-        metricName: `${props.stageName}-ApiWaf`,
-        sampledRequestsEnabled: true,
+      deployOptions: {
+        stageName: props.stageName,
+        throttlingRateLimit: 1000,
+        throttlingBurstLimit: 2000,
       },
-      rules: [
-        {
-          name: 'RateLimitRule', priority: 1, action: { block: {} },
-          statement: { rateBasedStatement: { limit: 1000, aggregateKeyType: 'IP' } },
-          visibilityConfig: { cloudWatchMetricsEnabled: true, metricName: 'RateLimitRule', sampledRequestsEnabled: true },
-        },
-        {
-          name: 'AWSManagedCommonRuleSet', priority: 2, overrideAction: { none: {} },
-          statement: { managedRuleGroupStatement: { vendorName: 'AWS', name: 'AWSManagedRulesCommonRuleSet' } },
-          visibilityConfig: { cloudWatchMetricsEnabled: true, metricName: 'AWSManagedCommonRuleSet', sampledRequestsEnabled: true },
-        },
-        {
-          name: 'AWSManagedKnownBadInputs', priority: 3, overrideAction: { none: {} },
-          statement: { managedRuleGroupStatement: { vendorName: 'AWS', name: 'AWSManagedRulesKnownBadInputsRuleSet' } },
-          visibilityConfig: { cloudWatchMetricsEnabled: true, metricName: 'AWSManagedKnownBadInputs', sampledRequestsEnabled: true },
-        },
-      ],
     });
 
-    new wafv2.CfnWebACLAssociation(this, 'ApiWafAssociation', {
-      resourceArn: api.deploymentStage.stageArn,
-      webAclArn: webAcl.attrArn,
-    });
-
-    // ─── 6. EventBridge ───
+    // ─── 5. EventBridge ───
     const eventBus = new events.EventBus(this, 'VersaEventBus', {
       eventBusName: `Versa-EventBus-${props.stageName}`,
     });
@@ -767,12 +737,8 @@ export class InfraStack extends cdk.Stack {
         width: 12,
       }),
       new cloudwatch.GraphWidget({
-        title: 'WAF - Blocked Requests',
-        left: [new cloudwatch.Metric({
-          namespace: 'AWS/WAFV2', metricName: 'BlockedRequests',
-          dimensionsMap: { WebACL: webAcl.attrArn.split('/').pop()!, Rule: 'ALL', Region: this.region },
-          period: cdk.Duration.minutes(5),
-        })],
+        title: 'API Gateway - Client Errors (4xx)',
+        left: [api.metricClientError({ period: cdk.Duration.minutes(5) })],
         width: 12,
       }),
     );
@@ -791,7 +757,7 @@ export class InfraStack extends cdk.Stack {
       { id: 'AwsSolutions-SQS3', reason: 'Lambda DLQ is the terminal queue — no further DLQ needed' },
       { id: 'AwsSolutions-SNS2', reason: 'SNS topic encryption not required for alarm notifications' },
       { id: 'AwsSolutions-SNS3', reason: 'SNS topic does not need to enforce SSL for alarm notifications' },
-      { id: 'AwsSolutions-APIG3', reason: 'WAF is associated via CfnWebACLAssociation at regional scope' },
+      { id: 'AwsSolutions-APIG3', reason: 'WAF disabled to optimize costs; rate limiting and request validation enforced via API Gateway throttling and handler validation' },
       { id: 'AwsSolutions-SQS4', reason: 'DLQ SSL enforcement not required for dev stage' },
     ], true);
   }

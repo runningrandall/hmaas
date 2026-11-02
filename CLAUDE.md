@@ -52,7 +52,7 @@ node scripts/seed-local-db.js           # Seed local data
 | Infrastructure | AWS CDK (TypeScript), 3 stacks |
 | CI/CD | GitHub Actions (deploy, teardown, release) |
 | Observability | AWS Powertools (Logger, Tracer, Metrics), Cloudwatch |
-| Security | WAF, cdk-nag, Lambda Authorizer |
+| Security | API Gateway Throttling, cdk-nag, Lambda Authorizer |
 | Testing | Vitest (backend + frontend), Jest (infra) |
 | Linting | Eslint for code fixes and linting |
 | Validation | Zod for all validation |
@@ -206,7 +206,7 @@ All events include `organizationId` in the detail payload.
 ## CDK Stacks (infra/)
 
 - **AuthStack**: Cognito User Pool (6 groups: SuperAdmin, Admin, Manager, User, Servicer, Customer), Verified Permissions policy store (Cedar), Pre Token Generation Lambda trigger (injects `organizationId` into access tokens), `custom:organizationId` user attribute
-- **InfraStack**: API Gateway + WAF, DynamoDB (+ 2 GSIs), Lambda functions (including Organization CRUD + config + secrets), EventBridge, S3, CloudWatch, Secrets Manager permissions for `versa/org/*`
+- **InfraStack**: API Gateway (with rate limiting & throttling), DynamoDB (+ 2 GSIs), Lambda functions (including Organization CRUD + config + secrets), EventBridge, S3, CloudWatch, Secrets Manager permissions for `versa/org/*`
 - **FrontendStack**: S3 + CloudFront
 
 ## Key Business Logic
